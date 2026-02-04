@@ -141,15 +141,15 @@ void ABaseZombie::SetChaseSpeed(float NewSpeed)
 void ABaseZombie::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
-	if (PropertyChangedEvent.Property && PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(ABaseMonster, MonsterData))
+	if (PropertyChangedEvent.Property && PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(ABaseZombie, MonsterData))
 	{
 		
 		OnConstruction(GetActorTransform());
 		
-		if (GUnrealEd)
+		/*if (GUnrealEd)
 		{
 			GUnrealEd->RedrawLevelEditingViewports();
-		}
+		}*/
 	}
 }
 #endif

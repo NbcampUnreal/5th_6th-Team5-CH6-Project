@@ -7,6 +7,7 @@
 #include "BaseZombie.generated.h"
 
 class UStatusComponent;
+class UMonsterDataAsset;
 
 UCLASS()
 class WARD_ZERO_API ABaseZombie : public ACharacter
