@@ -12,7 +12,7 @@ class UCameraComponent;
 class UInputAction;
 struct FInputActionValue;
 
-DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
+// DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 /**
  *  A simple player-controllable third person character
@@ -54,6 +54,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* CrouchAction;
+	UInputAction* InteractionAction;
+
+
 
 public:
 
@@ -80,6 +83,8 @@ protected:
 	void CrouchStart(const FInputActionValue& Value);
 
 	void CrouchEnd(const FInputActionValue& Value);
+	void Interact(const FInputActionValue& Value);
+
 
 public:
 

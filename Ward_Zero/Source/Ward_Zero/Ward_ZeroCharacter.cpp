@@ -12,6 +12,7 @@
 #include "InputActionValue.h"
 #include "Ward_Zero.h"
 
+
 AWard_ZeroCharacter::AWard_ZeroCharacter()
 {
 	// Set size for collision capsule
@@ -48,8 +49,6 @@ AWard_ZeroCharacter::AWard_ZeroCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
-	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 }
 
 void AWard_ZeroCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -166,4 +165,10 @@ void AWard_ZeroCharacter::DoJumpEnd()
 {
 	// signal the character to stop jumping
 	StopJumping();
+}
+
+void AWard_ZeroCharacter::Interact(const FInputActionValue& Value)
+{
+	// LogTemplateCharacter 대신 파일 상단에 include된 LogWard_Zero를 사용합니다.
+	UE_LOG(LogWard_Zero, Log, TEXT("상호작용 키를 눌렀습니다!"));
 }
