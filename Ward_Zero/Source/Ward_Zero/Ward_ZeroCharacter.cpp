@@ -30,12 +30,12 @@ AWard_ZeroCharacter::AWard_ZeroCharacter()
 	// instead of recompiling to adjust them
 	GetCharacterMovement()->JumpZVelocity = 500.f;
 	GetCharacterMovement()->AirControl = 0.35f;
-	GetCharacterMovement()->MaxWalkSpeed = 500.f;
+	
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
-
+	GetCharacterMovement()->MaxWalkSpeedCrouched = 150.f;
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
@@ -118,6 +118,7 @@ void AWard_ZeroCharacter::SprintEnd(const FInputActionValue& Value)
 void AWard_ZeroCharacter::CrouchStart(const FInputActionValue& Value)
 {
 	Crouch();
+	
 }
 
 void AWard_ZeroCharacter::CrouchEnd(const FInputActionValue& Value)
