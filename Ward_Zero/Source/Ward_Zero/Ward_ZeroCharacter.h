@@ -50,6 +50,10 @@ protected:
 	UInputAction* MouseLookAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* SprintAction;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* CrouchAction;
 	UInputAction* InteractionAction;
 
 
@@ -72,6 +76,13 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
+	void SprintStart(const FInputActionValue& Value);
+
+	void SprintEnd(const FInputActionValue& Value);
+
+	void CrouchStart(const FInputActionValue& Value);
+
+	void CrouchEnd(const FInputActionValue& Value);
 	void Interact(const FInputActionValue& Value);
 
 
@@ -100,5 +111,9 @@ public:
 
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+public:
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsSprinting = false;
 };
 

@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Ward_ZeroCharacter.h"
 #include "Engine/LocalPlayer.h"
@@ -35,6 +35,8 @@ AWard_ZeroCharacter::AWard_ZeroCharacter()
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
+	GetCharacterMovement()->MaxWalkSpeedCrouched = 150.f;
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -64,6 +66,12 @@ void AWard_ZeroCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AWard_ZeroCharacter::Look);
+
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Triggered, this, &AWard_ZeroCharacter::SprintStart);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &AWard_ZeroCharacter::SprintEnd);
+
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Triggered, this, &AWard_ZeroCharacter::CrouchStart);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AWard_ZeroCharacter::CrouchEnd);
 	}
 	else
 	{
@@ -87,6 +95,34 @@ void AWard_ZeroCharacter::Look(const FInputActionValue& Value)
 
 	// route the input
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
+}
+
+void AWard_ZeroCharacter::SprintStart(const FInputActionValue& Value)
+{
+	if (GetCharacterMovement() && !bIsSprinting)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = 250;
+	}
+	bIsSprinting = true; 
+}
+
+void AWard_ZeroCharacter::SprintEnd(const FInputActionValue& Value)
+{
+	if (GetCharacterMovement() && bIsSprinting)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = 200;
+	}
+	bIsSprinting = false; 
+}
+
+void AWard_ZeroCharacter::CrouchStart(const FInputActionValue& Value)
+{
+	Crouch();
+}
+
+void AWard_ZeroCharacter::CrouchEnd(const FInputActionValue& Value)
+{
+	UnCrouch();
 }
 
 void AWard_ZeroCharacter::DoMove(float Right, float Forward)
