@@ -175,9 +175,9 @@ void ABaseZombie::OnConstruction(const FTransform& Transform)
 		}
         
 		
-		if (MonsterData->AnimBPClass)
+		if (MonsterData->AnimBP)
 		{
-			GetMesh()->SetAnimInstanceClass(MonsterData->AnimBPClass);
+			GetMesh()->SetAnimInstanceClass(MonsterData->AnimBP);
 		}
 
 		
