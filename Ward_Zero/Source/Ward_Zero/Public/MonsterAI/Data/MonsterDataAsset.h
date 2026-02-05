@@ -9,20 +9,84 @@
 /**
  * 
  */
+class UAnimMontage;
+class USkeletalMesh;
+class UAnimInstance;
+class USoundBase;
+
+UENUM(BlueprintType)
+enum class EHitDirection : uint8
+{
+	Front,
+	Back,
+	Left,
+	Right
+};
+
+USTRUCT(BlueprintType)
+struct FDirectionalMontage
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> Front; 
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> Back;   
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> Left;   
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> Right;  
+};
+
+USTRUCT(BlueprintType)
+struct FGetUpMontage
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> FromFaceDown; 
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> FromFaceUp;   
+};
+
 UCLASS()
 class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 {
 	GENERATED_BODY()
 	
+	
 	public:
 	UPROPERTY(EditAnywhere, Category = "Visual")
-	USkeletalMesh* MonsterMesh;
+	TObjectPtr<USkeletalMesh> MonsterMesh;
+	
+	UPROPERTY(EditAnywhere, Category = "Visual")
+	FVector MeshScale = FVector(1.0f);
 
 	UPROPERTY(EditAnywhere, Category = "Animation")
-	TSubclassOf<UAnimInstance> AnimBPWalkRun; 
+	TSubclassOf<UAnimInstance> AnimBP;
+	
+	UPROPERTY(EditAnywhere, Category = "Animation|Combat")
+	TObjectPtr<UAnimMontage> AnimBPAttack;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Animation|Combat")
+	FDirectionalMontage HeadHitReactMontages; 
 
-	UPROPERTY(EditAnywhere, Category = "Visual")
-	FVector MeshScale = FVector(1.0f); 
+	UPROPERTY(EditDefaultsOnly, Category = "Animation|Combat")
+	FDirectionalMontage BodyHitReactMontages; 
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Animation|Combat")
+	FDirectionalMontage KnockdownMontages; 
+
+	UPROPERTY(EditDefaultsOnly, Category = "Animation|Combat")
+	FGetUpMontage GetUpMontages;
+	
+	 
 	
 	UPROPERTY(EditAnywhere, Category = "Status")
 	float MaxHP = 100.f;
@@ -48,11 +112,17 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	UPROPERTY(EditAnywhere, Category = "Hearing", meta=(ClampMin="0.0", ClampMax="1.0"))
 	float HearingThreshold = 0.5f;
 	
-	UPROPERTY(EditAnywhere, Category = "Attack")
+	UPROPERTY(EditAnywhere, Category = "Combat|Attack")
 	float AttackRange = 150.f;
 	
 	UPROPERTY(EditAnywhere, Category = "Chase")
 	float ChaseRange = 2000.f;
+	
+	UPROPERTY(EditAnywhere, Category = "Combat|Stun")
+	float StunnedTime = 3.f;
+	
+	UPROPERTY(EditAnywhere, Category = "Combat|Stun",meta=(ClampMin="0.0", ClampMax="1.0"))
+	float ResistStun = 0.5f;
 	
 	
 	UPROPERTY(EditAnywhere, Category = "Sight")
@@ -63,14 +133,14 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	
 	
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundBase* WalkSound;
+	TObjectPtr<USoundBase> WalkSound;
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundBase* RunSound;
+	TObjectPtr<USoundBase> RunSound;
 	
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundBase* IdleSound;
+	TObjectPtr<USoundBase> IdleSound;
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundBase* ChaseSound;
+	TObjectPtr<USoundBase> ChaseSound;
 	
 	
 	UPROPERTY(EditAnywhere, Category = "Volume")
@@ -78,6 +148,5 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	UPROPERTY(EditAnywhere, Category = "Volume")
 	float ChaseSoundVolume = 1.0f;
 	
-	UPROPERTY(EditAnywhere, Category = "Duration")
-	float StunnedTime = 0.f;
+	
 };
