@@ -36,26 +36,29 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	UPROPERTY(EditAnywhere, Category = "Speed")
 	float ChaseSpeed = 700.f;
 
-	UPROPERTY(EditAnywhere, Category = "Range")
+	UPROPERTY(EditAnywhere, Category = "Sight")
 	float BaseDetectionRange = 1200.f;
 	
-	UPROPERTY(EditAnywhere, Category = "Angle")
+	UPROPERTY(EditAnywhere, Category = "Sight")
+	float LoseSightRange = 1500.f;
+	
+	UPROPERTY(EditAnywhere, Category = "Sight")
 	float ViewAngle = 90.f;
 	
-	UPROPERTY(EditAnywhere, Category = "Sense", meta=(ClampMin="0.0", ClampMax="1.0"))
+	UPROPERTY(EditAnywhere, Category = "Hearing", meta=(ClampMin="0.0", ClampMax="1.0"))
 	float HearingThreshold = 0.5f;
 	
-	UPROPERTY(EditAnywhere, Category = "Range")
+	UPROPERTY(EditAnywhere, Category = "Attack")
 	float AttackRange = 150.f;
 	
-	UPROPERTY(EditAnywhere, Category = "Range")
+	UPROPERTY(EditAnywhere, Category = "Chase")
 	float ChaseRange = 2000.f;
 	
 	
-	UPROPERTY(EditAnywhere, Category = "Spec")
+	UPROPERTY(EditAnywhere, Category = "Sight")
 	float EyeHeight = 70.f;
 	
-	UPROPERTY(EditAnywhere, Category = "Duration")
+	UPROPERTY(EditAnywhere, Category = "Chase")
 	float MaxLostTargetTime = 5.f;
 	
 	
