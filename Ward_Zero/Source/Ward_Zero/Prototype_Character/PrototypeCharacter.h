@@ -66,11 +66,16 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = Movement)
     float CrouchMovementSpeed = 150.0f;
 
+    UPROPERTY(EditDefaultsOnly, Category = Camera)
+    float CrouchedArmLength = 130.0f;
+
+    float StandingArmLength = 200.0f;
+
     UPROPERTY(EditDefaultsOnly, Category = Movement)
     float WalkTurnRate = 5.0f;
 
     UPROPERTY(EditDefaultsOnly, Category = Camera)
-    float CrouchedCameraHeight = 15.0f;
+    float CrouchedCameraHeight = 40.0f;
 
     float StandingCameraHeight = 30.0f;
 
