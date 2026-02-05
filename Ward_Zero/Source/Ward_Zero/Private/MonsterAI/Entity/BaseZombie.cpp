@@ -9,6 +9,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Editor/UnrealEdEngine.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "MonsterAI/BaseZombie_AIController.h"
 #include "MonsterAI/Component/StatusComponent.h"
 
 
@@ -41,6 +42,14 @@ void ABaseZombie::BeginPlay()
 			GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetBaseSpeed();
 
 		}
+	}else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Zombie [%s] has no StatusComponent or MonsterData!"), *GetName());
+		return; 
+	}
+	if (ABaseZombie_AIController* AIC = GetController<ABaseZombie_AIController>())
+	{
+		AIC->UpdatePerceptionConfig();
 	}
 }
 
@@ -166,9 +175,9 @@ void ABaseZombie::OnConstruction(const FTransform& Transform)
 		}
         
 		
-		if (MonsterData->AnimBPClass)
+		if (MonsterData->AnimBP)
 		{
-			GetMesh()->SetAnimInstanceClass(MonsterData->AnimBPClass);
+			GetMesh()->SetAnimInstanceClass(MonsterData->AnimBP);
 		}
 
 		

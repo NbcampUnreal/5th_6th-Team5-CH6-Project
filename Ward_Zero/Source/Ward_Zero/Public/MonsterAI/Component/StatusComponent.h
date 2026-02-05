@@ -20,7 +20,7 @@ public:
 	UStatusComponent();
 	virtual void BeginPlay() override;
 	void InitData(const UMonsterDataAsset* BaseData);
-	
+	bool IsDataInit() const;
 	
 	bool GetIsExecutionActive() const { return bIsExecutionActive; }
 	void SetIsExecutionActive(bool b){bIsExecutionActive = b;}
@@ -39,6 +39,8 @@ public:
 	float GetChaseSoundVolume() const;
 	float GetStunTime() const;
 	float GetHearingThreshold() const;
+	float GetLoseSightRange() const;
+	float GetResistStun() const;
 	
 	
 	
@@ -49,6 +51,7 @@ private:
 	const UMonsterDataAsset* MonsterData;
 	
 	bool bIsExecutionActive = false;
+	bool bIsDataInit = false;
 	
 	UPROPERTY()
 	float CurrentHP = 0.0f;
