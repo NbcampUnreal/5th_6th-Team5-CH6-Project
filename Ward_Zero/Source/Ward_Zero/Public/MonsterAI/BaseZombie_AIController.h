@@ -6,6 +6,7 @@
 #include "AIController.h"
 #include "BaseZombie_AIController.generated.h"
 
+struct FAIStimulus;
 /**
  * 
  */
@@ -13,11 +14,31 @@ UCLASS()
 class WARD_ZERO_API ABaseZombie_AIController : public AAIController
 {
 	GENERATED_BODY()
-
+public:
+	void UpdatePerceptionConfig();
+	
 protected:
 	ABaseZombie_AIController();
+	
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "AI")
+	TObjectPtr<class UStatusComponent> StatusComp;
+	
 	virtual void BeginPlay() override;
-public:
+	
+	virtual void OnPossess(APawn* InPawn) override;
+	virtual void OnUnPossess() override;
+	
+	
+	
+	UFUNCTION()
+    void OnTargetDetected(AActor* Actor, FAIStimulus Stimulus);
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Perception")
+	class UAIPerceptionComponent* AIPerceptionComp;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Chase")
+	FName TargetKey = "TargetActor";
+	
 	virtual void Tick(float DeltaTime) override;
 private:
 	UPROPERTY(EditAnywhere)
