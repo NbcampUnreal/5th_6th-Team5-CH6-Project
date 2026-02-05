@@ -202,8 +202,6 @@ void APrototypeCharacter::ToggleCrouch(const FInputActionValue& Value)
 	{
 		Crouch();
 	}
-	
-
 }
 
 void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
