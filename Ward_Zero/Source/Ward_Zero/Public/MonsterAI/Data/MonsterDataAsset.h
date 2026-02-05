@@ -18,8 +18,8 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	UPROPERTY(EditAnywhere, Category = "Visual")
 	USkeletalMesh* MonsterMesh;
 
-	UPROPERTY(EditAnywhere, Category = "Visual")
-	TSubclassOf<UAnimInstance> AnimBPClass; 
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	TSubclassOf<UAnimInstance> AnimBPWalkRun; 
 
 	UPROPERTY(EditAnywhere, Category = "Visual")
 	FVector MeshScale = FVector(1.0f); 
