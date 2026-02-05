@@ -70,6 +70,8 @@ void APrototypeCharacter::BeginPlay()
 			PlayerController->PlayerCameraManager->ViewPitchMax = 50.0f;
 		}
 	}
+
+	StandingArmLength = CameraBoom->TargetArmLength;
 }
 
 void APrototypeCharacter::Tick(float DeltaTime)
@@ -90,7 +92,10 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	}
 
 	float TargetBaseZ = bIsCrouched ? CrouchedCameraHeight : StandingCameraHeight;
+	float TargetArmLength = bIsCrouched ? CrouchedArmLength : StandingArmLength;
+
 	CurrentBaseCameraZ = FMath::FInterpTo(CurrentBaseCameraZ, TargetBaseZ, DeltaTime, 5.0f);
+	CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, TargetArmLength, DeltaTime, 5.0f);
 
 	FVector Velocity = GetVelocity();
 	float Speed = Velocity.Size();
@@ -117,6 +122,7 @@ void APrototypeCharacter::Tick(float DeltaTime)
 
 	CameraBoom->SocketOffset.Z = FMath::FInterpTo(CameraBoom->SocketOffset.Z, FinalTargetZ, DeltaTime, 10.0f);
 	CameraBoom->SocketOffset.Y = FMath::FInterpTo(CameraBoom->SocketOffset.Y, FinalTargetY, DeltaTime, 10.0f);
+
 }
 
 void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
