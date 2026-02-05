@@ -175,9 +175,9 @@ void ABaseZombie::OnConstruction(const FTransform& Transform)
 		}
         
 		
-		if (MonsterData->AnimBPWalkRun)
+		if (MonsterData->AnimBP)
 		{
-			GetMesh()->SetAnimInstanceClass(MonsterData->AnimBPWalkRun);
+			GetMesh()->SetAnimInstanceClass(MonsterData->AnimBP);
 		}
 
 		

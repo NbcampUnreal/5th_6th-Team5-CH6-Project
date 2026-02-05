@@ -40,6 +40,7 @@ public:
 	float GetStunTime() const;
 	float GetHearingThreshold() const;
 	float GetLoseSightRange() const;
+	float GetResistStun() const;
 	
 	
 	

@@ -161,3 +161,12 @@ float UStatusComponent::GetLoseSightRange() const
 	}
 	return MonsterData->LoseSightRange;
 }
+
+float UStatusComponent::GetResistStun() const
+{
+	if (!MonsterData)
+	{
+		return 0.f;
+	}
+	return MonsterData->ResistStun;
+}
