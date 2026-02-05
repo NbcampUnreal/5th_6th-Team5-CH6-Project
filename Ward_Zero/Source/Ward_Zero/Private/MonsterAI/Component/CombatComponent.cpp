@@ -1,7 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-
-#include "MonsterAI/Component/CombatComponent.h"
+﻿#include "MonsterAI/Component/CombatComponent.h"
 
 #include "Engine/DamageEvents.h"
 #include "MonsterAI/Component/StatusComponent.h"
@@ -39,14 +36,14 @@ void UCombatComponent::OnTakeDamage(float Damage, FDamageEvent const& DamageEven
 	{
 		return;
 	}
-	bool bIsHeadShot = CheckHeadShot(DamageEvent);
+	//bool bIsHeadShot = CheckHeadShot(DamageEvent);
 	
 	float WeaponStunChance = WZDamageType->KnockdownProbability;
 	
 	float KnockdownChance = WeaponStunChance * (1 - StatusComp->GetResistStun());
 	if (FMath::RandRange(0.0f,100.0f) < KnockdownChance)
 	{
-		ApplyKnockdown(true);
+		//ApplyKnockdown(true);
 		return;
 	}
 	
