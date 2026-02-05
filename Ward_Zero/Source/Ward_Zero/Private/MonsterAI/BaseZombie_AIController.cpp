@@ -2,9 +2,19 @@
 
 
 #include "Public/MonsterAI/BaseZombie_AIController.h"
+
+#include <ThirdParty/ShaderConductor/ShaderConductor/External/DirectXShaderCompiler/include/dxc/DXIL/DxilConstants.h>
+
 #include "Kismet/GameplayStatics.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Chaos/PBDSuspensionConstraintData.h"
+#include "MonsterAI/Component/StatusComponent.h"
+#include "MonsterAI/Entity/BaseZombie.h"
+#include "Perception/AIPerceptionComponent.h"
+#include "Perception/AIPerceptionTypes.h"
+#include "Perception/AISenseConfig_Sight.h"
+#include "Perception/AISenseConfig_Hearing.h"
 
 ABaseZombie_AIController::ABaseZombie_AIController()
 {
@@ -13,6 +23,26 @@ ABaseZombie_AIController::ABaseZombie_AIController()
 	{
 		BT_BaseZombie = BT.Object;
 	}
+	AIPerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComp"));
+	UAISenseConfig_Sight* SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
+	UAISenseConfig_Hearing* HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("HearingConfig"));
+	SightConfig->SightRadius = 1500.f;
+	SightConfig->LoseSightRadius = 2000.f;
+	SightConfig->PeripheralVisionAngleDegrees = 60.f;
+	
+	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
+	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
+	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	
+	HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
+	HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
+	HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	
+	HearingConfig->HearingRange = 2000.f;
+
+	AIPerceptionComp->ConfigureSense(*HearingConfig);
+	AIPerceptionComp->ConfigureSense(*SightConfig);
+	AIPerceptionComp->SetDominantSense(SightConfig->GetSenseImplementation());
 }
 
 void ABaseZombie_AIController::BeginPlay()
@@ -22,14 +52,102 @@ void ABaseZombie_AIController::BeginPlay()
 	if (BT_BaseZombie != nullptr)
 	{
 		RunBehaviorTree(BT_BaseZombie);
-		APawn* playerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(),0);
-		if (playerPawn != nullptr)
-		{
-			GetBlackboardComponent()->SetValueAsVector(TEXT("PlayerLocation"),playerPawn->GetActorLocation());
-
-		}
-		GetBlackboardComponent()->SetValueAsVector(TEXT("DefaultLocation"),GetPawn()->GetActorLocation());
 	}
+	AIPerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &ABaseZombie_AIController::OnTargetDetected);
+}
+
+void ABaseZombie_AIController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	if (ABaseZombie* Zombie = Cast<ABaseZombie>(InPawn))
+	{
+		StatusComp = Zombie->FindComponentByClass<UStatusComponent>();
+		
+		if (StatusComp)
+		{
+			UpdatePerceptionConfig();
+		}
+	}
+}
+
+void ABaseZombie_AIController::OnUnPossess()
+{
+	Super::OnUnPossess();
+	StatusComp = nullptr;
+}
+
+void ABaseZombie_AIController::UpdatePerceptionConfig()
+{
+	if (!StatusComp || !AIPerceptionComp || !StatusComp->IsDataInit())
+	{
+		return;
+	}
+	UAISenseConfig_Sight* SightConfig = AIPerceptionComp->GetSenseConfig<UAISenseConfig_Sight>();
+	if (SightConfig)
+	{
+		SightConfig->SightRadius = StatusComp->GetBaseDetectionRange();
+		SightConfig->LoseSightRadius = StatusComp->GetLoseSightRange();
+		SightConfig->PeripheralVisionAngleDegrees = StatusComp->GetViewAngle() / 2;
+		
+		AIPerceptionComp->RequestStimuliListenerUpdate();
+	}
+	UAISenseConfig_Hearing* HearingConfig = AIPerceptionComp->GetSenseConfig<UAISenseConfig_Hearing>();
+	if (HearingConfig)
+	{
+		//HearingConfig->HearingRange = StatusComp->GetHearingRange();
+	}
+}
+
+void ABaseZombie_AIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimulus)
+{
+	UBlackboardComponent* BB = GetBlackboardComponent();
+	if (!BB)
+	{
+		return;
+	}
+	
+	TSubclassOf<UAISense> DetectedSense = UAIPerceptionSystem::GetSenseClassForStimulus(this, Stimulus);
+	
+	if (DetectedSense == UAISense_Sight::StaticClass())
+	{
+		if (Actor && Actor->ActorHasTag("Player"))
+		{
+			if (Stimulus.WasSuccessfullySensed())
+			{
+				BB->SetValueAsObject(TargetKey, Actor);
+				BB->ClearValue("InvestigateLocation");
+				BB->ClearValue("LastKnownLocation");
+			
+			}else
+			{
+				//BB->ClearValue(TargetKey);
+				BB->SetValueAsVector("LastKnownLocation", Stimulus.StimulusLocation);
+			}
+		}
+	}else if (DetectedSense == UAISense_Hearing::StaticClass())
+	{
+		if (BB->GetValueAsObject(TargetKey) == nullptr && Stimulus.WasSuccessfullySensed())
+		{
+			float Loudness = Stimulus.Strength;
+			float dist = FVector::Dist(GetPawn()->GetActorLocation(),Actor->GetActorLocation());
+			if (dist > 2000)
+			{
+				return;
+			}
+			float RealLoudness = Loudness * FMath::Clamp((1 - dist/2000),0,1.0f);
+			
+			if (StatusComp->GetHearingThreshold() <= RealLoudness)
+			{
+				BB->SetValueAsObject(TargetKey,Actor);
+				BB->SetValueAsVector("LastKnownLocation", Stimulus.StimulusLocation);
+			}else
+			{
+				BB->SetValueAsVector("InvestigateLocation", Stimulus.StimulusLocation);
+			}
+			
+		}
+	}
+	
 }
 
 void ABaseZombie_AIController::Tick(float DeltaTime)
