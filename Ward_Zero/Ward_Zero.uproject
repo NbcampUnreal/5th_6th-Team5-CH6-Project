@@ -33,7 +33,7 @@
 		},
 		{
 			"Name": "LXR",
-			"Enabled": true,
+			"Enabled": false,
 			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/bfe03ff858fa4b8d9766d7e9113f3829"
 		}
 	]
