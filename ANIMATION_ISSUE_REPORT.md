@@ -371,9 +371,141 @@ GlobalDefaultGameMode=/Game/ThirdPerson/Blueprints/BP_ThirdPersonGameMode.BP_Thi
 
 ---
 
+## 📋 UE 에디터 로그 분석
+
+> 사용자 제공 로그 (02/06/26 20:29:54) 기반 분석
+
+### 🔴 에러 (Error) — 즉시 수정 필요
+
+#### 에러 1: `BT_BaseZombie` BehaviorTree 경로 오류 (심각)
+
+```
+LogStreaming: Warning: LoadPackage: SkipPackage: /Game/MonsterAI_CHS/BT_BaseZombie - The package to load does not exist on disk or in the loader
+LogUObjectGlobals: Warning: Failed to find object 'BehaviorTree /Game/MonsterAI_CHS/BT_BaseZombie.BT_BaseZombie'
+LogUObjectGlobals: Error: CDO Constructor (BaseZombie_AIController): Failed to find BehaviorTree'/Game/MonsterAI_CHS/BT_BaseZombie'
+```
+
+**원인:** `BaseZombie_AIController.cpp`에 하드코딩된 경로가 **잘못됨**
+
+```cpp
+// 현재 코드 (잘못된 경로):
+ConstructorHelpers::FObjectFinder<UBehaviorTree>BT(
+    TEXT("BehaviorTree'/Game/MonsterAI_CHS/BT_BaseZombie'")
+);
+```
+
+**실제 에셋 위치:**
+- 리포지토리: `Ward_Zero/Content/MonsterAI/MonsterAI_CHS/BT_BaseZombie.uasset`
+- UE 게임 경로: `/Game/MonsterAI/MonsterAI_CHS/BT_BaseZombie`
+
+**문제:** 경로에서 `/MonsterAI/` 디렉토리가 **빠져있음**
+
+**수정 방법:**
+```cpp
+// 변경 전 (잘못됨):
+ConstructorHelpers::FObjectFinder<UBehaviorTree>BT(
+    TEXT("BehaviorTree'/Game/MonsterAI_CHS/BT_BaseZombie'")
+);
+
+// 변경 후 (올바른 경로):
+ConstructorHelpers::FObjectFinder<UBehaviorTree>BT(
+    TEXT("BehaviorTree'/Game/MonsterAI/MonsterAI_CHS/BT_BaseZombie.BT_BaseZombie'")
+);
+```
+
+**파일:** `Ward_Zero/Source/Ward_Zero/Private/MonsterAI/AIController/BaseZombie_AIController.cpp`
+
+**영향:** 모든 좀비 AI가 BehaviorTree를 로드하지 못해 **AI 행동이 완전히 작동하지 않음**
+
+---
+
+#### 에러 2: BlendSpace 애니메이션 누락
+
+```
+LoadErrors: Error: BlendSpace BS_Sprint has a sample with no/invalid animation.
+LoadErrors: Error: BlendSpace BS_Walk has a sample with no/invalid animation. (×5)
+```
+
+**원인:** BS_Walk에서 총 5개, BS_Sprint에서 1개의 애니메이션 참조가 깨져 있음
+
+이전 분석에서 확인된 대로:
+- `Jogging__1_1` 삭제 → `Jogging_2__UE`로 대체되었으나 BlendSpace 내부 참조 미수정
+- 폴더 이동 시 일부 애니메이션 참조 경로 불일치
+
+---
+
+#### 에러 3: `OrcIdle_UE` 에셋 누락
+
+```
+LoadErrors: Warning: While trying to load package /Game/Characters/Character_JC/Animation/BlendSpace/BS_Walk,
+    a dependent package /Game/Characters/Character_JC/Animation/Asset/Idle/OrcIdle_UE was not available.
+FPackageName: Skipped package /Game/Characters/Character_JC/Animation/Asset/Idle/OrcIdle_UE
+    has a valid, mounted, mount point but does not exist either on disk or in iostore.
+```
+
+**원인:** `BS_Walk`가 `/Game/Characters/Character_JC/Animation/Asset/Idle/OrcIdle_UE`를 참조하지만, 해당 파일이 존재하지 않음
+
+**현재 Idle 폴더의 에셋 목록:**
+| 파일명 | 존재 여부 |
+|--------|----------|
+| `AN_ResetTurn.uasset` | ✅ |
+| `BPI_Turn.uasset` | ✅ |
+| `Breathing_Idle.uasset` | ✅ |
+| `LeftTurn90_UE.uasset` | ✅ |
+| `RightTurn90_UE.uasset` | ✅ |
+| **`OrcIdle_UE.uasset`** | ❌ **없음!** |
+
+**수정 방법:**
+1. `OrcIdle_UE` 애니메이션이 이전에 존재했다면 → 복원 필요
+2. 이름이 변경되었다면 → BS_Walk에서 새 이름으로 재참조
+3. 삭제된 것이 의도적이라면 → BS_Walk에서 해당 샘플 포인트 제거
+
+---
+
+### 🟡 경고 (Warning) — 확인 필요
+
+#### 경고 1: Fab 머티리얼 Nanite 플래그 누락
+
+```
+MapCheck: Warning: M_MS_Srf Material /Fab/Materials/Standard/M_MS_Srf.M_MS_Srf was missing
+    the usage flag bUsedWithNanite. If the material asset is not re-saved,
+    it may not render correctly when run outside the editor.
+```
+
+**수정 방법:** UE 에디터에서 `/Fab/Materials/Standard/M_MS_Srf` 머티리얼을 열고 저장(Ctrl+S)하면 자동으로 플래그가 설정됨
+
+---
+
+### ✅ 무시해도 되는 항목 (환경/엔진)
+
+| 로그 | 설명 | 조치 |
+|------|------|------|
+| `Failed to load 'aqProf.dll'` | AMD 프로파일러 미설치 | 무시 (프로파일링 시에만 필요) |
+| `Failed to load 'VtuneApi.dll'` | Intel VTune 미설치 | 무시 (프로파일링 시에만 필요) |
+| `Failed to load 'WinPixGpuCapturer.dll'` | PIX GPU 캡처 미설치 | 무시 (GPU 디버깅 시에만 필요) |
+| `DDC.ddp not found` | 로컬 DDC 캐시 없음 | 무시 (자동 재생성됨) |
+| `ZenShared: Disabled` | Zen Server 미설정 | 무시 (팀 DDC 없으면 정상) |
+| `Shared: Disabled` | 공유 DDC 미설정 | 무시 (로컬 개발 시 정상) |
+| `Cloud: Disabled` | 클라우드 DDC 미설정 | 무시 (로컬 개발 시 정상) |
+| `SF_METAL_ES3_1_IOS` | iOS Metal 셰이더 모듈 검색 | 무시 (Windows 개발 시 정상) |
+| `Failed to read file .../Slate/Icons/doc_16x.png` | UE 5.6 엔진 내부 리소스 누락 | 무시 (엔진 버그 또는 불완전 설치) |
+| `Platform_VisionOS_24x.png` | VisionOS 플랫폼 리소스 없음 | 무시 (VisionOS 미설치 시 정상) |
+| `SourceControl: Revision control is disabled` | 소스 컨트롤 미연결 | 무시 (선택적 설정) |
+
+---
+
 ## 🎯 우선순위별 수정 체크리스트
 
-- [ ] **[긴급]** `BaseZombie.cpp`: 에디터 전용 `#include`에 `#if WITH_EDITOR` 가드 추가
-- [ ] **[긴급]** `Ward_Zero.Build.cs`: `"SlateCore"` 종속성 추가
-- [ ] **[확인 필요]** `LXR` 플러그인: 모든 팀원 설치 확인 또는 `.uproject`에서 비활성화
-- [ ] **[권장]** GameMode 리디렉터 정리 및 DefaultEngine.ini 경로 업데이트
+### 🔴 즉시 수정 (Error)
+- [ ] **[P0]** `BaseZombie_AIController.cpp`: BT 경로 수정 (`/Game/MonsterAI_CHS/` → `/Game/MonsterAI/MonsterAI_CHS/`)
+- [ ] **[P0]** `BS_Walk`: OrcIdle_UE 에셋 복원 또는 참조 제거
+- [ ] **[P0]** `BS_Walk` / `BS_Sprint`: 깨진 애니메이션 샘플 수정 (5+1개)
+
+### 🟡 빌드 관련 (Warning)
+- [ ] **[P1]** `BaseZombie.cpp`: 에디터 전용 `#include`에 `#if WITH_EDITOR` 가드 추가
+- [ ] **[P1]** `Ward_Zero.Build.cs`: `"SlateCore"` 종속성 추가
+
+### 🟢 권장 사항
+- [ ] **[P2]** `LXR` 플러그인: 모든 팀원 설치 확인 또는 `.uproject`에서 비활성화
+- [ ] **[P2]** GameMode 리디렉터 정리 및 DefaultEngine.ini 경로 업데이트
+- [ ] **[P2]** `M_MS_Srf` 머티리얼: UE 에디터에서 열고 재저장 (Nanite 플래그 설정)
