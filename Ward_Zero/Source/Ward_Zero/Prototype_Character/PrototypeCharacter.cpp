@@ -17,11 +17,11 @@ APrototypeCharacter::APrototypeCharacter()
 
 	// 캐릭터 무브먼트 설정
 	GetCharacterMovement()->bOrientRotationToMovement = false; // 이동 방향으로 캐릭터 회전
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 360.0f, 0.0f); // 회전 속도
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, 240.0f, 0.0f); // 회전 속도
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed; // 걷기 속도
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
-	GetCharacterMovement()->BrakingDecelerationWalking = 1500.f; // 멈출 때의 감속도
-	GetCharacterMovement()->MaxAcceleration = 1000.f;
+	GetCharacterMovement()->BrakingDecelerationWalking = 1000.f; // 멈출 때의 감속도
+	GetCharacterMovement()->MaxAcceleration = 800.f;
 	GetCharacterMovement()->GroundFriction = 6.f;
 	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true; // 웅크리기 가능
 	GetCharacterMovement()->MaxWalkSpeedCrouched = CrouchMovementSpeed;
@@ -29,7 +29,7 @@ APrototypeCharacter::APrototypeCharacter()
 	// 카메라 붐 생성 및 설정
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 200.0f; // 캐릭터와의 거리
+	CameraBoom->TargetArmLength = StandingArmLength; // 캐릭터와의 거리
 	CameraBoom->bUsePawnControlRotation = true;
 	CameraBoom->bEnableCameraLag = true; // 무거운 조작감
 	CameraBoom->CameraLagSpeed = 15.0f;

@@ -135,14 +135,6 @@ float UStatusComponent::GetChaseSoundVolume() const
 }
 
 
-float UStatusComponent::GetStunTime() const
-{
-	if (!MonsterData)
-	{
-		return 3.0f;
-	}
-	return MonsterData->StunnedTime;
-}
 
 float UStatusComponent::GetHearingThreshold() const
 {
@@ -162,11 +154,94 @@ float UStatusComponent::GetLoseSightRange() const
 	return MonsterData->LoseSightRange;
 }
 
-float UStatusComponent::GetResistStun() const
+float UStatusComponent::GetResistKnockdown() const
 {
 	if (!MonsterData)
 	{
 		return 0.f;
 	}
-	return MonsterData->ResistStun;
+	return MonsterData->ResistKnockdown;
+}
+
+
+float UStatusComponent::GetAttackDamage() const
+{
+	if (!MonsterData)
+	{
+		return 0.f;
+	}
+	return MonsterData->AttackDamage;
+}
+
+float UStatusComponent::GetHeadHitStunnedTime() const
+{
+	if (!MonsterData)
+	{
+		return 0.f;
+	}
+	return MonsterData->HeadHitStunnedTime;
+}
+
+float UStatusComponent::GetBodyHitStunnedTime() const
+{
+	if (!MonsterData)
+	{
+		return 0.f;
+	}
+	return MonsterData->BodyHitStunnedTime;
+}
+
+bool UStatusComponent::GetIsKnockdownSuperArmor() const
+{
+	if (!MonsterData)
+	{
+		return false;
+	}
+	return MonsterData->bIsKnockdownSuperArmor;
+}
+
+float UStatusComponent::GetWeakSpotDamageMultiplier() const
+{
+	if (!MonsterData)
+	{
+		return 2.0f;
+	}
+	return MonsterData->WeakSpotDamageMultiplier;
+}
+
+bool UStatusComponent::GetIsRecoveringCC() const
+{
+	return bIsRecoveringCC;
+}
+
+bool UStatusComponent::SetIsRecoveringCC(bool b)
+{
+	bIsRecoveringCC = b;
+	return bIsRecoveringCC;
+}
+
+float UStatusComponent::ApplyDamage(float damage)
+{
+	CurrentHP = CurrentHP - damage;
+	if (CurrentHP <= 0)
+	{
+		CurrentHP = 1.0f;
+	}
+	return CurrentHP;
+}
+
+float UStatusComponent::ApplyCriticalDamage(float damage)
+{
+	CurrentHP = CurrentHP - damage*GetWeakSpotDamageMultiplier();
+	return CurrentHP;
+}
+
+bool UStatusComponent::GetIsDead() const
+{
+	return bIsDead;
+}
+
+void UStatusComponent::SetIsDead(bool b)
+{
+	bIsDead = b;
 }

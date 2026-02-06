@@ -3,13 +3,17 @@
 
 #include "MonsterAI/Entity/BaseZombie.h"
 
+#include "BrainComponent.h"
 #include "UnrealEdGlobals.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "Public/MonsterAI/Data/MonsterDataAsset.h"
 #include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Editor/UnrealEdEngine.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "MonsterAI/BaseZombie_AIController.h"
+#include "MonsterAI/AIController/BaseZombie_AIController.h"
+#include "MonsterAI/AIController/WZAIKeys.h"
+#include "MonsterAI/Component/CombatComponent.h"
 #include "MonsterAI/Component/StatusComponent.h"
 
 
@@ -19,6 +23,7 @@ ABaseZombie::ABaseZombie()
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	StatusComponent  = CreateDefaultSubobject<UStatusComponent>(TEXT("StatusComponent"));
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	AudioLoopComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioLoopComponent"));
 	AudioLoopComponent->SetupAttachment(GetRootComponent());
 	AudioLoopComponent->SetAutoActivate(false);
@@ -28,6 +33,40 @@ ABaseZombie::ABaseZombie()
 	{
 		GetCapsuleComponent()->SetHiddenInGame(false);
 	}
+}
+
+void ABaseZombie::OnDeath()
+{
+	if (StatusComponent)
+	{
+		StatusComponent->SetIsDead(true);
+	}
+	if (auto* AIC = Cast<ABaseZombie_AIController>(GetController()))
+	{
+		AIC->StopMovement();
+		if (AIC->GetBrainComponent())
+		{
+			AIC->GetBrainComponent()->StopLogic("Death");
+		}
+	}
+	if (GetCapsuleComponent())
+	{
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
+	}
+	if (GetMesh())
+	{
+		
+		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+		GetMesh()->SetSimulatePhysics(true);
+	}
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->StopMovementImmediately();
+		GetCharacterMovement()->DisableMovement();
+		GetCharacterMovement()->SetComponentTickEnabled(false);
+	}
+	SetLifeSpan(5.0f);
 }
 
 // Called when the game starts or when spawned
@@ -146,6 +185,81 @@ void ABaseZombie::SetChaseSpeed(float NewSpeed)
 		StatusComponent->SetChaseSpeed(NewSpeed);
 	}
 }
+
+void ABaseZombie::PlayAnimM(UAnimMontage* MontageToPlay)
+{
+	PlayAnimMontage(MontageToPlay);
+}
+
+void ABaseZombie::StartRagdollKnockdown(EHitDirection HitDir)
+{
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	USkeletalMeshComponent* ZombieMesh = GetMesh();
+	ZombieMesh->SetCollisionProfileName(TEXT("Ragdoll"));
+	ZombieMesh->SetAllBodiesSimulatePhysics(true);
+	ZombieMesh->SetSimulatePhysics(true);
+	
+	if (auto* AIC = Cast<ABaseZombie_AIController>(GetController()))
+	{
+		AIC->StopMovement();
+		AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsKnockedDown, true);
+	}
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(
+			RagdollTimerHandle,
+			this,
+			&ABaseZombie::CheckRagdollVelocity,
+			0.15f,
+			true
+			);
+	}
+}
+
+void ABaseZombie::CheckRagdollVelocity()
+{
+	USkeletalMeshComponent* ZombieMesh = GetMesh();
+	if (ZombieMesh->GetPhysicsLinearVelocity().Size() < 10.0f)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(RagdollTimerHandle);
+		}
+		RecoverFromRagdoll();
+	}
+	
+}
+
+void ABaseZombie::RecoverFromRagdoll()
+{
+	USkeletalMeshComponent* ZombieMesh = GetMesh();
+	FVector PelvisLocation = ZombieMesh->GetSocketLocation(TEXT("Pelvis"));
+	FVector NewLocation = PelvisLocation;
+	NewLocation.Z += GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	SetActorLocation(NewLocation);
+	
+	FRotator PelvisRot = ZombieMesh->GetSocketRotation(TEXT("Pelvis"));
+	FVector PelvisUp = FRotationMatrix(PelvisRot).GetScaledAxis(EAxis::Z);
+	bool bIsFaceUp = (PelvisUp.Z > 0.0f);
+	
+	ZombieMesh->SetSimulatePhysics(false);
+	ZombieMesh->SetCollisionProfileName(TEXT("CharacterMesh"));
+	ZombieMesh->AttachToComponent(GetCapsuleComponent(),FAttachmentTransformRules::SnapToTargetIncludingScale);
+	ZombieMesh->SetRelativeLocationAndRotation(FVector(0,0,-90),FRotator(0,-90,0));
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	
+	UAnimMontage* MontageToPlay = bIsFaceUp ? MonsterData->GetUpMontages.FromFaceUp : MonsterData->GetUpMontages.FromFaceDown;
+	if (MontageToPlay)
+	{
+		PlayAnimM(MontageToPlay);
+	}
+}
+
+const UMonsterDataAsset* ABaseZombie::GetMonsterData() const
+{
+	return MonsterData;
+}
+
 #if WITH_EDITOR
 void ABaseZombie::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
