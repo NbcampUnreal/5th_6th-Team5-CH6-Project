@@ -1,16 +1,16 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Public/MonsterAI/AIController/BaseZombie_AIController.h"
+#include "MonsterAI/MonsterAI_CHS/AI/BaseZombie_AIController.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "MonsterAI/Component/StatusComponent.h"
-#include "MonsterAI/Entity/BaseZombie.h"
+#include "MonsterAI/MonsterAI_CHS/Component/StatusComponent.h"
+#include "MonsterAI/MonsterAI_CHS/Entity/BaseZombie.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AIPerceptionTypes.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
-#include "MonsterAI/AIController/WZAIKeys.h"
+#include "MonsterAI/MonsterAI_CHS/AI/WZAIKeys.h"
 
 ABaseZombie_AIController::ABaseZombie_AIController()
 {

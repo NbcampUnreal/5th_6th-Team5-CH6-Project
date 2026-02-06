@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "MonsterAI/Data/MonsterDataAsset.h"
+#include "MonsterAI/MonsterAI_CHS/Data/MonsterDataAsset.h"
 #include "CombatComponent.generated.h"
 
 

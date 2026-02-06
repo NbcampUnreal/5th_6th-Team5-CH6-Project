@@ -1,20 +1,20 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "MonsterAI/Entity/BaseZombie.h"
+#include "MonsterAI/MonsterAI_CHS/Entity/BaseZombie.h"
 
 #include "BrainComponent.h"
-#include "UnrealEdGlobals.h"
+//#include "UnrealEdGlobals.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "Public/MonsterAI/Data/MonsterDataAsset.h"
+#include "MonsterAI/MonsterAI_CHS/Data/MonsterDataAsset.h"
 #include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "Editor/UnrealEdEngine.h"
+//#include "Editor/UnrealEdEngine.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "MonsterAI/AIController/BaseZombie_AIController.h"
-#include "MonsterAI/AIController/WZAIKeys.h"
-#include "MonsterAI/Component/CombatComponent.h"
-#include "MonsterAI/Component/StatusComponent.h"
+#include "MonsterAI/MonsterAI_CHS/AI/BaseZombie_AIController.h"
+#include "MonsterAI/MonsterAI_CHS/AI/WZAIKeys.h"
+#include "MonsterAI/MonsterAI_CHS/Component/CombatComponent.h"
+#include "MonsterAI/MonsterAI_CHS/Component/StatusComponent.h"
 
 
 // Sets default values

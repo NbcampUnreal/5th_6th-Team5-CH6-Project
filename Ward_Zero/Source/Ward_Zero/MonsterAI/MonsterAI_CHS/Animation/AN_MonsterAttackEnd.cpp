@@ -1,13 +1,13 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "MonsterAI/Animation/AN_MonsterAttackEnd.h"
+#include "MonsterAI/MonsterAI_CHS/Animation/AN_MonsterAttackEnd.h"
 
 #include "AIController.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BTTaskNode.h"
-#include "MonsterAI/AIController/WZAIKeys.h"
+#include "MonsterAI/MonsterAI_CHS/AI/WZAIKeys.h"
 
 void UAN_MonsterAttackEnd::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
                                   const FAnimNotifyEventReference& EventReference)
