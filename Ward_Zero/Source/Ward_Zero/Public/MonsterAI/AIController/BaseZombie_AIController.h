@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+
 #include "BaseZombie_AIController.generated.h"
 
 struct FAIStimulus;
@@ -16,6 +17,13 @@ class WARD_ZERO_API ABaseZombie_AIController : public AAIController
 	GENERATED_BODY()
 public:
 	void UpdatePerceptionConfig();
+	
+	/*FBlackboard::FKey TargetActorKeyID;
+	FBlackboard::FKey IsStunnedKeyID;
+	FBlackboard::FKey IsKnockdownKeyID;
+	FBlackboard::FKey LastKnownLocationKeyID;
+	FBlackboard::FKey InvestigateLocationKeyID;
+	FBlackboard::FKey IsDeadKeyID;*/
 	
 protected:
 	ABaseZombie_AIController();
@@ -35,9 +43,7 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Perception")
 	class UAIPerceptionComponent* AIPerceptionComp;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Chase")
-	FName TargetKey = "TargetActor";
+	
 	
 	virtual void Tick(float DeltaTime) override;
 private:

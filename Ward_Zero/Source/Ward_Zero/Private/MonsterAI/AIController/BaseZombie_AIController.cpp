@@ -1,20 +1,16 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Public/MonsterAI/BaseZombie_AIController.h"
-
-#include <ThirdParty/ShaderConductor/ShaderConductor/External/DirectXShaderCompiler/include/dxc/DXIL/DxilConstants.h>
-
-#include "Kismet/GameplayStatics.h"
+#include "Public/MonsterAI/AIController/BaseZombie_AIController.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "Chaos/PBDSuspensionConstraintData.h"
 #include "MonsterAI/Component/StatusComponent.h"
 #include "MonsterAI/Entity/BaseZombie.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AIPerceptionTypes.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
+#include "MonsterAI/AIController/WZAIKeys.h"
 
 ABaseZombie_AIController::ABaseZombie_AIController()
 {
@@ -114,19 +110,19 @@ void ABaseZombie_AIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimu
 		{
 			if (Stimulus.WasSuccessfullySensed())
 			{
-				BB->SetValueAsObject(TargetKey, Actor);
-				BB->ClearValue("InvestigateLocation");
-				BB->ClearValue("LastKnownLocation");
+				BB->SetValueAsObject(WZAIKeys::TargetActor, Actor);
+				BB->ClearValue(WZAIKeys::InvestigateLocation);
+				BB->ClearValue(WZAIKeys::LastKnownLocation);
 			
 			}else
 			{
 				//BB->ClearValue(TargetKey);
-				BB->SetValueAsVector("LastKnownLocation", Stimulus.StimulusLocation);
+				BB->SetValueAsVector(WZAIKeys::LastKnownLocation, Stimulus.StimulusLocation);
 			}
 		}
 	}else if (DetectedSense == UAISense_Hearing::StaticClass())
 	{
-		if (BB->GetValueAsObject(TargetKey) == nullptr && Stimulus.WasSuccessfullySensed())
+		if (BB->GetValueAsObject(WZAIKeys::TargetActor) == nullptr && Stimulus.WasSuccessfullySensed())
 		{
 			float Loudness = Stimulus.Strength;
 			float dist = FVector::Dist(GetPawn()->GetActorLocation(),Actor->GetActorLocation());
@@ -138,11 +134,11 @@ void ABaseZombie_AIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimu
 			
 			if (StatusComp->GetHearingThreshold() <= RealLoudness)
 			{
-				BB->SetValueAsObject(TargetKey,Actor);
-				BB->SetValueAsVector("LastKnownLocation", Stimulus.StimulusLocation);
+				BB->SetValueAsObject(WZAIKeys::TargetActor,Actor);
+				BB->SetValueAsVector(WZAIKeys::LastKnownLocation, Stimulus.StimulusLocation);
 			}else
 			{
-				BB->SetValueAsVector("InvestigateLocation", Stimulus.StimulusLocation);
+				BB->SetValueAsVector(WZAIKeys::InvestigateLocation, Stimulus.StimulusLocation);
 			}
 			
 		}

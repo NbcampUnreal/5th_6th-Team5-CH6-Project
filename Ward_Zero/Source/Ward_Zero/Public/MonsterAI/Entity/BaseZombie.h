@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "BaseZombie.generated.h"
 
+enum class EHitDirection : uint8;
+class UCombatComponent;
 class UStatusComponent;
 class UMonsterDataAsset;
 
@@ -18,12 +20,15 @@ public:
 	// Sets default values for this character's properties
 	ABaseZombie();
 
-virtual void Tick(float DeltaSeconds) override;
+	virtual void OnDeath();
+	virtual void Tick(float DeltaSeconds) override;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	const UMonsterDataAsset* MonsterData;
 	
 	UAudioComponent* GetAudioLoopComponent() const { return AudioLoopComponent; }
+	UCombatComponent* GetCombatComponent() const { return CombatComponent;}
+	UStatusComponent* GetStatusComponent() const { return StatusComponent; }
 	
 	UFUNCTION(CallInEditor, Category = "Data")
 	void RefreshMonster();
@@ -40,6 +45,13 @@ virtual void Tick(float DeltaSeconds) override;
 	UFUNCTION(BlueprintCallable, Category = "Status", meta=(DisplayName="Set Monster Chase Speed"))
 	void SetChaseSpeed(float NewSpeed);
 	
+	UFUNCTION(BlueprintCallable, Category = "Animation", meta=(DisplayName ="Play Anim Montage"))
+	void PlayAnimM(UAnimMontage* MontageToPlay);
+	void StartRagdollKnockdown(EHitDirection HitDir);
+	void CheckRagdollVelocity();
+	void RecoverFromRagdoll();
+	
+	const UMonsterDataAsset* GetMonsterData() const;
 #if WITH_EDITOR
 	
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -53,12 +65,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	UStatusComponent* StatusComponent;
 	
-	
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	UAudioComponent* AudioLoopComponent;
 	
-
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
+	UCombatComponent* CombatComponent;
+	
+	FTimerHandle RagdollTimerHandle;
 	
 private:
 	bool bIsExecutionActive = false;

@@ -72,13 +72,13 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	TSubclassOf<UAnimInstance> AnimBP;
 	
 	UPROPERTY(EditAnywhere, Category = "Animation|Combat")
-	TObjectPtr<UAnimMontage> AnimBPAttack;
+	TObjectPtr<UAnimMontage> AttackMontage;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Animation|Combat")
-	FDirectionalMontage HeadHitReactMontages; 
+	FDirectionalMontage CriticalHitReactMontages; 
 
 	UPROPERTY(EditDefaultsOnly, Category = "Animation|Combat")
-	FDirectionalMontage BodyHitReactMontages; 
+	FDirectionalMontage NormalHitReactMontages; 
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Animation|Combat")
 	FDirectionalMontage KnockdownMontages; 
@@ -114,16 +114,31 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	
 	UPROPERTY(EditAnywhere, Category = "Combat|Attack")
 	float AttackRange = 150.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Attack")
+	float AttackDamage = 30.f;
+	
 	
 	UPROPERTY(EditAnywhere, Category = "Chase")
 	float ChaseRange = 2000.f;
 	
 	UPROPERTY(EditAnywhere, Category = "Combat|Stun")
-	float StunnedTime = 3.f;
+	float HeadHitStunnedTime = 1.f;
 	
-	UPROPERTY(EditAnywhere, Category = "Combat|Stun",meta=(ClampMin="0.0", ClampMax="1.0"))
-	float ResistStun = 0.5f;
+	UPROPERTY(EditAnywhere, Category = "Combat|Stun")
+	float BodyHitStunnedTime = 0.f;
 	
+	UPROPERTY(EditAnywhere, Category = "Combat|WeakPoint")
+	FName WeakBoneName = FName("head");
+	
+	UPROPERTY(EditAnywhere, Category = "Combat|WeakPoint")
+	float WeakSpotDamageMultiplier = 2.0f;
+	
+	UPROPERTY(EditAnywhere, Category = "Combat|Knockdown",meta=(ClampMin="0.0", ClampMax="1.0"))
+	float ResistKnockdown = 0.5f;
+	
+	UPROPERTY(EditAnywhere, Category = "Combat|Knockdown")
+	bool bIsKnockdownSuperArmor = false;
 	
 	UPROPERTY(EditAnywhere, Category = "Sight")
 	float EyeHeight = 70.f;
