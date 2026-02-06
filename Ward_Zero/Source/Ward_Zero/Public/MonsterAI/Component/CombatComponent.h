@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "MonsterAI/Data/MonsterDataAsset.h"
 #include "CombatComponent.generated.h"
 
 
@@ -19,21 +20,27 @@ public:
 	// Sets default values for this component's properties
 	UCombatComponent();
 	void OnTakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser);
+	void Attack();
 	
-	bool bIsResistingCC = false;
+	
 
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 	
-	void ApplyKnockdown(bool bIsKnockdown);
-	bool CheckHeadShot(const FDamageEvent& DamageEvent);
+	void ApplyKnockdown(EHitDirection HitDir);
+	void ApplyStun(EHitDirection HitDir, bool bIsCriticalHit);
+	bool CheckCriticalHit(const FDamageEvent& DamageEvent);
+	void OnDeath();
+	
+	EHitDirection GetHitDirection(const FVector& ShotDirection);
 	
 	UPROPERTY()
 	TObjectPtr<UStatusComponent> StatusComp;
 	
 	UPROPERTY()
-	TObjectPtr<UMonsterDataAsset> MonsterData;
+	const UMonsterDataAsset* MonsterData;
+
 
 public:
 	// Called every frame
