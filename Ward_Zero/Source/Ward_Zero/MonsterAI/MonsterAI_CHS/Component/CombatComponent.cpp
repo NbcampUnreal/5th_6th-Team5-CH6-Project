@@ -1,13 +1,13 @@
-﻿#include "MonsterAI/Component/CombatComponent.h"
+﻿#include "MonsterAI/MonsterAI_CHS/Component/CombatComponent.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Engine/DamageEvents.h"
-#include "MonsterAI/AIController/BaseZombie_AIController.h"
-#include "MonsterAI/AIController/WZAIKeys.h"
-#include "MonsterAI/Component/StatusComponent.h"
-#include "MonsterAI/Data/MonsterDataAsset.h"
-#include "MonsterAI/Entity/BaseZombie.h"
-#include "Weapon/WZDamageType.h"
+#include "MonsterAI/MonsterAI_CHS/AI/BaseZombie_AIController.h"
+#include "MonsterAI/MonsterAI_CHS/AI/WZAIKeys.h"
+#include "MonsterAI/MonsterAI_CHS/Component/StatusComponent.h"
+#include "MonsterAI/MonsterAI_CHS/Data/MonsterDataAsset.h"
+#include "MonsterAI/MonsterAI_CHS/Entity/BaseZombie.h"
+#include "MonsterAI/MonsterAI_CHS/Weapon/WZDamageType.h"
 
 
 // Sets default values for this component's properties

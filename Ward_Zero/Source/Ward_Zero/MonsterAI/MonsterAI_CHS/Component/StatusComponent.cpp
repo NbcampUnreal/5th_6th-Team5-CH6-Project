@@ -1,8 +1,8 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "MonsterAI/Component/StatusComponent.h"
-#include "Public/MonsterAI/Data/MonsterDataAsset.h"
+#include "MonsterAI/MonsterAI_CHS/Component/StatusComponent.h"
+#include "MonsterAI/MonsterAI_CHS/Data/MonsterDataAsset.h"
 
 UStatusComponent::UStatusComponent()
 {
