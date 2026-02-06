@@ -37,12 +37,21 @@ public:
 	float GetMaxLostTargetTime() const;
 	float GetIdleSoundVolume() const;
 	float GetChaseSoundVolume() const;
-	float GetStunTime() const;
 	float GetHearingThreshold() const;
 	float GetLoseSightRange() const;
-	float GetResistStun() const;
+	float GetResistKnockdown() const;
+	float GetAttackDamage() const;
+	float GetHeadHitStunnedTime() const;
+	float GetBodyHitStunnedTime() const;
+	bool GetIsKnockdownSuperArmor() const;
+	float GetWeakSpotDamageMultiplier() const;
+	bool GetIsRecoveringCC() const;
+	bool SetIsRecoveringCC(bool b);
 	
-	
+	float ApplyDamage(float damage);
+	float ApplyCriticalDamage(float damage);
+	bool GetIsDead() const;
+	void SetIsDead(bool b);
 	
 private:
 	UPROPERTY()
@@ -65,4 +74,8 @@ private:
 	bool bIsStunned = false;
 	UPROPERTY()
 	bool bIsWaiting = false;
+	UPROPERTY()
+	bool bIsDead = false;
+	UPROPERTY()
+	bool bIsRecoveringCC = false;
 };
