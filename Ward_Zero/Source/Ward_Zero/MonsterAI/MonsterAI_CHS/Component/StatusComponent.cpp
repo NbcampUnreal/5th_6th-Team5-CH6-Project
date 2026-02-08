@@ -20,9 +20,8 @@ void UStatusComponent::InitData(const UMonsterDataAsset* BaseData)
 	if (BaseData)
 	{
 		MonsterData = BaseData;
-		BaseSpeed = BaseData->BaseSpeed;
-		ChaseSpeed = BaseData->ChaseSpeed;
-		CurrentHP = BaseData->MaxHP;
+		Speed = FSpeed(BaseData->StateConfigMap[EMonsterMainState::Idle].MovementSpeed,BaseData->StateConfigMap[EMonsterMainState::Combat].MovementSpeed);
+		Health = FHealth(BaseData->MaxHP,BaseData->MaxHP);
 	}
 	bIsDataInit = true;
 }
@@ -32,25 +31,53 @@ bool UStatusComponent::IsDataInit() const
 	return bIsDataInit;
 }
 
+void UStatusComponent::SetMainState(EMonsterMainState NewState)
+{
+	if (MainState == NewState)
+	{
+		return;
+	}
+	MainState = NewState;
+	OnMainStateChanged.Broadcast(NewState);
+}
+
+void UStatusComponent::SetSubState(EMonsterSubState NewState)
+{
+	if (SubState == NewState) return;
+	SubState = NewState;
+	switch (SubState)
+	{
+	case EMonsterSubState::Attack:
+	case EMonsterSubState::Chase:
+	case EMonsterSubState::Knockdown:
+	case EMonsterSubState::Stun:
+		SetMainState(EMonsterMainState::Combat);
+		break;
+	default:
+		break;
+	}
+	OnSubStateChanged.Broadcast(SubState);
+}
+
 
 float UStatusComponent::GetBaseSpeed() const
 {
-	return BaseSpeed;
+	return Speed.GetBaseSpeed();
 }
 
 void UStatusComponent::SetBaseSpeed(float speed)
 {
-	BaseSpeed = speed;
+	Speed.SetBaseSpeed(speed);
 }
 
 float UStatusComponent::GetChaseSpeed() const
 {
-	return ChaseSpeed;
+	return Speed.GetChaseSpeed();
 }
 
 void UStatusComponent::SetChaseSpeed(float speed)
 {
-	ChaseSpeed = speed;
+	Speed.SetChaseSpeed(speed);
 }
 
 float UStatusComponent::GetArrivalRadius() const
@@ -122,7 +149,7 @@ float UStatusComponent::GetIdleSoundVolume() const
 	{
 		return 1.0f;
 	}
-	return MonsterData->IdleSoundVolume;
+	return MonsterData->StateConfigMap[EMonsterMainState::Idle].LoopSoundVolume;
 }
 
 float UStatusComponent::GetChaseSoundVolume() const
@@ -131,7 +158,7 @@ float UStatusComponent::GetChaseSoundVolume() const
 	{
 		return 1.0f;
 	}
-	return MonsterData->ChaseSoundVolume;
+	return MonsterData->StateConfigMap[EMonsterMainState::Combat].LoopSoundVolume;
 }
 
 
@@ -171,6 +198,11 @@ float UStatusComponent::GetAttackDamage() const
 		return 0.f;
 	}
 	return MonsterData->AttackDamage;
+}
+
+float UStatusComponent::GetCurrentHP() const
+{
+	return Health.GetCurrentHP();
 }
 
 float UStatusComponent::GetHeadHitStunnedTime() const
@@ -220,20 +252,18 @@ bool UStatusComponent::SetIsRecoveringCC(bool b)
 	return bIsRecoveringCC;
 }
 
-float UStatusComponent::ApplyDamage(float damage)
+FName UStatusComponent::GetWeakBoneName() const
 {
-	CurrentHP = CurrentHP - damage;
-	if (CurrentHP <= 0)
+	if (!MonsterData)
 	{
-		CurrentHP = 1.0f;
+		return "None";
 	}
-	return CurrentHP;
+	return MonsterData->WeakBoneName;
 }
 
-float UStatusComponent::ApplyCriticalDamage(float damage)
+float UStatusComponent::ApplyDamage(float Amount, bool bIsCritical)
 {
-	CurrentHP = CurrentHP - damage*GetWeakSpotDamageMultiplier();
-	return CurrentHP;
+	return Health.AppyDamage(Amount,bIsCritical);
 }
 
 bool UStatusComponent::GetIsDead() const

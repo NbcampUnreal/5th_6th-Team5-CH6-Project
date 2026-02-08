@@ -9,12 +9,23 @@
 /**
  * 
  */
+UENUM(BlueprintType)
+enum class EDamageSource : uint8
+{
+	None        UMETA(DisplayName = "None"),
+	Melee       UMETA(DisplayName = "Melee"),
+	Gun			UMETA(DisplayName = "Gun"),
+	Explosion   UMETA(DisplayName = "Explosion")
+};
 UCLASS()
 class WARD_ZERO_API UWZDamageType : public UDamageType
 {
 	GENERATED_BODY()
 	
 public:
+	UPROPERTY(EditDefaultsOnly, Category = "Damage Type Info")
+	EDamageSource DamageSource = EDamageSource::None;
+	
 	UPROPERTY(EditDefaultsOnly)
 	float StunProbability = 100.f;
 	

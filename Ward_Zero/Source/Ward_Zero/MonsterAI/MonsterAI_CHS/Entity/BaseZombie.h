@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "MonsterAI/MonsterAI_CHS/Data/Type/MonsterStat.h"
 #include "BaseZombie.generated.h"
 
 enum class EHitDirection : uint8;
@@ -59,8 +60,11 @@ public:
 	
 protected:
 	virtual void OnConstruction(const FTransform& Transform) override;
+	UFUNCTION()
+	void HandleStateChange(EMonsterMainState NewState);
 	virtual void BeginPlay() override;
 	
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	UStatusComponent* StatusComponent;

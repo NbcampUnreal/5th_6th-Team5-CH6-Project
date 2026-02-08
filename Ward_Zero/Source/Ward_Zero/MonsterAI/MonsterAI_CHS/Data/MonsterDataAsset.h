@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "MonsterAI/MonsterAI_CHS/Data/Type/MonsterStat.h"
+#include "MonsterAI/MonsterAI_CHS/Data/Type/GameTypes.h"
 #include "MonsterDataAsset.generated.h"
 
 /**
@@ -13,15 +15,6 @@ class UAnimMontage;
 class USkeletalMesh;
 class UAnimInstance;
 class USoundBase;
-
-UENUM(BlueprintType)
-enum class EHitDirection : uint8
-{
-	Front,
-	Back,
-	Left,
-	Right
-};
 
 USTRUCT(BlueprintType)
 struct FDirectionalMontage
@@ -71,6 +64,8 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	TSubclassOf<UAnimInstance> AnimBP;
 	
+	UPROPERTY(EditAnywhere, Category = "Animation|Idle")
+	TSubclassOf<UAnimMontage> IdleMontage;
 	UPROPERTY(EditAnywhere, Category = "Animation|Combat")
 	TObjectPtr<UAnimMontage> AttackMontage;
 	
@@ -86,6 +81,8 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	UPROPERTY(EditDefaultsOnly, Category = "Animation|Combat")
 	FGetUpMontage GetUpMontages;
 	
+	UPROPERTY(EditAnywhere, Category = "State Settings")
+	TMap<EMonsterMainState, FMonsterStateSettings> StateConfigMap;
 	 
 	
 	UPROPERTY(EditAnywhere, Category = "Status")
@@ -94,11 +91,6 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	UPROPERTY(EditAnywhere, Category = "Chase")
 	float ArrivalRadius = 100.f;
 	
-	UPROPERTY(EditAnywhere, Category = "Speed")
-	float BaseSpeed = 450.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Speed")
-	float ChaseSpeed = 700.f;
 
 	UPROPERTY(EditAnywhere, Category = "Sight")
 	float BaseDetectionRange = 1200.f;
@@ -152,16 +144,6 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	TObjectPtr<USoundBase> RunSound;
 	
-	UPROPERTY(EditAnywhere, Category = "Sound")
-	TObjectPtr<USoundBase> IdleSound;
-	UPROPERTY(EditAnywhere, Category = "Sound")
-	TObjectPtr<USoundBase> ChaseSound;
-	
-	
-	UPROPERTY(EditAnywhere, Category = "Volume")
-	float IdleSoundVolume = 1.0f;
-	UPROPERTY(EditAnywhere, Category = "Volume")
-	float ChaseSoundVolume = 1.0f;
 	
 	
 };

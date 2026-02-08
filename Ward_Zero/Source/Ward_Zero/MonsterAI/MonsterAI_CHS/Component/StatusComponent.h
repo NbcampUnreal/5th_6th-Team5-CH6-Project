@@ -4,11 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "MonsterAI/MonsterAI_CHS/Data/Type/MonsterStat.h"
+#include "MonsterAI/MonsterAI_CHS/Data/Type/GameTypes.h"
 #include "StatusComponent.generated.h"
 
 
 class UMonsterDataAsset;
 class ABaseZombie;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMonsterMainStateChanged, EMonsterMainState, NewState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMonsterSubStateChanged, EMonsterSubState, NewState);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class WARD_ZERO_API UStatusComponent : public UActorComponent
@@ -21,6 +26,9 @@ public:
 	virtual void BeginPlay() override;
 	void InitData(const UMonsterDataAsset* BaseData);
 	bool IsDataInit() const;
+	
+	void SetMainState(EMonsterMainState NewState);
+	void SetSubState(EMonsterSubState NewState);
 	
 	bool GetIsExecutionActive() const { return bIsExecutionActive; }
 	void SetIsExecutionActive(bool b){bIsExecutionActive = b;}
@@ -41,15 +49,22 @@ public:
 	float GetLoseSightRange() const;
 	float GetResistKnockdown() const;
 	float GetAttackDamage() const;
+	float GetCurrentHP() const;
 	float GetHeadHitStunnedTime() const;
 	float GetBodyHitStunnedTime() const;
 	bool GetIsKnockdownSuperArmor() const;
 	float GetWeakSpotDamageMultiplier() const;
 	bool GetIsRecoveringCC() const;
 	bool SetIsRecoveringCC(bool b);
+	FName GetWeakBoneName() const;
 	
-	float ApplyDamage(float damage);
-	float ApplyCriticalDamage(float damage);
+	UPROPERTY(BlueprintAssignable)
+	FOnMonsterMainStateChanged OnMainStateChanged;
+	
+	UPROPERTY(BlueprintAssignable)
+	FOnMonsterSubStateChanged OnSubStateChanged;
+	
+	float ApplyDamage(float Amount, bool bIsCritical);
 	bool GetIsDead() const;
 	void SetIsDead(bool b);
 	
@@ -59,15 +74,16 @@ private:
 	UPROPERTY()
 	const UMonsterDataAsset* MonsterData;
 	
+	UPROPERTY(VisibleAnywhere)
+	EMonsterMainState MainState = EMonsterMainState::Idle;
+	UPROPERTY(VisibleAnywhere)
+	EMonsterSubState SubState = EMonsterSubState::None;
 	bool bIsExecutionActive = false;
 	bool bIsDataInit = false;
 	
-	UPROPERTY()
-	float CurrentHP = 0.0f;
-	UPROPERTY()
-	float BaseSpeed = 0.f;
-	UPROPERTY()
-	float ChaseSpeed = 0.f;
+	FHealth Health;
+	FSpeed Speed;
+	
 	UPROPERTY()
 	bool bIsSpecialActivate = false;
 	UPROPERTY()
