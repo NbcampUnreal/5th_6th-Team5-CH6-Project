@@ -35,7 +35,9 @@ protected:
 	virtual void BeginPlay() override;
 
 	UFUNCTION()
-	void HandleStateChange(EMonsterMainState NewState);
+	void HandleMainStateChange(EMonsterMainState NewState);
+	UFUNCTION()
+	void HandleSubStateChange(EMonsterSubState NewState);
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
 	

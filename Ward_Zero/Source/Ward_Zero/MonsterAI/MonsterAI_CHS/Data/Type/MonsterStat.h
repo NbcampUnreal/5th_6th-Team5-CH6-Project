@@ -36,6 +36,9 @@ struct FMonsterStateSettings
 	UPROPERTY(EditAnywhere)
 	float LoopSoundVolume = 0.f;
 	
+	UPROPERTY(EditAnywhere)
+	float YawRotateSpeed = 180.f;
+	
 };
 
 

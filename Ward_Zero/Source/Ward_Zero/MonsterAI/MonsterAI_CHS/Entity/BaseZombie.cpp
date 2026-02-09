@@ -89,6 +89,17 @@ void ABaseZombie::BeginPlay()
 	{
 		AIC->UpdatePerceptionConfig();
 	}
+	bUseControllerRotationYaw = false;
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->bOrientRotationToMovement = false;
+		MoveComp->bUseControllerDesiredRotation = true;
+		MoveComp->RotationRate = FRotator(0.f, MonsterData->StateConfigMap[EMonsterMainState::Idle].YawRotateSpeed, 0.f);
+	}
+	/*bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;*/
+	
 	
 }
 
@@ -310,7 +321,11 @@ void ABaseZombie::OnConstruction(const FTransform& Transform)
 
 		
 		GetMesh()->SetRelativeScale3D(MonsterData->MeshScale);
-        
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+		GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+		GetMesh()->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Block);
+		GetMesh()->bReturnMaterialOnMove = true;
 		
 		if (GetCharacterMovement())
 		{

@@ -45,7 +45,6 @@ void UCombatComponent::ApplyKnockdown(EHitDirection HitDir)
 	}
 	AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsKnockedDown,true);
 	AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsStunned,false);
-	AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsAttacking,false);
 	Owner->StartRagdollKnockdown(HitDir);
 	
 	
