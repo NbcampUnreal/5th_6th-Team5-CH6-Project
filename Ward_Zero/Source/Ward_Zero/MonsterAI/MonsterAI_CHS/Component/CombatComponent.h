@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "MonsterAI/MonsterAI_CHS/Data/MonsterDataAsset.h"
+#include "MonsterAI/MonsterAI_CHS/Weapon/WZDamageType.h"
 #include "CombatComponent.generated.h"
 
 
@@ -19,10 +20,9 @@ class WARD_ZERO_API UCombatComponent : public UActorComponent
 public:
 	// Sets default values for this component's properties
 	UCombatComponent();
-	void OnTakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser);
+	void ProcessDamageLogic(float Damage, FName HitBone, const FVector& AttackDir, const UWZDamageType* DamageType, AActor* DamageCauser);
+	void HandleAllDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser);
 	void Attack();
-	
-	
 
 protected:
 	// Called when the game starts
@@ -30,9 +30,9 @@ protected:
 	
 	void ApplyKnockdown(EHitDirection HitDir);
 	void ApplyStun(EHitDirection HitDir, bool bIsCriticalHit);
-	bool CheckCriticalHit(const FDamageEvent& DamageEvent);
 	void OnDeath();
 	
+
 	EHitDirection GetHitDirection(const FVector& ShotDirection);
 	
 	UPROPERTY()

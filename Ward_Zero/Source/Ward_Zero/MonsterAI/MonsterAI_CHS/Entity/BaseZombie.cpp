@@ -40,6 +40,7 @@ void ABaseZombie::OnDeath()
 	if (StatusComponent)
 	{
 		StatusComponent->SetIsDead(true);
+		StatusComponent->SetMainState(EMonsterMainState::Dead);
 	}
 	if (auto* AIC = Cast<ABaseZombie_AIController>(GetController()))
 	{
@@ -66,7 +67,7 @@ void ABaseZombie::OnDeath()
 		GetCharacterMovement()->DisableMovement();
 		GetCharacterMovement()->SetComponentTickEnabled(false);
 	}
-	SetLifeSpan(5.0f);
+	//SetLifeSpan(5.0f);
 }
 
 // Called when the game starts or when spawned
@@ -76,20 +77,32 @@ void ABaseZombie::BeginPlay()
 	if (StatusComponent && MonsterData)
 	{
 		StatusComponent->InitData(MonsterData);
-		if (GetCharacterMovement())
-		{
-			GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetBaseSpeed();
-
-		}
+		StatusComponent->OnMainStateChanged.AddDynamic(this, &ABaseZombie::HandleStateChange);
+		StatusComponent->SetMainState(MonsterData->StartState);
 	}else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Zombie [%s] has no StatusComponent or MonsterData!"), *GetName());
 		return; 
 	}
+	
 	if (ABaseZombie_AIController* AIC = GetController<ABaseZombie_AIController>())
 	{
 		AIC->UpdatePerceptionConfig();
 	}
+	
+}
+
+float ABaseZombie::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (CombatComponent)
+	{
+		// 모든 데미지 정보를 CombatComponent로 넘겨줍니다.
+		CombatComponent->HandleAllDamage(ActualDamage, DamageEvent, EventInstigator, DamageCauser);
+	}
+
+	return ActualDamage;
 }
 
 // Called every frame
@@ -100,7 +113,7 @@ void ABaseZombie::Tick(float DeltaTime)
 #if WITH_EDITOR
 	if (MonsterData && StatusComponent)
 	{
-		FlushPersistentDebugLines(GetWorld());
+		//FlushPersistentDebugLines(GetWorld());
 
 		FVector Center = GetActorLocation();
 		Center.Z += MonsterData->EyeHeight;
@@ -121,8 +134,8 @@ void ABaseZombie::Tick(float DeltaTime)
 			View_Range, 
 			32, 
 			FColor::Green, 
-			true, 
-			-1.f, 
+			false, 
+			1.f, 
 			0, 
 			2.0f, 
 			false 
@@ -133,8 +146,8 @@ void ABaseZombie::Tick(float DeltaTime)
 		FVector LeftDir = Forward.RotateAngleAxis(-View_Angle * 0.5f, FVector::UpVector);
 		FVector RightDir = Forward.RotateAngleAxis(View_Angle * 0.5f, FVector::UpVector);
 
-		DrawDebugLine(GetWorld(), Center, Center + LeftDir * View_Range, FColor::Green, true, -1.f, 0, 2.0f);
-		DrawDebugLine(GetWorld(), Center, Center + RightDir * View_Range, FColor::Green, true, -1.f, 0, 2.0f);
+		DrawDebugLine(GetWorld(), Center, Center + LeftDir * View_Range, FColor::Green, false, 0.1f, 0, 2.0f);
+		DrawDebugLine(GetWorld(), Center, Center + RightDir * View_Range, FColor::Green, false, 0.1f, 0, 2.0f);
 	}
 #endif
 	
@@ -243,7 +256,8 @@ void ABaseZombie::RecoverFromRagdoll()
 	bool bIsFaceUp = (PelvisUp.Z > 0.0f);
 	
 	ZombieMesh->SetSimulatePhysics(false);
-	ZombieMesh->SetCollisionProfileName(TEXT("CharacterMesh"));
+	ZombieMesh->SetCollisionProfileName(TEXT("Custom"));
+	ZombieMesh->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);
 	ZombieMesh->AttachToComponent(GetCapsuleComponent(),FAttachmentTransformRules::SnapToTargetIncludingScale);
 	ZombieMesh->SetRelativeLocationAndRotation(FVector(0,0,-90),FRotator(0,-90,0));
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -300,7 +314,10 @@ void ABaseZombie::OnConstruction(const FTransform& Transform)
 		
 		if (GetCharacterMovement())
 		{
-			GetCharacterMovement()->MaxWalkSpeed = MonsterData->BaseSpeed;
+			if (MonsterData->StateConfigMap.Find(EMonsterMainState::Idle) != nullptr)
+			{
+				GetCharacterMovement()->MaxWalkSpeed = MonsterData->StateConfigMap[EMonsterMainState::Idle].MovementSpeed;
+			}
 		}
 	}
 	
@@ -343,4 +360,23 @@ void ABaseZombie::OnConstruction(const FTransform& Transform)
 		DrawDebugLine(GetWorld(), Center, Center + RightDir * View_Range, FColor::Green, true, -1.f, 0, 2.0f);
 	}
 #endif
+}
+
+void ABaseZombie::HandleStateChange(EMonsterMainState NewState)
+{
+	if (!AudioLoopComponent || !MonsterData) return;
+	
+	if (const FMonsterStateSettings* Settings = MonsterData->StateConfigMap.Find(NewState))
+	{
+		if (GetCharacterMovement())
+		{
+			GetCharacterMovement()->MaxWalkSpeed = MonsterData->StateConfigMap[NewState].MovementSpeed;
+		}
+		
+		if (Settings->StateLoopSound && AudioLoopComponent->GetSound() != Settings->StateLoopSound)
+		{
+			AudioLoopComponent->SetSound(Settings->StateLoopSound);
+			AudioLoopComponent->Play();
+		}
+	}
 }

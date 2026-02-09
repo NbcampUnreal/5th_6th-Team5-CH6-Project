@@ -13,29 +13,29 @@ void UAN_MonsterAttackEnd::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenc
                                   const FAnimNotifyEventReference& EventReference)
 {
 	Super::Notify(MeshComp, Animation, EventReference);
-	UE_LOG(LogTemp,Warning,TEXT("Notify Start"));
+	//UE_LOG(LogTemp,Warning,TEXT("Notify Start"));
 
 	if (MeshComp && MeshComp->GetOwner())
 	{
 		if (APawn* Pawn = Cast<APawn>(MeshComp->GetOwner()))
 		{
-			UE_LOG(LogTemp,Warning,TEXT("Pawn clear"));
+			//UE_LOG(LogTemp,Warning,TEXT("Pawn clear"));
 
 			if (AAIController* AIC = Cast<AAIController>(Pawn->GetController()))
 			{
-				UE_LOG(LogTemp,Warning,TEXT("AIC clear"));
+				//UE_LOG(LogTemp,Warning,TEXT("AIC clear"));
 
 				if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
 				{
-					UE_LOG(LogTemp,Warning,TEXT("BB clear"));
+					//UE_LOG(LogTemp,Warning,TEXT("BB clear"));
 					BB->SetValueAsBool(WZAIKeys::IsAttacking,false);
 				}
 				if (UBehaviorTreeComponent* BT = Cast<UBehaviorTreeComponent>(AIC->GetBrainComponent()))
 				{
-					UE_LOG(LogTemp,Warning,TEXT("BT clear"));
+					//UE_LOG(LogTemp,Warning,TEXT("BT clear"));
 					if (const UBTNode* ActiveNode = BT->GetActiveNode())
 					{
-						UE_LOG(LogTemp,Warning,TEXT("Task Stop"));
+						//UE_LOG(LogTemp,Warning,TEXT("Task Stop"));
 						BT->OnTaskFinished(Cast<UBTTaskNode>(ActiveNode),EBTNodeResult::Succeeded);
 					}
 				}

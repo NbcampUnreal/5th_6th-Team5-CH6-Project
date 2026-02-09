@@ -2,6 +2,7 @@
 
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Engine/DamageEvents.h"
+#include "MonsterAI/MonsterAI_CHS/Data/Type/GameTypes.h"
 #include "MonsterAI/MonsterAI_CHS/AI/BaseZombie_AIController.h"
 #include "MonsterAI/MonsterAI_CHS/AI/WZAIKeys.h"
 #include "MonsterAI/MonsterAI_CHS/Component/StatusComponent.h"
@@ -30,63 +31,6 @@ void UCombatComponent::BeginPlay()
 	}
 	
 }
-
-
-void UCombatComponent::OnTakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator,
-                                    AActor* DamageCauser)
-{
-	if (!StatusComp)
-	{
-		return;
-	}
-	const UWZDamageType* WZDamageType = Cast<UWZDamageType>(DamageEvent.DamageTypeClass.GetDefaultObject());
-	if (!WZDamageType)
-	{
-		return;
-	}
-	EHitDirection HitDir = EHitDirection::Front;
-	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
-	{
-		const FPointDamageEvent* PointDamageE = static_cast<const FPointDamageEvent*>(&DamageEvent);
-		HitDir = GetHitDirection(PointDamageE->ShotDirection);
-	}else if (DamageCauser)
-	{
-		FVector DirectionToCauser = (GetOwner()->GetActorLocation() - DamageCauser->GetActorLocation());
-		HitDir = GetHitDirection(DirectionToCauser);
-	}
-	bool bIsCriticalHit = CheckCriticalHit(DamageEvent);
-	if (bIsCriticalHit)
-	{
-		float WeaponKnockdownChance = WZDamageType->KnockdownProbability;
-		float KnockdownChance = WeaponKnockdownChance * (1 - StatusComp->GetResistKnockdown());
-		if (StatusComp->ApplyCriticalDamage(Damage) <= 0.0f)
-		{
-			OnDeath();
-		}else if (FMath::RandRange(0.0f,100.0f) < KnockdownChance)
-		{
-			ApplyKnockdown(HitDir);
-		}else
-		{
-			if (StatusComp->GetIsRecoveringCC() && StatusComp->GetIsKnockdownSuperArmor())
-			{
-				return;
-			}
-			ApplyStun(HitDir,bIsCriticalHit);
-		}
-	}else
-	{
-		
-		StatusComp->ApplyDamage(Damage);
-		if (StatusComp->GetIsRecoveringCC() && StatusComp->GetIsKnockdownSuperArmor())
-		{
-			return;
-		}
-		ApplyStun(HitDir,bIsCriticalHit);
-	}
-}
-
-
-
 void UCombatComponent::ApplyKnockdown(EHitDirection HitDir)
 {
 	ABaseZombie* Owner = Cast<ABaseZombie>(GetOwner());
@@ -123,54 +67,29 @@ void UCombatComponent::ApplyStun(EHitDirection HitDir, bool bIsCriticalHit)
 	{
 		return;
 	}
-	AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsStunned,true);
-	AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsAttacking,false);
 	UAnimMontage* MontageToPlay = nullptr;
-	if (bIsCriticalHit)
+	
+	
+	switch (HitDir)
 	{
-		switch (HitDir)
-		{
-		case EHitDirection::Front: MontageToPlay = MonsterData->CriticalHitReactMontages.Front; break;
-		case EHitDirection::Back:  MontageToPlay = MonsterData->CriticalHitReactMontages.Back; break;
-		case EHitDirection::Left:  MontageToPlay = MonsterData->CriticalHitReactMontages.Left; break;
-		case EHitDirection::Right: MontageToPlay = MonsterData->CriticalHitReactMontages.Right; break;
-		}
-	}else
-	{
-		switch (HitDir)
-		{
 		case EHitDirection::Front: MontageToPlay = MonsterData->NormalHitReactMontages.Front; break;
 		case EHitDirection::Back:  MontageToPlay = MonsterData->NormalHitReactMontages.Back; break;
 		case EHitDirection::Left:  MontageToPlay = MonsterData->NormalHitReactMontages.Left; break;
 		case EHitDirection::Right: MontageToPlay = MonsterData->NormalHitReactMontages.Right; break;
-		}
 	}
+	
 	
 
 	if (MontageToPlay)
 	{
+		AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsStunned,true);
 		Owner->PlayAnimM(MontageToPlay);
 		AIC->StopMovement(); 
-	
 		
 	}
 	
 }
 
-
-bool UCombatComponent::CheckCriticalHit(const FDamageEvent& DamageEvent)
-{
-	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
-	{
-		const FPointDamageEvent* PointDamageE = static_cast<const FPointDamageEvent*>(&DamageEvent);
-		FName HitBoneName = PointDamageE->HitInfo.BoneName;
-		if (!MonsterData->WeakBoneName.IsNone() && HitBoneName == MonsterData->WeakBoneName)
-		{
-			return true;
-		}
-	}
-	return false;
-}
 
 void UCombatComponent::OnDeath()
 {
@@ -186,16 +105,84 @@ void UCombatComponent::OnDeath()
 
 void UCombatComponent::Attack()
 {
-	UE_LOG(LogTemp,Warning,TEXT("CombatComp Attack Func start"))
+	//UE_LOG(LogTemp,Warning,TEXT("CombatComp Attack Func start"))
 	ABaseZombie* Owner = Cast<ABaseZombie>(GetOwner());
 	if (!Owner) return;
 	UAnimMontage* MontageToPlay = nullptr;
 	MontageToPlay = MonsterData->AttackMontage;
 	if (MontageToPlay)
 	{
-		UE_LOG(LogTemp,Warning,TEXT("CallAttack Montage"))
+		//UE_LOG(LogTemp,Warning,TEXT("CallAttack Montage"))
 		Owner->PlayAnimM(MontageToPlay);
 	}
+}
+
+void UCombatComponent::ProcessDamageLogic(float Damage, FName HitBone, const FVector& AttackDir,
+	const UWZDamageType* DamageType, AActor* DamageCauser)
+{
+	EHitDirection HitDir = EHitDirection::Front;
+	if (DamageType->DamageSource == EDamageSource::Gun)
+	{
+		HitDir = GetHitDirection(AttackDir);
+		float KnockdownChance = DamageType->KnockdownProbability * (1 - StatusComp->GetResistKnockdown());
+		bool bIsCriticalHit =  (HitBone == StatusComp->GetWeakBoneName());
+		UE_LOG(LogTemp,Warning,TEXT("Hit! CurrentHP: %f, HitBone: %s, WeakBone: %s, bIsCritical: %hs"),StatusComp->GetCurrentHP(),*HitBone.ToString(),*StatusComp->GetWeakBoneName().ToString(), bIsCriticalHit ? "true" : "false");
+		if (bIsCriticalHit)
+		{
+			UE_LOG(LogTemp,Warning,TEXT("Critical"));
+			if (StatusComp->ApplyDamage(Damage,bIsCriticalHit) <= 0.0f)
+			{
+				UE_LOG(LogTemp,Warning,TEXT("Death"));
+				OnDeath();
+			}else if (FMath::RandRange(0.0f,100.0f) < KnockdownChance)
+			{
+				UE_LOG(LogTemp,Warning,TEXT("Knockdown"));
+				ApplyKnockdown(HitDir);
+			}
+		}else
+		{
+			StatusComp->ApplyDamage(Damage,bIsCriticalHit);
+			if (StatusComp->GetIsRecoveringCC() && StatusComp->GetIsKnockdownSuperArmor())
+			{
+				return;
+			}
+			ApplyStun(HitDir,bIsCriticalHit);
+		}
+	}else
+	{
+		StatusComp->ApplyDamage(Damage,false);
+		if (StatusComp->GetIsRecoveringCC() && StatusComp->GetIsKnockdownSuperArmor())
+		{
+			return;
+		}
+		ApplyStun(HitDir,false);
+	}
+	
+}
+
+void UCombatComponent::HandleAllDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator,
+                                       AActor* DamageCauser)
+{
+	const UWZDamageType* WZDamageType = Cast<UWZDamageType>(DamageEvent.DamageTypeClass.GetDefaultObject());
+    
+	FName HitBone = NAME_None;
+	FVector HitDir = FVector::ZeroVector;
+
+	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
+	{
+		const FPointDamageEvent* PointDamageEvent = static_cast<const FPointDamageEvent*>(&DamageEvent);
+		HitBone = PointDamageEvent->HitInfo.BoneName;
+		HitDir = PointDamageEvent->ShotDirection;
+	}
+	else
+	{
+		if (DamageCauser)
+		{
+			HitDir = GetOwner()->GetActorLocation() - DamageCauser->GetActorLocation();
+		}
+	}
+
+	ProcessDamageLogic(Damage, HitBone, HitDir, WZDamageType, DamageCauser);
 }
 
 EHitDirection UCombatComponent::GetHitDirection(const FVector& ShotDirection)
