@@ -20,7 +20,10 @@ void UStatusComponent::InitData(const UMonsterDataAsset* BaseData)
 	if (BaseData)
 	{
 		MonsterData = BaseData;
-		Speed = FSpeed(BaseData->StateConfigMap[EMonsterMainState::Idle].MovementSpeed,BaseData->StateConfigMap[EMonsterMainState::Combat].MovementSpeed);
+		if (BaseData->StateConfigMap.Find(EMonsterMainState::Idle) != nullptr && BaseData->StateConfigMap.Find(EMonsterMainState::Combat) != nullptr)
+		{
+			Speed = FSpeed(BaseData->StateConfigMap[EMonsterMainState::Idle].MovementSpeed,BaseData->StateConfigMap[EMonsterMainState::Combat].MovementSpeed);
+		}
 		Health = FHealth(BaseData->MaxHP,BaseData->MaxHP);
 	}
 	bIsDataInit = true;

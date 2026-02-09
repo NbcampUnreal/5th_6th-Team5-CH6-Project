@@ -52,6 +52,11 @@ void ABaseZombie_AIController::BeginPlay()
 	AIPerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &ABaseZombie_AIController::OnTargetDetected);
 }
 
+void ABaseZombie_AIController::HandleStateChange(EMonsterMainState NewState)
+{
+	GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::MainState,static_cast<uint8>(NewState));
+}
+
 void ABaseZombie_AIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
@@ -62,6 +67,7 @@ void ABaseZombie_AIController::OnPossess(APawn* InPawn)
 		if (StatusComp)
 		{
 			UpdatePerceptionConfig();
+			StatusComp->OnMainStateChanged.AddDynamic(this, &ABaseZombie_AIController::HandleStateChange);
 		}
 	}
 }
@@ -110,13 +116,14 @@ void ABaseZombie_AIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimu
 		{
 			if (Stimulus.WasSuccessfullySensed())
 			{
+				StatusComp->SetMainState(EMonsterMainState::Combat);
 				BB->SetValueAsObject(WZAIKeys::TargetActor, Actor);
 				BB->ClearValue(WZAIKeys::InvestigateLocation);
 				BB->ClearValue(WZAIKeys::LastKnownLocation);
 			
 			}else
 			{
-				//BB->ClearValue(TargetKey);
+				//StatusComp->SetMainState(EMonsterMainState::Investigate);
 				BB->SetValueAsVector(WZAIKeys::LastKnownLocation, Stimulus.StimulusLocation);
 			}
 		}
@@ -134,10 +141,12 @@ void ABaseZombie_AIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimu
 			
 			if (StatusComp->GetHearingThreshold() <= RealLoudness)
 			{
+				StatusComp->SetMainState(EMonsterMainState::Combat);
 				BB->SetValueAsObject(WZAIKeys::TargetActor,Actor);
 				BB->SetValueAsVector(WZAIKeys::LastKnownLocation, Stimulus.StimulusLocation);
 			}else
 			{
+				StatusComp->SetMainState(EMonsterMainState::Investigate);
 				BB->SetValueAsVector(WZAIKeys::InvestigateLocation, Stimulus.StimulusLocation);
 			}
 			

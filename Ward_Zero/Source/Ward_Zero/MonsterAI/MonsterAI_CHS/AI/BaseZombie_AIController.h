@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "MonsterAI/MonsterAI_CHS/Data/Type/MonsterStat.h"
 
 #include "BaseZombie_AIController.generated.h"
 
@@ -32,7 +33,9 @@ protected:
 	TObjectPtr<class UStatusComponent> StatusComp;
 	
 	virtual void BeginPlay() override;
-	
+
+	UFUNCTION()
+	void HandleStateChange(EMonsterMainState NewState);
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
 	

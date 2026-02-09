@@ -81,7 +81,10 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	UPROPERTY(EditDefaultsOnly, Category = "Animation|Combat")
 	FGetUpMontage GetUpMontages;
 	
-	UPROPERTY(EditAnywhere, Category = "State Settings")
+	UPROPERTY(EditDefaultsOnly, Category = "State")
+	EMonsterMainState StartState = EMonsterMainState::Idle;
+	
+	UPROPERTY(EditAnywhere, Category = "State")
 	TMap<EMonsterMainState, FMonsterStateSettings> StateConfigMap;
 	 
 	
@@ -128,7 +131,7 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	
 	UPROPERTY(EditAnywhere, Category = "Combat|Knockdown",meta=(ClampMin="0.0", ClampMax="1.0"))
 	float ResistKnockdown = 0.5f;
-	
+			
 	UPROPERTY(EditAnywhere, Category = "Combat|Knockdown")
 	bool bIsKnockdownSuperArmor = false;
 	

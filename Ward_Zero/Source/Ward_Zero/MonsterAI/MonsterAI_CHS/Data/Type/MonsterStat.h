@@ -7,6 +7,7 @@ enum class EMonsterMainState:uint8
 {
 	Idle,
 	Patrol,
+	Investigate,
 	Combat,
 	Dead
 };
@@ -26,11 +27,13 @@ struct FMonsterStateSettings
 {
 	GENERATED_BODY()
 	
+	UPROPERTY(EditAnywhere)
 	float MovementSpeed = 600.f;
 	
-	UPROPERTY()
+	UPROPERTY(EditAnywhere)
 	class USoundBase* StateLoopSound = nullptr;
 
+	UPROPERTY(EditAnywhere)
 	float LoopSoundVolume = 0.f;
 	
 };

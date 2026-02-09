@@ -40,6 +40,7 @@ void ABaseZombie::OnDeath()
 	if (StatusComponent)
 	{
 		StatusComponent->SetIsDead(true);
+		StatusComponent->SetMainState(EMonsterMainState::Dead);
 	}
 	if (auto* AIC = Cast<ABaseZombie_AIController>(GetController()))
 	{
@@ -66,7 +67,7 @@ void ABaseZombie::OnDeath()
 		GetCharacterMovement()->DisableMovement();
 		GetCharacterMovement()->SetComponentTickEnabled(false);
 	}
-	SetLifeSpan(5.0f);
+	//SetLifeSpan(5.0f);
 }
 
 // Called when the game starts or when spawned
@@ -77,11 +78,7 @@ void ABaseZombie::BeginPlay()
 	{
 		StatusComponent->InitData(MonsterData);
 		StatusComponent->OnMainStateChanged.AddDynamic(this, &ABaseZombie::HandleStateChange);
-		if (GetCharacterMovement())
-		{
-			GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetBaseSpeed();
-
-		}
+		StatusComponent->SetMainState(MonsterData->StartState);
 	}else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Zombie [%s] has no StatusComponent or MonsterData!"), *GetName());
@@ -92,6 +89,7 @@ void ABaseZombie::BeginPlay()
 	{
 		AIC->UpdatePerceptionConfig();
 	}
+	
 }
 
 float ABaseZombie::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -148,8 +146,8 @@ void ABaseZombie::Tick(float DeltaTime)
 		FVector LeftDir = Forward.RotateAngleAxis(-View_Angle * 0.5f, FVector::UpVector);
 		FVector RightDir = Forward.RotateAngleAxis(View_Angle * 0.5f, FVector::UpVector);
 
-		DrawDebugLine(GetWorld(), Center, Center + LeftDir * View_Range, FColor::Green, false, 1.f, 0, 2.0f);
-		DrawDebugLine(GetWorld(), Center, Center + RightDir * View_Range, FColor::Green, false, 1.f, 0, 2.0f);
+		DrawDebugLine(GetWorld(), Center, Center + LeftDir * View_Range, FColor::Green, false, 0.1f, 0, 2.0f);
+		DrawDebugLine(GetWorld(), Center, Center + RightDir * View_Range, FColor::Green, false, 0.1f, 0, 2.0f);
 	}
 #endif
 	
@@ -316,7 +314,10 @@ void ABaseZombie::OnConstruction(const FTransform& Transform)
 		
 		if (GetCharacterMovement())
 		{
-			GetCharacterMovement()->MaxWalkSpeed = MonsterData->StateConfigMap[EMonsterMainState::Idle].MovementSpeed;
+			if (MonsterData->StateConfigMap.Find(EMonsterMainState::Idle) != nullptr)
+			{
+				GetCharacterMovement()->MaxWalkSpeed = MonsterData->StateConfigMap[EMonsterMainState::Idle].MovementSpeed;
+			}
 		}
 	}
 	
@@ -367,6 +368,11 @@ void ABaseZombie::HandleStateChange(EMonsterMainState NewState)
 	
 	if (const FMonsterStateSettings* Settings = MonsterData->StateConfigMap.Find(NewState))
 	{
+		if (GetCharacterMovement())
+		{
+			GetCharacterMovement()->MaxWalkSpeed = MonsterData->StateConfigMap[NewState].MovementSpeed;
+		}
+		
 		if (Settings->StateLoopSound && AudioLoopComponent->GetSound() != Settings->StateLoopSound)
 		{
 			AudioLoopComponent->SetSound(Settings->StateLoopSound);
