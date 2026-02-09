@@ -47,8 +47,7 @@ void UStatusComponent::SetMainState(EMonsterMainState NewState)
 void UStatusComponent::SetSubState(EMonsterSubState NewState)
 {
 	if (SubState == NewState) return;
-	SubState = NewState;
-	switch (SubState)
+	switch (NewState)
 	{
 	case EMonsterSubState::Attack:
 	case EMonsterSubState::Chase:
@@ -59,6 +58,7 @@ void UStatusComponent::SetSubState(EMonsterSubState NewState)
 	default:
 		break;
 	}
+	SubState = NewState;
 	OnSubStateChanged.Broadcast(SubState);
 }
 

@@ -12,4 +12,5 @@ namespace WZAIKeys
 	const FName IsDead = TEXT("IsDead");
 	const FName IsWithinAttackRange = TEXT("IsWithinAttackRange");
 	const FName MainState = TEXT("MainState");
+	const FName SubState = TEXT("SubState");
 }

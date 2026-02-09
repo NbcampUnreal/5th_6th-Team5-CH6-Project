@@ -52,9 +52,14 @@ void ABaseZombie_AIController::BeginPlay()
 	AIPerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &ABaseZombie_AIController::OnTargetDetected);
 }
 
-void ABaseZombie_AIController::HandleStateChange(EMonsterMainState NewState)
+void ABaseZombie_AIController::HandleMainStateChange(EMonsterMainState NewState)
 {
 	GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::MainState,static_cast<uint8>(NewState));
+}
+
+void ABaseZombie_AIController::HandleSubStateChange(EMonsterSubState NewState)
+{
+	GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::SubState,static_cast<uint8>(NewState));
 }
 
 void ABaseZombie_AIController::OnPossess(APawn* InPawn)
@@ -67,7 +72,9 @@ void ABaseZombie_AIController::OnPossess(APawn* InPawn)
 		if (StatusComp)
 		{
 			UpdatePerceptionConfig();
-			StatusComp->OnMainStateChanged.AddDynamic(this, &ABaseZombie_AIController::HandleStateChange);
+			StatusComp->OnMainStateChanged.AddDynamic(this, &ABaseZombie_AIController::HandleMainStateChange);
+			StatusComp->OnSubStateChanged.AddDynamic(this, &ABaseZombie_AIController::HandleSubStateChange);
+
 		}
 	}
 }
