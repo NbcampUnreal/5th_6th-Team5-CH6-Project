@@ -5,6 +5,9 @@
 #include "GameFramework/Controller.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Objects/Ladder.h"
+#include "Objects/Interface/Interact.h"
+#include "Components/BoxComponent.h"
 
 APrototypeCharacter::APrototypeCharacter()
 {
@@ -79,7 +82,10 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	CheckRunState();
-
+	if (bIsQuickTurning)
+	{
+		return;
+	}
 	if (!bIsRunning && GetVelocity().SizeSquared() > KINDA_SMALL_NUMBER)
 	{
 		FRotator TargetRotation = FRotator(0.0f, GetControlRotation().Yaw, 0.0f);
@@ -123,6 +129,24 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	CameraBoom->SocketOffset.Z = FMath::FInterpTo(CameraBoom->SocketOffset.Z, FinalTargetZ, DeltaTime, 10.0f);
 	CameraBoom->SocketOffset.Y = FMath::FInterpTo(CameraBoom->SocketOffset.Y, FinalTargetY, DeltaTime, 10.0f);
 
+	//Climb
+	if (bIsClimbing && CurrentLadder)
+	{
+		float MyHeight = GetActorLocation().Z;
+		float TopHeight = CurrentLadder->TopExitPoint->GetComponentLocation().Z;
+		float BottomHeight = CurrentLadder->BottomStartPoint->GetComponentLocation().Z;
+
+		if (MyHeight >= TopHeight) //사다리 끝 도달 
+		{
+			StopClimbing();
+			SetActorLocation(CurrentLadder->TopExitPoint->GetComponentLocation());
+		}
+		else if (MyHeight <= BottomHeight)
+		{
+			StopClimbing();
+		}
+		return;
+	}
 }
 
 void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -154,6 +178,11 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		{
 			EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &APrototypeCharacter::ToggleCrouch);
 		}
+
+		if (InteractAction)
+		{
+			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APrototypeCharacter::Interact);
+		}
 	}
 
 }
@@ -162,6 +191,12 @@ void APrototypeCharacter::Move(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
+	if (bIsClimbing) //등반 중 
+	{
+		// W/S로 이동 
+		AddMovementInput(FVector::UpVector, MovementVector.Y);
+		return;
+	}
 	if (Controller != nullptr)
 	{
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -195,10 +230,9 @@ void APrototypeCharacter::Look(const FInputActionValue& Value)
 void APrototypeCharacter::ToggleCrouch(const FInputActionValue& Value)
 {
 	// 달리고 있다면 앉기 불가능
-	if (bIsRunning)
-	{
-		return;
-	}
+	if (bIsRunning) return;
+	//등반 중이면 앉기 불가능
+	if (bIsClimbing) return;
 
 	if (bIsCrouched)
 	{
@@ -218,6 +252,11 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 	}
 
 	if (bIsRunning)
+	{
+		return;
+	}
+
+	if (bIsClimbing)
 	{
 		return;
 	}
@@ -251,3 +290,60 @@ void APrototypeCharacter::CheckRunState()
 	}
 }
 
+void APrototypeCharacter::Interact(const FInputActionValue& Value)
+{
+	if (bIsClimbing)
+	{
+		StopClimbing(); 
+		return;
+	}
+
+	//전방 사다리 있는지 검사 
+	FVector Start = MainCamera->GetComponentLocation();
+	FVector End = Start + (MainCamera->GetForwardVector() * 250.0f);
+	
+	FHitResult Hit; 
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+	{
+		AActor* HitActor = Hit.GetActor();
+		//히트된 엑터 = 인터페이스 구현 여부 검사 
+		if (HitActor && HitActor->GetClass()->ImplementsInterface(UInteract::StaticClass()))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Interact Hit"));
+			IInteract::Execute_OnInteract(HitActor, this);
+		}
+	}
+}
+
+void APrototypeCharacter::StartClimbing(ALadder* Ladder)
+{
+	if (!Ladder) return;
+
+	bIsClimbing = true;
+	CurrentLadder = Ladder; 
+	bIsRunning = false; 
+	UnCrouch();
+
+	GetCharacterMovement()->SetMovementMode(MOVE_Flying); //중력 무시 
+	GetCharacterMovement()->StopMovementImmediately();
+	GetCharacterMovement()->MaxWalkSpeed = ClimbSpeed;
+
+	//플레이어 위치를 사다리 중간으로 이동 
+	FVector StartLoc = Ladder->BottomStartPoint->GetComponentLocation();
+	FRotator StartRot = Ladder->GetActorForwardVector().Rotation(); // 방향 
+	StartRot.Yaw += 180.0f;
+
+	SetActorLocationAndRotation(StartLoc, StartRot);
+}
+
+void APrototypeCharacter::StopClimbing()
+{
+	bIsClimbing = false; 
+	CurrentLadder = nullptr; 
+
+	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+}

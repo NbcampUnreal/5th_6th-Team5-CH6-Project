@@ -9,7 +9,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
-
+class ALadder;
 
 UCLASS()
 class WARD_ZERO_API APrototypeCharacter : public ACharacter
@@ -53,6 +53,9 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
     UInputAction* CrouchAction;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+    UInputAction* InteractAction;
+
 private:
 
 	bool bIsRunning = false;
@@ -62,6 +65,9 @@ private:
 
     UPROPERTY(EditDefaultsOnly, Category = "Movement")
 	float RunSpeed = 250.0f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Movement")
+    float ClimbSpeed = 150.0f;
 
     UPROPERTY(EditDefaultsOnly, Category = Movement)
     float CrouchMovementSpeed = 150.0f;
@@ -92,7 +98,6 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = Camera)
     float BobHorizontalAmplitude = 1.0f; // 흔들림 강도 (좌우 폭)
 
-
 protected:
     // 이동 처리 함수
 	void Move(const FInputActionValue& Value);
@@ -108,4 +113,24 @@ protected:
 
 	// 크로우치 토글 함수
 	void ToggleCrouch(const FInputActionValue& Value);
+
+    void Interact(const FInputActionValue& Value);
+
+public:
+    //Climbing Var & Fuc 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Climbing")
+    bool bIsClimbing = false; 
+
+    UPROPERTY(BlueprintReadOnly, Category="Climbing")
+    TObjectPtr<ALadder> CurrentLadder = nullptr; 
+
+    UFUNCTION(BlueprintCallable)
+    void StartClimbing(ALadder* Ladder);
+
+    UFUNCTION(BlueprintCallable)
+    void StopClimbing();
+
+    //Turn Var 
+    UPROPERTY(BlueprintReadWrite)
+    bool bIsQuickTurning = false;
 };
