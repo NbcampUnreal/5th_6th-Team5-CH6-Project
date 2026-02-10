@@ -78,7 +78,7 @@ void ABaseZombie::BeginPlay()
 	{
 		StatusComponent->InitData(MonsterData);
 		StatusComponent->OnMainStateChanged.AddDynamic(this, &ABaseZombie::HandleStateChange);
-		StatusComponent->SetMainState(MonsterData->StartState);
+		StatusComponent->SetMainState(StatusComponent->GetStartState());
 	}else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Zombie [%s] has no StatusComponent or MonsterData!"), *GetName());
@@ -109,7 +109,7 @@ float ABaseZombie::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 
 	if (CombatComponent)
 	{
-		// 모든 데미지 정보를 CombatComponent로 넘겨줍니다.
+		
 		CombatComponent->HandleAllDamage(ActualDamage, DamageEvent, EventInstigator, DamageCauser);
 	}
 
@@ -212,7 +212,12 @@ void ABaseZombie::SetChaseSpeed(float NewSpeed)
 
 void ABaseZombie::PlayAnimM(UAnimMontage* MontageToPlay)
 {
+	
 	PlayAnimMontage(MontageToPlay);
+}
+
+void ABaseZombie::BangDoor(AActor* TargetDoor)
+{
 }
 
 void ABaseZombie::StartRagdollKnockdown(EHitDirection HitDir)
@@ -380,6 +385,14 @@ void ABaseZombie::OnConstruction(const FTransform& Transform)
 void ABaseZombie::HandleStateChange(EMonsterMainState NewState)
 {
 	if (!AudioLoopComponent || !MonsterData) return;
+	
+	if (NewState == EMonsterMainState::Idle)
+	{
+		if (MonsterData->IdleMontage)
+		{
+			PlayAnimM(MonsterData->IdleMontage);
+		}
+	}
 	
 	if (const FMonsterStateSettings* Settings = MonsterData->StateConfigMap.Find(NewState))
 	{

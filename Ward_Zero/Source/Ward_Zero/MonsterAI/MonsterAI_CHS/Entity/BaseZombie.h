@@ -48,6 +48,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Animation", meta=(DisplayName ="Play Anim Montage"))
 	void PlayAnimM(UAnimMontage* MontageToPlay);
+	
+	UFUNCTION(BlueprintCallable, Category = "Animation", meta=(DisplayName="Bang the Door"))
+	void BangDoor(AActor* TargetDoor);
 	void StartRagdollKnockdown(EHitDirection HitDir);
 	void CheckRagdollVelocity();
 	void RecoverFromRagdoll();

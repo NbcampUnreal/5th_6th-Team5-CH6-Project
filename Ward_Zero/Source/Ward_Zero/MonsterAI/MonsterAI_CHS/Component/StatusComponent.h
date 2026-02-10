@@ -30,39 +30,43 @@ public:
 	void SetMainState(EMonsterMainState NewState);
 	void SetSubState(EMonsterSubState NewState);
 	
-	bool GetIsExecutionActive() const { return bIsExecutionActive; }
-	void SetIsExecutionActive(bool b){bIsExecutionActive = b;}
+	EMonsterMainState GetStartState() const;
+	
 	float GetBaseSpeed() const;
 	void SetBaseSpeed(float speed);
 	float GetChaseSpeed() const;
 	void SetChaseSpeed(float speed);
 	float GetArrivalRadius() const;
 	float GetBaseDetectionRange() const;
+	float GetLoseSightRange() const;
 	float GetViewAngle() const;
 	float GetAttackRange() const;
-	float GetChaseRange() const;
+	
 	float GetEyeHeight() const;
 	float GetMaxLostTargetTime() const;
 	float GetIdleSoundVolume() const;
 	float GetChaseSoundVolume() const;
 	float GetHearingThreshold() const;
-	float GetLoseSightRange() const;
+	
 	float GetResistKnockdown() const;
 	float GetAttackDamage() const;
 	float GetCurrentHP() const;
 	float GetHeadHitStunnedTime() const;
 	float GetBodyHitStunnedTime() const;
-	bool GetIsKnockdownSuperArmor() const;
+	
 	float GetWeakSpotDamageMultiplier() const;
 	bool GetIsRecoveringCC() const;
 	bool SetIsRecoveringCC(bool b);
-	FName GetWeakBoneName() const;
+	bool GetIsKnockdownSuperArmor() const;
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnMonsterMainStateChanged OnMainStateChanged;
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnMonsterSubStateChanged OnSubStateChanged;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	EMonsterMainState StartState = EMonsterMainState::Idle;
 	
 	float ApplyDamage(float Amount, bool bIsCritical);
 	bool GetIsDead() const;
@@ -74,22 +78,19 @@ private:
 	UPROPERTY()
 	const UMonsterDataAsset* MonsterData;
 	
+	
+	
 	UPROPERTY(VisibleAnywhere)
 	EMonsterMainState MainState = EMonsterMainState::Idle;
 	UPROPERTY(VisibleAnywhere)
 	EMonsterSubState SubState = EMonsterSubState::None;
-	bool bIsExecutionActive = false;
 	bool bIsDataInit = false;
 	
 	FHealth Health;
 	FSpeed Speed;
 	
 	UPROPERTY()
-	bool bIsSpecialActivate = false;
-	UPROPERTY()
 	bool bIsStunned = false;
-	UPROPERTY()
-	bool bIsWaiting = false;
 	UPROPERTY()
 	bool bIsDead = false;
 	UPROPERTY()

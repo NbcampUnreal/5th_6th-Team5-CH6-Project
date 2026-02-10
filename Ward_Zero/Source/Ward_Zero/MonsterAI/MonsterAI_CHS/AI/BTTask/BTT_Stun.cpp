@@ -12,7 +12,6 @@ EBTNodeResult::Type UBTT_Stun::ExecuteTask(UBehaviorTreeComponent& OwnerComp, ui
 	AAIController* AIC = OwnerComp.GetAIOwner();
 	if (ABaseZombie* Zombie = Cast<ABaseZombie>(AIC->GetPawn()))
 	{
-		AIC->StopMovement();
 		return EBTNodeResult::InProgress;
 	}
 	return EBTNodeResult::Failed;

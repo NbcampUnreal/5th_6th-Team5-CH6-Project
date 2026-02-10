@@ -4,16 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotify.h"
-#include "AN_MonsterAttackEnd.generated.h"
+#include "AN_SmallStunEnd.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class WARD_ZERO_API UAN_MonsterAttackEnd : public UAnimNotify
+class WARD_ZERO_API UAN_SmallStunEnd : public UAnimNotify
 {
 	GENERATED_BODY()
 	
 	public:
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;
+
 };

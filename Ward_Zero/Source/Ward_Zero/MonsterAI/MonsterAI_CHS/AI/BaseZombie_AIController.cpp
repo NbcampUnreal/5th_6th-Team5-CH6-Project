@@ -4,6 +4,7 @@
 #include "MonsterAI/MonsterAI_CHS/AI/BaseZombie_AIController.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "MonsterAI/MonsterAI_CHS/Component/StatusComponent.h"
 #include "MonsterAI/MonsterAI_CHS/Entity/BaseZombie.h"
 #include "Perception/AIPerceptionComponent.h"
@@ -11,6 +12,8 @@
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
 #include "MonsterAI/MonsterAI_CHS/AI/WZAIKeys.h"
+#include "MonsterAI/MonsterAI_CHS/Data/MonsterDataAsset.h"
+#include "Navigation/PathFollowingComponent.h"
 
 ABaseZombie_AIController::ABaseZombie_AIController()
 {
@@ -50,11 +53,17 @@ void ABaseZombie_AIController::BeginPlay()
 		RunBehaviorTree(BT_BaseZombie);
 	}
 	AIPerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &ABaseZombie_AIController::OnTargetDetected);
+	
+	
 }
 
 void ABaseZombie_AIController::HandleMainStateChange(EMonsterMainState NewState)
 {
 	GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::MainState,static_cast<uint8>(NewState));
+	if (NewState == EMonsterMainState::Combat)
+	{
+		GetBlackboardComponent()->SetValueAsObject(WZAIKeys::TargetActor,UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+	}
 }
 
 void ABaseZombie_AIController::HandleSubStateChange(EMonsterSubState NewState)
@@ -84,6 +93,27 @@ void ABaseZombie_AIController::OnUnPossess()
 	Super::OnUnPossess();
 	StatusComp = nullptr;
 }
+
+void ABaseZombie_AIController::HandleInteractionRequest(FGameplayTag InteractingTag, const FVector& Destination)
+{
+	/*ABaseZombie* Zombie = Cast<ABaseZombie>(GetOwner());
+	if (!Zombie->GetMonsterData()) return;
+	EInteractableObject IO = EInteractableObject::Door;
+	switch (InteractingTag)
+	{
+	case GPTags::Door: IO =EInteractableObject::Door; break;
+	case GPTags::Window: IO =EInteractableObject::Window; break;
+	default:
+		break;
+	}
+	const FInteractionInfo* Info = Zombie->GetMonsterData()->InteractionInfoMap.Find(InteractingTag);
+	if (Info && Info->InteractionMontage)
+	{
+		GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::MainState,static_cast<uint8>(EMonsterMainState::Interacting));
+		GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::InterActingObject,static_cast<uint8>(IO));
+	}*/
+}
+
 
 void ABaseZombie_AIController::UpdatePerceptionConfig()
 {
@@ -148,15 +178,9 @@ void ABaseZombie_AIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimu
 			
 			if (StatusComp->GetHearingThreshold() <= RealLoudness)
 			{
-				StatusComp->SetMainState(EMonsterMainState::Combat);
-				BB->SetValueAsObject(WZAIKeys::TargetActor,Actor);
-				BB->SetValueAsVector(WZAIKeys::LastKnownLocation, Stimulus.StimulusLocation);
-			}else
-			{
 				StatusComp->SetMainState(EMonsterMainState::Investigate);
 				BB->SetValueAsVector(WZAIKeys::InvestigateLocation, Stimulus.StimulusLocation);
 			}
-			
 		}
 	}
 	
