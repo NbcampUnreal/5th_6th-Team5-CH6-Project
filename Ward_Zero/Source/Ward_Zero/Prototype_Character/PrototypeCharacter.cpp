@@ -86,6 +86,7 @@ void APrototypeCharacter::BeginPlay()
 	}
 
 	StandingArmLength = CameraBoom->TargetArmLength;
+	DefaultTargetOffset = CameraBoom->TargetOffset;
 }
 
 void APrototypeCharacter::Tick(float DeltaTime)
@@ -95,15 +96,23 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	CheckRunState();
 	if (bIsQuickTurning) return;
 
-	if (!bIsRunning && GetVelocity().SizeSquared() > KINDA_SMALL_NUMBER)
+	//회전 동기화 
+	if (bIsAiming)
 	{
-		FRotator TargetRotation = FRotator(0.0f, GetControlRotation().Yaw, 0.0f);
-
-		FRotator CurrentRotation = GetActorRotation();
-
-		FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, WalkTurnRate);
-
-		SetActorRotation(NewRotation);
+		// 컨트롤러(카메라)가 보는 방향으로 캐릭터 몸통을 즉시 돌림
+		FRotator NewRot = GetActorRotation();
+		NewRot.Yaw = GetControlRotation().Yaw;
+		SetActorRotation(NewRot);
+	}
+	else
+	{
+		if (!bIsRunning && GetVelocity().SizeSquared() > KINDA_SMALL_NUMBER)
+		{
+			FRotator TargetRotation = FRotator(0.0f, GetControlRotation().Yaw, 0.0f);
+			FRotator CurrentRotation = GetActorRotation();
+			FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, WalkTurnRate);
+			SetActorRotation(NewRotation);
+		}
 	}
 
 	float TargetBaseZ = bIsCrouched ? CrouchedCameraHeight : StandingCameraHeight;
@@ -131,33 +140,45 @@ void APrototypeCharacter::Tick(float DeltaTime)
 
 		BobTime = 0.0f;
 	}
-
-	float FinalTargetZ = CurrentBaseCameraZ + ZOffsetBob;
-	float FinalTargetY = 45.0f + YOffsetBob; // 45.0f는 기본 Y 오프셋
-	
-	//추가 - JC Start 
-	float ActualTargetArmLength = bIsAiming ? AimArmLength : TargetArmLength;
+	float ActualTargetArmLength = bIsAiming ? AimArmLength : StandingArmLength;
 	float ActualTargetFOV = bIsAiming ? AimFOV : 80.f;
-	float ActualCameraLagSpeed = bIsAiming ? AimCameraLagSpeed : 15.0f;
 
-	FVector ActualTargetSocketOffset;
+	// TargetOffset: 회전의 중심축 (이 값을 Y=60 이상 주어야 캐릭터 중심이 아닌, 캐릭터 우측 허공을 중심으로 돕니다)
+	FVector AimTargetOffsetVal = FVector(0.0f, 65.0f, 50.0f);
+
+	// SocketOffset: 렌즈 위치 (TargetOffset에서 위치를 잡았으므로 얘는 0에 가깝게 둡니다)
+	FVector AimSocketOffsetVal = FVector(0.0f, 0.0f, -15.0f);
+
+	// 2. 카메라 위치 목표값 설정
+	float TargetArmLengthDest = bIsAiming ? AimArmLength : StandingArmLength;
+	float TargetFOVDest = bIsAiming ? AimFOV : 80.0f;
+	FVector TargetSocketOffsetDest;
+	FVector TargetOffsetDest;
+
 	if (bIsAiming)
 	{
-		ActualTargetSocketOffset = AimSocketOffset;
+		TargetSocketOffsetDest = AimSocketOffset; // Y가 0인 값
+		TargetOffsetDest = AimTargetOffset;       // Y가 60인 값 (화면 왼쪽 고정용)
 	}
 	else
 	{
-		ActualTargetSocketOffset = FVector(0.0f, FinalTargetY, FinalTargetZ);
-
+		float BobZ = CurrentBaseCameraZ + ZOffsetBob;
+		float BobY = 45.0f + YOffsetBob;
+		TargetSocketOffsetDest = FVector(0.0f, BobY, BobZ);
+		TargetOffsetDest = DefaultTargetOffset + FVector(0.f,0.f,50.f);
 	}
 
-	/*CameraBoom->SocketOffset.Z = FMath::FInterpTo(CameraBoom->SocketOffset.Z, FinalTargetZ, DeltaTime, 10.0f);
-	CameraBoom->SocketOffset.Y = FMath::FInterpTo(CameraBoom->SocketOffset.Y, FinalTargetY, DeltaTime, 10.0f);*/
-	float InterpSpeed = 7.0f;
-	CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, ActualTargetArmLength, DeltaTime, InterpSpeed);
-	MainCamera->FieldOfView = FMath::FInterpTo(MainCamera->FieldOfView, ActualTargetFOV, DeltaTime, InterpSpeed);
-	CameraBoom->SocketOffset = FMath::VInterpTo(CameraBoom->SocketOffset, ActualTargetSocketOffset, DeltaTime, InterpSpeed);
-	CameraBoom->CameraLagSpeed = FMath::FInterpTo(CameraBoom->CameraLagSpeed, ActualCameraLagSpeed, DeltaTime, 5.0f);
+	// [핵심 3] 조준 중일 때 보간 속도를 '무한대'에 가깝게 높임
+	// 숫자가 낮으면 마우스를 확 돌릴 때 캐릭터가 화면에서 살짝 밀렸다가 돌아오는 '젤리' 현상이 생깁니다.
+	// 50.0f 이상 주면 거의 1:1로 붙어 다닙니다.
+	float InterpSpeed = bIsAiming ? 50.0f : 10.0f;
+
+	CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, TargetArmLengthDest, DeltaTime, InterpSpeed);
+	MainCamera->FieldOfView = FMath::FInterpTo(MainCamera->FieldOfView, TargetFOVDest, DeltaTime, InterpSpeed);
+
+	// TargetOffset이 변할 때 부드럽게 넘어가되, 조준 상태에서는 꽉 잡음
+	CameraBoom->TargetOffset = FMath::VInterpTo(CameraBoom->TargetOffset, TargetOffsetDest, DeltaTime, InterpSpeed);
+	CameraBoom->SocketOffset = FMath::VInterpTo(CameraBoom->SocketOffset, TargetSocketOffsetDest, DeltaTime, InterpSpeed);
 	//추가 - JC End 
 	
 	//Climb
@@ -396,15 +417,22 @@ void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 	if (bIsPistolEquipped && !bIsRunning && !bIsClimbing)
 	{
 		bIsAiming = true;
-		bIsAiming_Anim = true; 
+		bIsAiming_Anim = true;
 
-		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed * 0.5f; //조준 시 이속 감소 
+		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed * 0.5f;
 
-		bUseControllerRotationYaw = true; //조준 시 카메라 방향으로 캐릭터 고정 
+		// [핵심 4] 카메라 랙 완전 제거
+		// 이게 켜져 있으면 회전할 때 캐릭터가 화면 반대편으로 쏠립니다.
+		CameraBoom->bEnableCameraLag = false;
+		CameraBoom->bEnableCameraRotationLag = false;
+
+		// 혹시 모르니 속도값도 최대로
+		CameraBoom->CameraLagSpeed = 1000.0f;
+		CameraBoom->CameraRotationLagSpeed = 1000.0f;
 
 		if (LaserSightComponent)
 		{
-			LaserSightComponent->Activate(true); 
+			LaserSightComponent->Activate(true);
 		}
 	}
 }
@@ -416,7 +444,15 @@ void APrototypeCharacter::StopAiming(const FInputActionValue& Value)
 
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 
-	bUseControllerRotationYaw = false; //조준 해제 시 자유 회전 
+	bUseControllerRotationYaw = false;
+
+	// 조준 해제 시 다시 부드러운 이동을 위해 랙 활성화
+	CameraBoom->bEnableCameraLag = true;
+	CameraBoom->bEnableCameraRotationLag = true;
+
+	// 랙 속도 초기화 (부드러운 느낌으로 복구)
+	CameraBoom->CameraLagSpeed = 15.0f;
+	CameraBoom->CameraRotationLagSpeed = 15.0f;
 
 	if (LaserSightComponent)
 	{

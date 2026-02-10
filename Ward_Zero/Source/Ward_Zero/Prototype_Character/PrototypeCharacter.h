@@ -183,16 +183,19 @@ public:
 
 public:
     UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
-    float AimArmLength = 90.0f; //조준 시 팔 길이 (줌인)
+    float AimArmLength = 80.0f;
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
-    FVector AimSocketOffset = FVector(20.f, 30.0f, 80.0f); //조준 시 어깨 너머 오른쪽
+    FVector AimSocketOffset = FVector(0.f, 0.f, 38.f);
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
-    float AimFOV = 65.0f; //조준 시 시야각
+    FVector AimTargetOffset = FVector(0.0f, 15.0f, 40.0f);
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
-    float AimCameraLagSpeed = 8.0f; //조준 시 카메라 이동  
+    float AimFOV = 55.0f; // 광각을 줄여 집중도 향상
+
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
+    float AimCameraLagSpeed = 15.0f; //조준 시 카메라 이동  
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
     float AimLookSensitivity = 0.5f; //마우스 민감도 
@@ -218,4 +221,7 @@ public:
 
     UPROPERTY(BlueprintReadOnly, Category = "Pistol")
     FVector ElbowIKTargetLocation;
+
+    // [추가] 기본 상태의 TargetOffset
+    FVector DefaultTargetOffset;
 };
