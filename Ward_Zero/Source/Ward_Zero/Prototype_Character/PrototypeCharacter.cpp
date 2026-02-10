@@ -143,10 +143,10 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	float ActualTargetArmLength = bIsAiming ? AimArmLength : StandingArmLength;
 	float ActualTargetFOV = bIsAiming ? AimFOV : 80.f;
 
-	// TargetOffset: 회전의 중심축 (이 값을 Y=60 이상 주어야 캐릭터 중심이 아닌, 캐릭터 우측 허공을 중심으로 돕니다)
+	// TargetOffset: 회전의 중심축
 	FVector AimTargetOffsetVal = FVector(0.0f, 65.0f, 50.0f);
 
-	// SocketOffset: 렌즈 위치 (TargetOffset에서 위치를 잡았으므로 얘는 0에 가깝게 둡니다)
+	// SocketOffset: 렌즈 위치
 	FVector AimSocketOffsetVal = FVector(0.0f, 0.0f, -15.0f);
 
 	// 2. 카메라 위치 목표값 설정
@@ -168,9 +168,6 @@ void APrototypeCharacter::Tick(float DeltaTime)
 		TargetOffsetDest = DefaultTargetOffset + FVector(0.f,0.f,50.f);
 	}
 
-	// [핵심 3] 조준 중일 때 보간 속도를 '무한대'에 가깝게 높임
-	// 숫자가 낮으면 마우스를 확 돌릴 때 캐릭터가 화면에서 살짝 밀렸다가 돌아오는 '젤리' 현상이 생깁니다.
-	// 50.0f 이상 주면 거의 1:1로 붙어 다닙니다.
 	float InterpSpeed = bIsAiming ? 50.0f : 10.0f;
 
 	CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, TargetArmLengthDest, DeltaTime, InterpSpeed);
