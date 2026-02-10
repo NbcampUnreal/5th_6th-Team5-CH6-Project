@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Engine/DataAsset.h"
 #include "MonsterAI/MonsterAI_CHS/Data/Type/MonsterStat.h"
 #include "MonsterAI/MonsterAI_CHS/Data/Type/GameTypes.h"
@@ -15,6 +16,18 @@ class UAnimMontage;
 class USkeletalMesh;
 class UAnimInstance;
 class USoundBase;
+
+USTRUCT(BlueprintType)
+struct FLegHitReactionMontage
+{
+	GENERATED_BODY()
+	public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> LeftLegHitReaction;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> RightLegHitReaction;
+	
+};
 
 USTRUCT(BlueprintType)
 struct FDirectionalMontage
@@ -48,6 +61,18 @@ public:
 	TObjectPtr<UAnimMontage> FromFaceUp;   
 };
 
+USTRUCT(BlueprintType)
+struct FInteractionInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere)
+	UAnimMontage* InteractionMontage;
+
+	UPROPERTY(EditAnywhere)
+	float InteractingDuration = 2.0f;
+	
+};
 UCLASS()
 class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 {
@@ -65,9 +90,11 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	TSubclassOf<UAnimInstance> AnimBP;
 	
 	UPROPERTY(EditAnywhere, Category = "Animation|Idle")
-	TSubclassOf<UAnimMontage> IdleMontage;
+	TObjectPtr<UAnimMontage> IdleMontage;
 	UPROPERTY(EditAnywhere, Category = "Animation|Combat")
-	TObjectPtr<UAnimMontage> AttackMontage;
+	TArray<TObjectPtr<UAnimMontage>> AttackMontages;
+	UPROPERTY(EditAnywhere, Category = "Animation|Chase")
+	TObjectPtr<UAnimMontage> BangTheDoorMontage;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Animation|Combat")
 	FDirectionalMontage CriticalHitReactMontages; 
@@ -76,13 +103,16 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	FDirectionalMontage NormalHitReactMontages; 
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Animation|Combat")
+	FLegHitReactionMontage LegHitReactionMontage;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Animation|Combat")
 	FDirectionalMontage KnockdownMontages; 
 
 	UPROPERTY(EditDefaultsOnly, Category = "Animation|Combat")
 	FGetUpMontage GetUpMontages;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "State")
-	EMonsterMainState StartState = EMonsterMainState::Idle;
+	UPROPERTY(EditAnywhere, Category = "Interaction")
+	TMap<FGameplayTag,FInteractionInfo> InteractionInfoMap;
 	
 	UPROPERTY(EditAnywhere, Category = "State")
 	TMap<EMonsterMainState, FMonsterStateSettings> StateConfigMap;
@@ -114,8 +144,8 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	float AttackDamage = 30.f;
 	
 	
-	UPROPERTY(EditAnywhere, Category = "Chase")
-	float ChaseRange = 2000.f;
+	/*UPROPERTY(EditAnywhere, Category = "Chase")
+	float ChaseRange = 2000.f;*/
 	
 	UPROPERTY(EditAnywhere, Category = "Combat|Stun")
 	float HeadHitStunnedTime = 1.f;
@@ -123,8 +153,14 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	UPROPERTY(EditAnywhere, Category = "Combat|Stun")
 	float BodyHitStunnedTime = 0.f;
 	
-	UPROPERTY(EditAnywhere, Category = "Combat|WeakPoint")
+	/*UPROPERTY(EditAnywhere, Category = "Combat|WeakPoint")
 	FName WeakBoneName = FName("head");
+	
+	UPROPERTY(EditAnywhere, Category = "Combat|WeakPoint")
+	FName LeftLegBoneName = FName("left");
+	
+	UPROPERTY(EditAnywhere, Category = "Combat|WeakPoint")
+	FName RightLegBoneName = FName("right");*/
 	
 	UPROPERTY(EditAnywhere, Category = "Combat|WeakPoint")
 	float WeakSpotDamageMultiplier = 2.0f;

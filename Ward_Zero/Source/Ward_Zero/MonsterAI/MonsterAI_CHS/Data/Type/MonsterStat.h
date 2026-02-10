@@ -8,6 +8,7 @@ enum class EMonsterMainState:uint8
 	Idle,
 	Patrol,
 	Investigate,
+	Interacting,
 	Combat,
 	Dead
 };

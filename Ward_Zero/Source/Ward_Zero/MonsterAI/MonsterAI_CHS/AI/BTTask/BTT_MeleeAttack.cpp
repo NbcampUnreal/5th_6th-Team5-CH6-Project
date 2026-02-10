@@ -16,7 +16,7 @@ EBTNodeResult::Type UBTT_MeleeAttack::ExecuteTask(UBehaviorTreeComponent& OwnerC
 	if (ABaseZombie* Zombie = Cast<ABaseZombie>(AIC->GetPawn()))
 	{
 		AIC->StopMovement();
-		if (Zombie->MonsterData->AttackMontage)
+		if (Zombie->MonsterData->AttackMontages.Num() != 0)
 		{
 			Zombie->GetCombatComponent()->Attack();
 			return EBTNodeResult::InProgress;
