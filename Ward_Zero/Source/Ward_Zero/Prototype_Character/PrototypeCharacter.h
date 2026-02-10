@@ -3,13 +3,15 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 #include "PrototypeCharacter.generated.h"
 
 class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
-
+class ALadder;
 
 UCLASS()
 class WARD_ZERO_API APrototypeCharacter : public ACharacter
@@ -35,6 +37,21 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
     UCameraComponent* MainCamera;
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess = "true"))
+    UStaticMeshComponent* PistolMesh;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon|Effects")
+    UNiagaraSystem* MuzzleFlash;//총구 화염 
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon|Effects")
+    UNiagaraSystem* ImpactEffect;//피격 이펙트
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon|Effects")
+    UNiagaraSystem* LaserSightSystem; //레이저 
+    
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon|Effects")
+    TSubclassOf<UCameraShakeBase> FireCameraShake;
+
     // Enhanced Input Mapping
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
     UInputMappingContext* DefaultMappingContext;
@@ -53,6 +70,18 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
     UInputAction* CrouchAction;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+    UInputAction* InteractAction;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+    UInputAction* EquipAction;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+    UInputAction* AimAction;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+    UInputAction* FireAction;
+
 private:
 
 	bool bIsRunning = false;
@@ -62,6 +91,9 @@ private:
 
     UPROPERTY(EditDefaultsOnly, Category = "Movement")
 	float RunSpeed = 250.0f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Movement")
+    float ClimbSpeed = 150.0f;
 
     UPROPERTY(EditDefaultsOnly, Category = Movement)
     float CrouchMovementSpeed = 150.0f;
@@ -92,7 +124,6 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = Camera)
     float BobHorizontalAmplitude = 1.0f; // 흔들림 강도 (좌우 폭)
 
-
 protected:
     // 이동 처리 함수
 	void Move(const FInputActionValue& Value);
@@ -108,4 +139,83 @@ protected:
 
 	// 크로우치 토글 함수
 	void ToggleCrouch(const FInputActionValue& Value);
+
+    void Interact(const FInputActionValue& Value);
+
+    void ToggleEquip(const FInputActionValue& Value);
+
+    void StartAiming(const FInputActionValue& Value);
+
+    void StopAiming(const FInputActionValue& Value);
+
+    void Fire(const FInputActionValue& Value);
+
+public:
+    //Climbing Var & Fuc 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Climbing")
+    bool bIsClimbing = false; 
+
+    UPROPERTY(BlueprintReadOnly, Category="Climbing")
+    TObjectPtr<ALadder> CurrentLadder = nullptr; 
+
+    UFUNCTION(BlueprintCallable)
+    void StartClimbing(ALadder* Ladder);
+
+    UFUNCTION(BlueprintCallable)
+    void StopClimbing();
+
+    //Turn Var 
+    UPROPERTY(BlueprintReadWrite)
+    bool bIsQuickTurning = false;
+
+public:
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+    bool bIsPistolEquipped = false;
+
+    UPROPERTY(EditAnywhere, Category="Montage")
+    TObjectPtr<UAnimMontage> EquipMontage;
+
+    UPROPERTY(EditAnywhere, Category = "Montage")
+    TObjectPtr<UAnimMontage> UnequipMontage;
+
+    UPROPERTY(EditAnywhere, Category = "Montage")
+    TObjectPtr<UAnimMontage> FireMontage;
+
+public:
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
+    float AimArmLength = 90.0f; //조준 시 팔 길이 (줌인)
+
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
+    FVector AimSocketOffset = FVector(20.f, 30.0f, 80.0f); //조준 시 어깨 너머 오른쪽
+
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
+    float AimFOV = 65.0f; //조준 시 시야각
+
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
+    float AimCameraLagSpeed = 8.0f; //조준 시 카메라 이동  
+
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
+    float AimLookSensitivity = 0.5f; //마우스 민감도 
+
+    UPROPERTY(BlueprintReadOnly, Category = "Weapon")
+    bool bIsAiming_Anim = false;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Pistol|Zoom")
+    bool bIsAiming = false;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Pistol")
+    FVector HandIKTargetLocation;
+
+private:
+    UPROPERTY()
+    TObjectPtr<UNiagaraComponent> LaserSightComponent;
+
+    void UpdateLaserSight();
+
+public:
+    UPROPERTY(BlueprintReadOnly, Category = "Pistol")
+    FVector HandIKTargetLocations;  // 손 타겟 (기존)
+
+    UPROPERTY(BlueprintReadOnly, Category = "Pistol")
+    FVector ElbowIKTargetLocation;
 };
