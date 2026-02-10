@@ -14,4 +14,5 @@ namespace WZAIKeys
 	const FName IsWithinAttackRange = TEXT("IsWithinAttackRange");
 	const FName MainState = TEXT("MainState");
 	const FName SubState = TEXT("SubState");
+	const FName InterActingObject = TEXT("InteractingObject");
 }

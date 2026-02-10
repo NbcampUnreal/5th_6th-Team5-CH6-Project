@@ -18,6 +18,13 @@ enum class EHitPart: uint8
 	LegRight,
 };
 
+UENUM(BlueprintType)
+enum class EInteractableObject: uint8
+{
+	Door,
+	Window,
+};
+
 namespace GPTags
 {
 	const FName Head = FName("Combat.HitPart.Head");
