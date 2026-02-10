@@ -2,12 +2,14 @@
 
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Engine/DamageEvents.h"
+#include "GameplayTagContainer.h"
 #include "MonsterAI/MonsterAI_CHS/Data/Type/GameTypes.h"
 #include "MonsterAI/MonsterAI_CHS/AI/BaseZombie_AIController.h"
 #include "MonsterAI/MonsterAI_CHS/AI/WZAIKeys.h"
 #include "MonsterAI/MonsterAI_CHS/Component/StatusComponent.h"
 #include "MonsterAI/MonsterAI_CHS/Data/MonsterDataAsset.h"
 #include "MonsterAI/MonsterAI_CHS/Entity/BaseZombie.h"
+#include "MonsterAI/MonsterAI_CHS/Physics/TagPhysicalMaterial.h"
 #include "MonsterAI/MonsterAI_CHS/Weapon/WZDamageType.h"
 
 
@@ -50,12 +52,13 @@ void UCombatComponent::ApplyKnockdown(EHitDirection HitDir)
 	
 }
 
-void UCombatComponent::ApplyStun(EHitDirection HitDir, bool bIsCriticalHit)
+void UCombatComponent::ApplyStun(EHitDirection HitDir, EHitPart HitPart)
 {
-	if (StatusComp->GetIsRecoveringCC() && StatusComp->GetIsKnockdownSuperArmor())
+	/*if (StatusComp->GetIsRecoveringCC() && StatusComp->GetIsKnockdownSuperArmor())
 	{
 		return;
-	}
+	}*/
+	
 	ABaseZombie* Owner = Cast<ABaseZombie>(GetOwner());
 	if (!Owner)
 	{
@@ -67,15 +70,48 @@ void UCombatComponent::ApplyStun(EHitDirection HitDir, bool bIsCriticalHit)
 		return;
 	}
 	UAnimMontage* MontageToPlay = nullptr;
-	
-	
-	switch (HitDir)
+	if (bIsAttacking)
 	{
+		Owner->StopAnimMontage();
+	}
+	if (HitPart == EHitPart::Head)
+	{
+		switch (HitDir)
+		{
+		case EHitDirection::Front: MontageToPlay = MonsterData->CriticalHitReactMontages.Front; break;
+		case EHitDirection::Back: MontageToPlay = MonsterData->CriticalHitReactMontages.Back; break;
+		case EHitDirection::Left: MontageToPlay = MonsterData->CriticalHitReactMontages.Left; break;
+		case EHitDirection::Right: MontageToPlay = MonsterData->CriticalHitReactMontages.Right; break;
+
+		}
+	}else if (HitPart == EHitPart::Body)
+	{
+		switch (HitDir)
+		{
 		case EHitDirection::Front: MontageToPlay = MonsterData->NormalHitReactMontages.Front; break;
 		case EHitDirection::Back:  MontageToPlay = MonsterData->NormalHitReactMontages.Back; break;
 		case EHitDirection::Left:  MontageToPlay = MonsterData->NormalHitReactMontages.Left; break;
 		case EHitDirection::Right: MontageToPlay = MonsterData->NormalHitReactMontages.Right; break;
+		}
+	}else
+	{
+		if (StatusComp->GetIsRecoveringCC())
+		{
+			return;
+		}
+		StatusComp->SetIsRecoveringCC(true);
+		AIC->StopMovement();
+		AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsLegFalling,true);
+		if (HitPart == EHitPart::LegLeft)
+		{
+			MontageToPlay = MonsterData->LegHitReactionMontage.LeftLegHitReaction;
+		}else if (HitPart == EHitPart::LegRight)
+		{
+			MontageToPlay = MonsterData->LegHitReactionMontage.RightLegHitReaction;
+		}
 	}
+	
+	
 	
 	
 
@@ -83,8 +119,6 @@ void UCombatComponent::ApplyStun(EHitDirection HitDir, bool bIsCriticalHit)
 	{
 		AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsStunned,true);
 		Owner->PlayAnimM(MontageToPlay);
-		AIC->StopMovement(); 
-		
 	}
 	
 }
@@ -105,10 +139,15 @@ void UCombatComponent::OnDeath()
 void UCombatComponent::Attack()
 {
 	//UE_LOG(LogTemp,Warning,TEXT("CombatComp Attack Func start"))
+	SetIsAttacking(true);
 	ABaseZombie* Owner = Cast<ABaseZombie>(GetOwner());
 	if (!Owner) return;
 	UAnimMontage* MontageToPlay = nullptr;
-	MontageToPlay = MonsterData->AttackMontage;
+	if (MonsterData->AttackMontages.Num() != 0)
+	{
+		int32 Randindex = FMath::RandRange(0,100) % MonsterData->AttackMontages.Num();
+		MontageToPlay = MonsterData->AttackMontages[Randindex];
+	}
 	if (MontageToPlay)
 	{
 		//UE_LOG(LogTemp,Warning,TEXT("CallAttack Montage"))
@@ -116,36 +155,35 @@ void UCombatComponent::Attack()
 	}
 }
 
-void UCombatComponent::ProcessDamageLogic(float Damage, FName HitBone, const FVector& AttackDir,
-	const UWZDamageType* DamageType, AActor* DamageCauser)
+bool UCombatComponent::GetIsAttacking()
 {
-	EHitDirection HitDir = EHitDirection::Front;
-	if (DamageType->DamageSource == EDamageSource::Gun)
+	return bIsAttacking;
+}
+
+void UCombatComponent::SetIsAttacking(bool isAttacking)
+{
+	bIsAttacking = isAttacking;
+}
+
+void UCombatComponent::ProcessDamageLogic(float Damage, EHitPart HitPart, const FVector& AttackDir,
+                                          const UWZDamageType* DamageType, AActor* DamageCauser)
+{
+	EHitDirection HitDir = GetHitDirection(AttackDir);
+	
+	if (HitPart == EHitPart::Head)
 	{
-		HitDir = GetHitDirection(AttackDir);
 		float KnockdownChance = DamageType->KnockdownProbability * (1 - StatusComp->GetResistKnockdown());
-		bool bIsCriticalHit =  (HitBone == StatusComp->GetWeakBoneName());
-		UE_LOG(LogTemp,Warning,TEXT("Hit! CurrentHP: %f, HitBone: %s, WeakBone: %s, bIsCritical: %hs"),StatusComp->GetCurrentHP(),*HitBone.ToString(),*StatusComp->GetWeakBoneName().ToString(), bIsCriticalHit ? "true" : "false");
-		if (bIsCriticalHit)
+		if (StatusComp->ApplyDamage(Damage,true) <= 0.0f)
 		{
-			UE_LOG(LogTemp,Warning,TEXT("Critical"));
-			if (StatusComp->ApplyDamage(Damage,bIsCriticalHit) <= 0.0f)
-			{
-				UE_LOG(LogTemp,Warning,TEXT("Death"));
-				OnDeath();
-			}else if (FMath::RandRange(0.0f,100.0f) < KnockdownChance)
-			{
-				UE_LOG(LogTemp,Warning,TEXT("Knockdown"));
-				ApplyKnockdown(HitDir);
-			}
+			UE_LOG(LogTemp,Warning,TEXT("Death"));
+			OnDeath();
+		}else if (FMath::RandRange(0.0f,100.0f) < KnockdownChance)
+		{
+			UE_LOG(LogTemp,Warning,TEXT("Knockdown"));
+			ApplyKnockdown(HitDir);
 		}else
 		{
-			StatusComp->ApplyDamage(Damage,bIsCriticalHit);
-			if (StatusComp->GetIsRecoveringCC() && StatusComp->GetIsKnockdownSuperArmor())
-			{
-				return;
-			}
-			ApplyStun(HitDir,bIsCriticalHit);
+			ApplyStun(HitDir, HitPart);
 		}
 	}else
 	{
@@ -154,7 +192,7 @@ void UCombatComponent::ProcessDamageLogic(float Damage, FName HitBone, const FVe
 		{
 			return;
 		}
-		ApplyStun(HitDir,false);
+		ApplyStun(HitDir, HitPart);
 	}
 	
 }
@@ -164,13 +202,34 @@ void UCombatComponent::HandleAllDamage(float Damage, FDamageEvent const& DamageE
 {
 	const UWZDamageType* WZDamageType = Cast<UWZDamageType>(DamageEvent.DamageTypeClass.GetDefaultObject());
     
-	FName HitBone = NAME_None;
+	//FName HitBone = NAME_None;
 	FVector HitDir = FVector::ZeroVector;
-
+	EHitPart HitPart = EHitPart::Body;
 	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
 	{
+		StatusComp->SetMainState(EMonsterMainState::Combat);
+		
 		const FPointDamageEvent* PointDamageEvent = static_cast<const FPointDamageEvent*>(&DamageEvent);
-		HitBone = PointDamageEvent->HitInfo.BoneName;
+		
+		if (UTagPhysicalMaterial* PM = Cast<UTagPhysicalMaterial>(PointDamageEvent->HitInfo.PhysMaterial.Get()))
+		{
+			FGameplayTag HitTag = PM->HitPartTag;
+			if (HitTag.MatchesTag(FGameplayTag::RequestGameplayTag(GPTags::Head)))
+			{
+				UE_LOG(LogTemp,Warning,TEXT("Hit Tag Head"))
+				HitPart = EHitPart::Head;
+			}else if (HitTag.MatchesTag(FGameplayTag::RequestGameplayTag(GPTags::LegLeft)))
+			{
+				UE_LOG(LogTemp,Warning,TEXT("Hit Tag Letf Leg"))
+
+				HitPart = EHitPart::LegLeft;
+			}else if (HitTag.MatchesTag(FGameplayTag::RequestGameplayTag(GPTags::LegRight)))
+			{
+				UE_LOG(LogTemp,Warning,TEXT("Hit Tag Right Leg"))
+
+				HitPart = EHitPart::LegRight;
+			}
+		}
 		HitDir = PointDamageEvent->ShotDirection;
 	}
 	else
@@ -181,7 +240,7 @@ void UCombatComponent::HandleAllDamage(float Damage, FDamageEvent const& DamageE
 		}
 	}
 
-	ProcessDamageLogic(Damage, HitBone, HitDir, WZDamageType, DamageCauser);
+	ProcessDamageLogic(Damage, HitPart, HitDir, WZDamageType, DamageCauser);
 }
 
 EHitDirection UCombatComponent::GetHitDirection(const FVector& ShotDirection)

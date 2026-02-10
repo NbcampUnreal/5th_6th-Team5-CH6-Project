@@ -8,6 +8,7 @@
 
 #include "BaseZombie_AIController.generated.h"
 
+struct FGameplayTag;
 struct FAIStimulus;
 /**
  * 
@@ -18,13 +19,10 @@ class WARD_ZERO_API ABaseZombie_AIController : public AAIController
 	GENERATED_BODY()
 public:
 	void UpdatePerceptionConfig();
+
+	UFUNCTION()
+	void HandleInteractionRequest(FGameplayTag InteractingTag,const FVector& Destination);
 	
-	/*FBlackboard::FKey TargetActorKeyID;
-	FBlackboard::FKey IsStunnedKeyID;
-	FBlackboard::FKey IsKnockdownKeyID;
-	FBlackboard::FKey LastKnownLocationKeyID;
-	FBlackboard::FKey InvestigateLocationKeyID;
-	FBlackboard::FKey IsDeadKeyID;*/
 	
 protected:
 	ABaseZombie_AIController();
@@ -40,7 +38,6 @@ protected:
 	void HandleSubStateChange(EMonsterSubState NewState);
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
-	
 	
 	
 	UFUNCTION()

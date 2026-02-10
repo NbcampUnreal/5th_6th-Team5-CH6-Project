@@ -49,10 +49,13 @@ void UStatusComponent::SetSubState(EMonsterSubState NewState)
 	if (SubState == NewState) return;
 	switch (NewState)
 	{
+	case EMonsterSubState::Stun:
+		bIsRecoveringCC = true;
+		SetMainState(EMonsterMainState::Combat);
+		break;
 	case EMonsterSubState::Attack:
 	case EMonsterSubState::Chase:
 	case EMonsterSubState::Knockdown:
-	case EMonsterSubState::Stun:
 		SetMainState(EMonsterMainState::Combat);
 		break;
 	default:
@@ -60,6 +63,11 @@ void UStatusComponent::SetSubState(EMonsterSubState NewState)
 	}
 	SubState = NewState;
 	OnSubStateChanged.Broadcast(SubState);
+}
+
+EMonsterMainState UStatusComponent::GetStartState() const
+{
+	return StartState;
 }
 
 
@@ -119,14 +127,14 @@ float UStatusComponent::GetAttackRange() const
 	return MonsterData->AttackRange;
 }
 
-float UStatusComponent::GetChaseRange() const
+/*float UStatusComponent::GetChaseRange() const
 {
 	if (!MonsterData)
 	{
 		return 1000.0f;
 	}
 	return MonsterData->ChaseRange;
-}
+}*/
 
 float UStatusComponent::GetEyeHeight() const
 {
@@ -255,7 +263,7 @@ bool UStatusComponent::SetIsRecoveringCC(bool b)
 	return bIsRecoveringCC;
 }
 
-FName UStatusComponent::GetWeakBoneName() const
+/*FName UStatusComponent::GetWeakBoneName() const
 {
 	if (!MonsterData)
 	{
@@ -263,6 +271,24 @@ FName UStatusComponent::GetWeakBoneName() const
 	}
 	return MonsterData->WeakBoneName;
 }
+
+FName UStatusComponent::GetLeftBoneName() const
+{
+	if (!MonsterData)
+	{
+		return "None";
+	}
+	return MonsterData->LeftLegBoneName;
+}
+
+FName UStatusComponent::GetRightBoneName() const
+{
+	if (!MonsterData)
+	{
+		return "None";
+	}
+	return MonsterData->RightLegBoneName;
+}*/
 
 float UStatusComponent::ApplyDamage(float Amount, bool bIsCritical)
 {

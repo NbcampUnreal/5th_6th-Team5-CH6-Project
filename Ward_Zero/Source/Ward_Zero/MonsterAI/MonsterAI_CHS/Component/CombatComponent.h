@@ -20,16 +20,18 @@ class WARD_ZERO_API UCombatComponent : public UActorComponent
 public:
 	// Sets default values for this component's properties
 	UCombatComponent();
-	void ProcessDamageLogic(float Damage, FName HitBone, const FVector& AttackDir, const UWZDamageType* DamageType, AActor* DamageCauser);
+	void ProcessDamageLogic(float Damage, EHitPart HitPart, const FVector& AttackDir, const UWZDamageType* DamageType, AActor* DamageCauser);
 	void HandleAllDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser);
 	void Attack();
+	bool GetIsAttacking();
+	void SetIsAttacking(bool isAttacking);
 
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 	
 	void ApplyKnockdown(EHitDirection HitDir);
-	void ApplyStun(EHitDirection HitDir, bool bIsCriticalHit);
+	void ApplyStun(EHitDirection HitDir, EHitPart HitPart);
 	void OnDeath();
 	
 
@@ -46,6 +48,9 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	                           FActorComponentTickFunction* ThisTickFunction) override;
+	
+	private:
+	bool bIsAttacking;
 };
 
 
