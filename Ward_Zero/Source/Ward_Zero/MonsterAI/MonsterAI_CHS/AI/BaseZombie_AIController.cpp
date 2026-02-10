@@ -4,6 +4,7 @@
 #include "MonsterAI/MonsterAI_CHS/AI/BaseZombie_AIController.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "MonsterAI/MonsterAI_CHS/Component/StatusComponent.h"
 #include "MonsterAI/MonsterAI_CHS/Entity/BaseZombie.h"
 #include "Perception/AIPerceptionComponent.h"
@@ -55,6 +56,10 @@ void ABaseZombie_AIController::BeginPlay()
 void ABaseZombie_AIController::HandleMainStateChange(EMonsterMainState NewState)
 {
 	GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::MainState,static_cast<uint8>(NewState));
+	if (NewState == EMonsterMainState::Combat)
+	{
+		GetBlackboardComponent()->SetValueAsObject(WZAIKeys::TargetActor,UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+	}
 }
 
 void ABaseZombie_AIController::HandleSubStateChange(EMonsterSubState NewState)
