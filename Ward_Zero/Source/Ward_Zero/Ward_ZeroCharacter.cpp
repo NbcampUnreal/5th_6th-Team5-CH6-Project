@@ -12,7 +12,6 @@
 #include "InputActionValue.h"
 #include "Ward_Zero.h"
 
-
 AWard_ZeroCharacter::AWard_ZeroCharacter()
 {
 	// Set size for collision capsule

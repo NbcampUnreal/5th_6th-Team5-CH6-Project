@@ -18,8 +18,12 @@ public class Ward_Zero : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
-		});
+			"Slate",
+			"Niagara",
+            "GameplayTags",
+            "PhysicsCore",
+            "NavigationSystem"
+        });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
