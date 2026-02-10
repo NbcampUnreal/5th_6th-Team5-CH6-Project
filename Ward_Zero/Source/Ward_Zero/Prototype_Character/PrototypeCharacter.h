@@ -189,7 +189,7 @@ public:
     FVector AimSocketOffset = FVector(0.f, 0.f, 38.f);
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
-    FVector AimTargetOffset = FVector(0.0f, 15.0f, 40.0f);
+    FVector AimTargetOffset = FVector(0.0f, 15.f, 30.0f);
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
     float AimFOV = 55.0f; // 광각을 줄여 집중도 향상

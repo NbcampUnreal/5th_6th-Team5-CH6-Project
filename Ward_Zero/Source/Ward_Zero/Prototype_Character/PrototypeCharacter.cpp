@@ -46,7 +46,7 @@ APrototypeCharacter::APrototypeCharacter()
 	MainCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("MainCamera"));
 	MainCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	MainCamera->bUsePawnControlRotation = false;
-	MainCamera->FieldOfView = 80.0f;
+	MainCamera->FieldOfView = 60.0f;
 
 	PistolMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PistolMesh"));
 	if (PistolMesh)
