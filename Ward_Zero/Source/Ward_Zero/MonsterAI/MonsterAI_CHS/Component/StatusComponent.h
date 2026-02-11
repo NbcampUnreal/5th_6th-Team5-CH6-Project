@@ -29,7 +29,8 @@ public:
 	
 	void SetMainState(EMonsterMainState NewState);
 	void SetSubState(EMonsterSubState NewState);
-	
+	EMonsterMainState GetMainState() const;
+	EMonsterSubState GetSubState() const;
 	EMonsterMainState GetStartState() const;
 	
 	float GetBaseSpeed() const;

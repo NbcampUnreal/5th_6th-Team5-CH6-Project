@@ -1,5 +1,6 @@
 ﻿#include "Prototype_Character/PrototypeCharacter.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "UI_KWJ/Reading/DocumentSubsystem.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
@@ -535,6 +536,20 @@ void APrototypeCharacter::CheckRunState()
 
 void APrototypeCharacter::Interact(const FInputActionValue& Value)
 {
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC)
+	{
+		ULocalPlayer* LP = PC->GetLocalPlayer();
+		if (LP)
+		{
+			UDocumentSubsystem* DocSubsystem = LP->GetSubsystem<UDocumentSubsystem>();
+			if (DocSubsystem && DocSubsystem->IsDocumentOpen())
+			{
+				DocSubsystem->CloseDocument();
+				return;
+			}
+		}
+	}
 	if (bIsClimbing)
 	{
 		StopClimbing(); 
