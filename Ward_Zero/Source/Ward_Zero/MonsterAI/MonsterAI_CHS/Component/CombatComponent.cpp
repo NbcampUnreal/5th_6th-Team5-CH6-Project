@@ -47,7 +47,6 @@ void UCombatComponent::ApplyKnockdown(EHitDirection HitDir)
 	}
 	if (StatusComp->GetIsRecoveringCC())
 	{
-		UE_LOG(LogTemp,Warning,TEXT("Knockdown: recoveringcc is true"));
 		return;
 	}
 	
@@ -128,7 +127,6 @@ void UCombatComponent::ApplyStun(EHitDirection HitDir, EHitPart HitPart)
 	}
 	if (HitPart == EHitPart::Head)
 	{
-		UE_LOG(LogTemp,Warning,TEXT("Appy Stun: hitpart head"));
 		switch (HitDir)
 		{
 		case EHitDirection::Front: MontageToPlay = MonsterData->CriticalHitReactMontages.Front; break;
@@ -139,7 +137,6 @@ void UCombatComponent::ApplyStun(EHitDirection HitDir, EHitPart HitPart)
 		}
 	}else if (HitPart == EHitPart::Body)
 	{
-		UE_LOG(LogTemp,Warning,TEXT("Appy Stun: hitpart body"));
 
 		switch (HitDir)
 		{
@@ -150,7 +147,6 @@ void UCombatComponent::ApplyStun(EHitDirection HitDir, EHitPart HitPart)
 		}
 	}else
 	{
-		UE_LOG(LogTemp,Warning,TEXT("Appy Stun: hitpart leg"));
 
 		if (StatusComp->GetIsRecoveringCC())
 		{
@@ -175,7 +171,6 @@ void UCombatComponent::ApplyStun(EHitDirection HitDir, EHitPart HitPart)
 
 	if (MontageToPlay)
 	{
-		UE_LOG(LogTemp,Warning,TEXT("Apply Stun: isrecoveringcc is %S"),StatusComp->GetIsRecoveringCC() ? "true" : "false");
 		AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsStunned,true);
 		Owner->PlayAnimM(MontageToPlay);
 	}

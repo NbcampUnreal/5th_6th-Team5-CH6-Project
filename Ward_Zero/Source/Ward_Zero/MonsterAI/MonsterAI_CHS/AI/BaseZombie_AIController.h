@@ -20,8 +20,9 @@ class WARD_ZERO_API ABaseZombie_AIController : public AAIController
 public:
 	void UpdatePerceptionConfig();
 
+	
 	UFUNCTION()
-	void HandleInteractionRequest(FGameplayTag InteractingTag,const FVector& Destination);
+	void HandleInteractionRequest(FGameplayTag InteractingTag,const FVector& Destination, AActor* Interactor);
 	
 	
 protected:
@@ -39,6 +40,8 @@ protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
 	
+	UFUNCTION()
+	void StopInteracting();
 	
 	UFUNCTION()
     void OnTargetDetected(AActor* Actor, FAIStimulus Stimulus);

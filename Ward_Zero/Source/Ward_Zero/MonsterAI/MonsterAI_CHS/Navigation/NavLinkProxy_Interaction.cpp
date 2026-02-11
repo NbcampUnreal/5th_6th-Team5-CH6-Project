@@ -26,6 +26,6 @@ void ANavLinkProxy_Interaction::HandleSmartLinkReached(AActor* Agent, const FVec
 	{
 		UE_LOG(LogTemp, Warning,TEXT("Link call AIC"));
 		AIC->StopMovement();
-		AIC->HandleInteractionRequest(InteractionTag, Destination);
+		AIC->HandleInteractionRequest(InteractionTag, Destination,InteractedObject);
 	}
 }
