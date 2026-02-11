@@ -70,6 +70,10 @@ void UCombatComponent::ApplyStun(EHitDirection HitDir, EHitPart HitPart)
 		return;
 	}
 	UAnimMontage* MontageToPlay = nullptr;
+	if (StatusComp)
+	{
+		StatusComp->SetSubState(EMonsterSubState::Stun);
+	}
 	if (bIsAttacking)
 	{
 		Owner->StopAnimMontage();
@@ -140,6 +144,10 @@ void UCombatComponent::Attack()
 {
 	//UE_LOG(LogTemp,Warning,TEXT("CombatComp Attack Func start"))
 	SetIsAttacking(true);
+	if (StatusComp)
+	{
+		StatusComp->SetSubState(EMonsterSubState::Attack);
+	}
 	ABaseZombie* Owner = Cast<ABaseZombie>(GetOwner());
 	if (!Owner) return;
 	UAnimMontage* MontageToPlay = nullptr;

@@ -17,11 +17,6 @@
 
 ABaseZombie_AIController::ABaseZombie_AIController()
 {
-	ConstructorHelpers::FObjectFinder<UBehaviorTree>BT(TEXT("BehaviorTree'/Game/MonsterAI_CHS/BT_BaseZombie'"));
-	if (BT.Succeeded())
-	{
-		BT_BaseZombie = BT.Object;
-	}
 	AIPerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComp"));
 	UAISenseConfig_Sight* SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
 	UAISenseConfig_Hearing* HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("HearingConfig"));
@@ -60,6 +55,7 @@ void ABaseZombie_AIController::BeginPlay()
 void ABaseZombie_AIController::HandleMainStateChange(EMonsterMainState NewState)
 {
 	GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::MainState,static_cast<uint8>(NewState));
+	UE_LOG(LogTemp,Warning,TEXT("Change Main State"));
 	if (NewState == EMonsterMainState::Combat)
 	{
 		GetBlackboardComponent()->SetValueAsObject(WZAIKeys::TargetActor,UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
@@ -96,22 +92,38 @@ void ABaseZombie_AIController::OnUnPossess()
 
 void ABaseZombie_AIController::HandleInteractionRequest(FGameplayTag InteractingTag, const FVector& Destination)
 {
-	/*ABaseZombie* Zombie = Cast<ABaseZombie>(GetOwner());
-	if (!Zombie->GetMonsterData()) return;
-	EInteractableObject IO = EInteractableObject::Door;
-	switch (InteractingTag)
+	UE_LOG(LogTemp,Warning,TEXT("AIC recieve interaction request"));
+	if (StatusComp->GetMainState() ==  EMonsterMainState::Patrol)
 	{
-	case GPTags::Door: IO =EInteractableObject::Door; break;
-	case GPTags::Window: IO =EInteractableObject::Window; break;
-	default:
-		break;
+		StatusComp->SetMainState(EMonsterMainState::Idle);
+		StatusComp->SetMainState(EMonsterMainState::Patrol);
+		UE_LOG(LogTemp,Warning,TEXT("Don't Interaction (State:Patrol)"));
+		return;
 	}
+	
+	ABaseZombie* Zombie = Cast<ABaseZombie>(GetPawn());
+	if (!Zombie)
+	{
+		UE_LOG(LogTemp, Error, TEXT("HandleInteractionRequest: Zombie is null"));
+		return;
+	}
+
+	const UMonsterDataAsset* Data = Zombie->GetMonsterData();
+	if (!Data)
+	{
+		UE_LOG(LogTemp, Error, TEXT("MonsterData is null"));
+		return;
+	}
+	if (!Zombie->GetMonsterData()) return;
+	
+	
 	const FInteractionInfo* Info = Zombie->GetMonsterData()->InteractionInfoMap.Find(InteractingTag);
 	if (Info && Info->InteractionMontage)
 	{
-		GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::MainState,static_cast<uint8>(EMonsterMainState::Interacting));
-		GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::InterActingObject,static_cast<uint8>(IO));
-	}*/
+		UE_LOG(LogTemp,Warning,TEXT("AIC write blackboard keys"));
+		StatusComp->SetMainState(EMonsterMainState::Interacting);
+		GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::InterActingObject,static_cast<uint8>(Info->InteractableObject));
+	}
 }
 
 
