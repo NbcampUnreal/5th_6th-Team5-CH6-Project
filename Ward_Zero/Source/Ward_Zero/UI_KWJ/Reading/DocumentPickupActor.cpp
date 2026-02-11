@@ -3,7 +3,7 @@
 #include "UI_KWJ/Reading/DocumentPickupActor.h"
 #include "UI_KWJ/Reading/DocumentData.h"
 #include "UI_KWJ/Reading/DocumentSubsystem.h"
-#include "Prototype_Character/PrototypeCharacter.h"
+#include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
 #include "Ward_Zero.h"
