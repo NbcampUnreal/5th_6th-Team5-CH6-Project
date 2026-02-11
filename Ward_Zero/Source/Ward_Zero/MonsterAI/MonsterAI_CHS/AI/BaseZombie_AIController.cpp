@@ -95,8 +95,8 @@ void ABaseZombie_AIController::HandleInteractionRequest(FGameplayTag Interacting
 	UE_LOG(LogTemp,Warning,TEXT("AIC recieve interaction request"));
 	if (StatusComp->GetMainState() ==  EMonsterMainState::Patrol)
 	{
-		StatusComp->SetMainState(EMonsterMainState::Idle);
-		StatusComp->SetMainState(EMonsterMainState::Patrol);
+		/*StatusComp->SetMainState(EMonsterMainState::Idle);
+		StatusComp->SetMainState(EMonsterMainState::Patrol);*/
 		UE_LOG(LogTemp,Warning,TEXT("Don't Interaction (State:Patrol)"));
 		return;
 	}
