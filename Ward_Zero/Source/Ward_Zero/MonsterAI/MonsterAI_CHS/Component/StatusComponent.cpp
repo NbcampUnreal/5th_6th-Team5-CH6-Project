@@ -50,9 +50,6 @@ void UStatusComponent::SetSubState(EMonsterSubState NewState)
 	switch (NewState)
 	{
 	case EMonsterSubState::Stun:
-		bIsRecoveringCC = true;
-		SetMainState(EMonsterMainState::Combat);
-		break;
 	case EMonsterSubState::Attack:
 	case EMonsterSubState::Chase:
 	case EMonsterSubState::Knockdown:
@@ -63,6 +60,16 @@ void UStatusComponent::SetSubState(EMonsterSubState NewState)
 	}
 	SubState = NewState;
 	OnSubStateChanged.Broadcast(SubState);
+}
+
+EMonsterMainState UStatusComponent::GetMainState() const
+{
+	return MainState;
+}
+
+EMonsterSubState UStatusComponent::GetSubState() const
+{
+	return SubState;
 }
 
 EMonsterMainState UStatusComponent::GetStartState() const
