@@ -65,6 +65,16 @@ void UStatusComponent::SetSubState(EMonsterSubState NewState)
 	OnSubStateChanged.Broadcast(SubState);
 }
 
+EMonsterMainState UStatusComponent::GetMainState() const
+{
+	return MainState;
+}
+
+EMonsterSubState UStatusComponent::GetSubState() const
+{
+	return SubState;
+}
+
 EMonsterMainState UStatusComponent::GetStartState() const
 {
 	return StartState;
