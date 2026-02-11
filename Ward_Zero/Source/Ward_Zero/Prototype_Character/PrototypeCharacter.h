@@ -13,6 +13,15 @@ class UInputMappingContext;
 class UInputAction;
 class ALadder;
 
+UENUM(BlueprintType)
+enum class EPlayerHitDirection : uint8
+{
+    Front,
+    Back,
+    Left,
+    Right
+};
+
 UCLASS()
 class WARD_ZERO_API APrototypeCharacter : public ACharacter
 {
@@ -27,6 +36,11 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+    virtual float TakeDamage(
+        float DamageAmount, 
+        struct FDamageEvent const& DamageEvent, 
+        class AController* EventInstigator, 
+        AActor* DamageCauser) override;
 
 protected:
     // 카메라 붐
@@ -101,7 +115,7 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = Camera)
     float CrouchedArmLength = 130.0f;
 
-    float StandingArmLength = 150.0f;
+    float StandingArmLength = 180.0f;
 
     UPROPERTY(EditDefaultsOnly, Category = Movement)
     float WalkTurnRate = 2.5f;
@@ -109,7 +123,7 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = Camera)
     float CrouchedCameraHeight = 40.0f;
 
-    float StandingCameraHeight = 30.0f;
+    float StandingCameraHeight = 45.0f;
 
     float CurrentBaseCameraZ = StandingCameraHeight;
 
@@ -183,7 +197,7 @@ public:
 
 public:
     UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
-    float AimArmLength = 80.0f;
+    float AimArmLength = 60.0f;
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
     FVector AimSocketOffset = FVector(0.f, 0.f, 38.f);
@@ -192,7 +206,7 @@ public:
     FVector AimTargetOffset = FVector(0.0f, 15.f, 30.0f);
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
-    float AimFOV = 55.0f; // 광각을 줄여 집중도 향상
+    float AimFOV = 45.0f; // 광각을 줄여 집중도 향상
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
     float AimCameraLagSpeed = 15.0f; //조준 시 카메라 이동  
@@ -214,6 +228,7 @@ private:
     TObjectPtr<UNiagaraComponent> LaserSightComponent;
 
     void UpdateLaserSight();
+    void CalculateAimOffset();
 
 public:
     UPROPERTY(BlueprintReadOnly, Category = "Pistol")
@@ -224,4 +239,63 @@ public:
 
     // [추가] 기본 상태의 TargetOffset
     FVector DefaultTargetOffset;
+
+protected:
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
+    FName AimCameraSocketName = TEXT("head"); // 또는 적절한 본 이름
+
+    bool bWasUsingPawnControlRotation = false;
+    FVector OriginalSocketOffset;
+    FVector OriginalTargetOffset;
+
+public:
+    UPROPERTY(BlueprintReadOnly, Category = "Weapon")
+    float AimPitch;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Weapon")
+    float AimYaw;
+
+public:
+    TSubclassOf<UDamageType> DamageType; 
+
+protected:
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Status")
+    float MaxHealth = 100.f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Status")
+    float CurrHealth;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Status")
+    bool bIsDead = false; 
+
+    //Hit Montage
+    UPROPERTY(EditDefaultsOnly, Category="Montage")
+    TObjectPtr<UAnimMontage> HitMontage_Front;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Montage")
+    TObjectPtr<UAnimMontage> HitMontage_Back;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Montage")
+    TObjectPtr<UAnimMontage> HitMontage_Right;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Montage")
+    TObjectPtr<UAnimMontage> HitMontage_Left;
+    
+    //Death Montage
+    UPROPERTY(EditDefaultsOnly, Category = "Montage")
+    TObjectPtr<UAnimMontage> DeathMontage_Front;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Montage")
+    TObjectPtr<UAnimMontage> DeathMontage_Back;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Montage")
+    TObjectPtr<UAnimMontage> DeathMontage_Left;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Montage")
+    TObjectPtr<UAnimMontage> DeathMontage_Right;
+
+private:
+    void PlayHitReaction(const FVector& ToAttackerDir);
+    void PlayDeathReaction(const FVector& ToAttackerDir);
+    EPlayerHitDirection GetHitDirection(const FVector& ToAttackerDir);
 };
