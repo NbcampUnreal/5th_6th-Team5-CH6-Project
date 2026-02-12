@@ -23,6 +23,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	
-	UFUNCTION(BlueprintCallable, Category = "Interaction")
+	UFUNCTION()
 	void HandleSmartLinkReached(AActor* Agent, const FVector& Destination);
 };

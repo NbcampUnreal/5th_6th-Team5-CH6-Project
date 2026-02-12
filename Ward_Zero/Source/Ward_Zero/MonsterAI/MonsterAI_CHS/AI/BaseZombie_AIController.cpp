@@ -13,11 +13,15 @@
 #include "Perception/AISenseConfig_Hearing.h"
 #include "MonsterAI/MonsterAI_CHS/AI/WZAIKeys.h"
 #include "MonsterAI/MonsterAI_CHS/Data/MonsterDataAsset.h"
-#include "MonsterAI/MonsterAI_CHS/Object/ZombieInteractableInterface.h"
 #include "Navigation/PathFollowingComponent.h"
 
 ABaseZombie_AIController::ABaseZombie_AIController()
 {
+	ConstructorHelpers::FObjectFinder<UBehaviorTree>BT(TEXT("BehaviorTree'/Game/MonsterAI_CHS/BT_BaseZombie'"));
+	if (BT.Succeeded())
+	{
+		BT_BaseZombie = BT.Object;
+	}
 	AIPerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComp"));
 	UAISenseConfig_Sight* SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
 	UAISenseConfig_Hearing* HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("HearingConfig"));
@@ -90,51 +94,24 @@ void ABaseZombie_AIController::OnUnPossess()
 	StatusComp = nullptr;
 }
 
-void ABaseZombie_AIController::StopInteracting()
+void ABaseZombie_AIController::HandleInteractionRequest(FGameplayTag InteractingTag, const FVector& Destination)
 {
-	StatusComp->SetMainState(EMonsterMainState::Combat);
-	GetBlackboardComponent()->SetValueAsObject(WZAIKeys::TargetActor,UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
-}
-
-void ABaseZombie_AIController::HandleInteractionRequest(FGameplayTag InteractingTag, const FVector& Destination,AActor* InterActor)
-{
-	
-	UE_LOG(LogTemp,Warning,TEXT("AIC recieve interaction request"));
-	if (StatusComp->GetMainState() ==  EMonsterMainState::Patrol)
-	{
-		/*StatusComp->SetMainState(EMonsterMainState::Idle);
-		StatusComp->SetMainState(EMonsterMainState::Patrol);*/
-		return;
-	}
-	
-	ABaseZombie* Zombie = Cast<ABaseZombie>(GetPawn());
-	if (!Zombie)
-	{
-		return;
-	}
-
-	const UMonsterDataAsset* Data = Zombie->GetMonsterData();
-	if (!Data)
-	{
-		return;
-	}
+	/*ABaseZombie* Zombie = Cast<ABaseZombie>(GetOwner());
 	if (!Zombie->GetMonsterData()) return;
-	
-	IZombieInteractableInterface* Interactable = Cast<IZombieInteractableInterface>(InterActor);
-	if (Interactable)
+	EInteractableObject IO = EInteractableObject::Door;
+	switch (InteractingTag)
 	{
-		UE_LOG(LogTemp,Warning,TEXT("AIC bind delegate to door"));
-		Interactable->GetOnDestroyedDelegate().AddDynamic(this,&ABaseZombie_AIController::StopInteracting);
-		
+	case GPTags::Door: IO =EInteractableObject::Door; break;
+	case GPTags::Window: IO =EInteractableObject::Window; break;
+	default:
+		break;
 	}
-	
-	
 	const FInteractionInfo* Info = Zombie->GetMonsterData()->InteractionInfoMap.Find(InteractingTag);
 	if (Info && Info->InteractionMontage)
 	{
-		StatusComp->SetMainState(EMonsterMainState::Interacting);
-		GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::InterActingObject,static_cast<uint8>(Info->InteractableObject));
-	}
+		GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::MainState,static_cast<uint8>(EMonsterMainState::Interacting));
+		GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::InterActingObject,static_cast<uint8>(IO));
+	}*/
 }
 
 

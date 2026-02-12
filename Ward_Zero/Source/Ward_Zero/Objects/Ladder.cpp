@@ -1,6 +1,6 @@
 #include "Objects/Ladder.h"
 #include "Components/BoxComponent.h"
-#include "Prototype_Character/PrototypeCharacter.h"
+#include "Character/Prototype_Character/PrototypeCharacter.h"
 
 ALadder::ALadder()
 {
