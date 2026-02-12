@@ -66,16 +66,11 @@ struct FInteractionInfo
 {
 	GENERATED_BODY()
 
-	FInteractionInfo() : InteractionMontage(nullptr), InteractableObject(EInteractableObject::Door), InteractingDuration(2.0f) {}
+	UPROPERTY(EditAnywhere)
+	UAnimMontage* InteractionMontage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TObjectPtr<UAnimMontage> InteractionMontage;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	EInteractableObject InteractableObject;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float InteractingDuration;
+	UPROPERTY(EditAnywhere)
+	float InteractingDuration = 2.0f;
 	
 };
 UCLASS()

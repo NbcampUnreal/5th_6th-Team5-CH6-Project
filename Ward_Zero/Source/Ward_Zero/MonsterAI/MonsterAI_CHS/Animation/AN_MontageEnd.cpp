@@ -19,6 +19,7 @@ void UAN_MontageEnd::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase*
 	{
 		if (ABaseZombie* Zombie = Cast<ABaseZombie>(MeshComp->GetOwner()))
 		{
+			Zombie->GetStatusComponent()->SetIsRecoveringCC(false);
 			Zombie->GetCombatComponent()->SetIsAttacking(false);
 
 			if (AAIController* AIC = Cast<AAIController>(Zombie->GetController()))

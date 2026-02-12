@@ -25,16 +25,16 @@ enum class EPlayerHitDirection : uint8
 UCLASS()
 class WARD_ZERO_API APrototypeCharacter : public ACharacter
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	APrototypeCharacter();
+    APrototypeCharacter();
 
 protected:
-	virtual void BeginPlay() override;
+    virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
     virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-    virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, 
+    virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
         class AController* EventInstigator, AActor* DamageCauser) override;
 
 #pragma region Components
@@ -98,7 +98,7 @@ protected:
 protected:
     // 이동 속도 설정
     UPROPERTY(EditDefaultsOnly, Category = "Movement") float WalkSpeed = 200.0f;
-    UPROPERTY(EditDefaultsOnly, Category = "Movement") float RunSpeed = 450.0f;
+    UPROPERTY(EditDefaultsOnly, Category = "Movement") float RunSpeed = 250.0f;  // ⭐ 450 -> 250 수정!
     UPROPERTY(EditDefaultsOnly, Category = "Movement") float ClimbSpeed = 150.0f;
     UPROPERTY(EditDefaultsOnly, Category = "Movement") float CrouchMovementSpeed = 150.0f;
     UPROPERTY(EditDefaultsOnly, Category = "Movement") float WalkTurnRate = 2.5f;
@@ -121,60 +121,63 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Camera") float BobHorizontalAmplitude = 1.0f;
 
     // 조준 시 줌 설정
-    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim") float AimArmLength = 60.0f;
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim") float AimArmLength = 80.0f;
     UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim") float AimFOV = 45.0f;
 
-    FVector DefaultTargetOffset; 
+    FVector DefaultTargetOffset;
+    FVector OriginalSocketOffset;
+    FVector OriginalTargetOffset;
+    bool bWasUsingPawnControlRotation = false;
 #pragma endregion 
 
 #pragma region Climb 
 public:
-	// 등반 시스템
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Climbing")
-	bool bIsClimbing = false;
+    // 등반 시스템
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Climbing")
+    bool bIsClimbing = false;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Climbing")
-	TObjectPtr<ALadder> CurrentLadder = nullptr;
+    UPROPERTY(BlueprintReadOnly, Category = "Climbing")
+    TObjectPtr<ALadder> CurrentLadder = nullptr;
 
-	UFUNCTION(BlueprintCallable) 
-	void StartClimbing(ALadder* Ladder);
+    UFUNCTION(BlueprintCallable)
+    void StartClimbing(ALadder* Ladder);
 
-	UFUNCTION(BlueprintCallable) 
-	void StopClimbing();
+    UFUNCTION(BlueprintCallable)
+    void StopClimbing();
 
-	// 턴 시스템
-	UPROPERTY(BlueprintReadWrite)
-	bool bIsQuickTurning = false;
+    // 턴 시스템
+    UPROPERTY(BlueprintReadWrite)
+    bool bIsQuickTurning = false;
 
 private:
-	bool bIsRunning = false;
-	void CheckRunState();
+    bool bIsRunning = false;
+    void CheckRunState();
 #pragma endregion 
 
 
 #pragma region Func
 protected:
-	void Move(const FInputActionValue& Value);
-	void Look(const FInputActionValue& Value);
-	void StartRunning(const FInputActionValue& Value);
-	void ToggleCrouch(const FInputActionValue& Value);
-	void Interact(const FInputActionValue& Value);
+    void Move(const FInputActionValue& Value);
+    void Look(const FInputActionValue& Value);
+    void StartRunning(const FInputActionValue& Value);
+    void ToggleCrouch(const FInputActionValue& Value);
+    void Interact(const FInputActionValue& Value);
 
-	// 전투
-	void ToggleEquip(const FInputActionValue& Value);
-	void StartAiming(const FInputActionValue& Value);
-	void StopAiming(const FInputActionValue& Value);
-	void Fire(const FInputActionValue& Value);
+    // 전투
+    void ToggleEquip(const FInputActionValue& Value);
+    void StartAiming(const FInputActionValue& Value);
+    void StopAiming(const FInputActionValue& Value);
+    void Fire(const FInputActionValue& Value);
 
-	//Event 
-	UFUNCTION()
-	void OnDeath(); // StatusComponent가 죽었다고 하면 실행
+    //Event 
+    UFUNCTION()
+    void OnDeath(); // StatusComponent가 죽었다고 하면 실행
 #pragma endregion 
 
 #pragma region Montage Fuc 
 private:
-	void PlayHitReaction(const FVector& ToAttackerDir);
-	void PlayDeathReaction(const FVector& ToAttackerDir);
-	EPlayerHitDirection GetHitDirection(const FVector& ToAttackerDir);
+    void PlayHitReaction(const FVector& ToAttackerDir);
+    void PlayDeathReaction(const FVector& ToAttackerDir);
+    EPlayerHitDirection GetHitDirection(const FVector& ToAttackerDir);
 #pragma endregion 
 };

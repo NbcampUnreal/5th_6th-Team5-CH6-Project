@@ -45,55 +45,9 @@ void UCombatComponent::ApplyKnockdown(EHitDirection HitDir)
 	{
 		return;
 	}
-	if (StatusComp->GetIsRecoveringCC())
-	{
-		return;
-	}
-	
-	
-	UAnimMontage* MontageToPlay = nullptr;
-	StatusComp->SetSubState(EMonsterSubState::Knockdown);
-	
-	if (GetIsAttacking())
-	{
-		Owner->StopAnimMontage();
-		SetIsAttacking(false);
-	}
-	
-	switch (HitDir)
-	{
-		case EHitDirection::Front: MontageToPlay = MonsterData->KnockdownMontages.Front; break;
-		case EHitDirection::Back: MontageToPlay = MonsterData->KnockdownMontages.Back; break;
-		case EHitDirection::Left: MontageToPlay = MonsterData->KnockdownMontages.Left; break;
-		case EHitDirection::Right: MontageToPlay = MonsterData->KnockdownMontages.Right; break;
-
-	}
-	
-	
-	if (MontageToPlay)
-	{
-		StatusComp->SetIsRecoveringCC(true);
-		AIC->StopMovement();
-		AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsKnockedDown,true);
-		AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsStunned,false);
-		Owner->PlayAnimM(MontageToPlay);
-	}
-	
-	//Ragdoll
-	/*ABaseZombie* Owner = Cast<ABaseZombie>(GetOwner());
-	if (!Owner)
-	{
-		return;
-	}
-	ABaseZombie_AIController* AIC = Cast<ABaseZombie_AIController>(Owner->GetController());
-	if (!AIC)
-	{
-		return;
-	}
 	AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsKnockedDown,true);
 	AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsStunned,false);
 	Owner->StartRagdollKnockdown(HitDir);
-	*/
 	
 	
 }
@@ -116,14 +70,9 @@ void UCombatComponent::ApplyStun(EHitDirection HitDir, EHitPart HitPart)
 		return;
 	}
 	UAnimMontage* MontageToPlay = nullptr;
-	if (StatusComp)
-	{
-		StatusComp->SetSubState(EMonsterSubState::Stun);
-	}
-	if (GetIsAttacking())
+	if (bIsAttacking)
 	{
 		Owner->StopAnimMontage();
-		SetIsAttacking(false);
 	}
 	if (HitPart == EHitPart::Head)
 	{
@@ -137,7 +86,6 @@ void UCombatComponent::ApplyStun(EHitDirection HitDir, EHitPart HitPart)
 		}
 	}else if (HitPart == EHitPart::Body)
 	{
-
 		switch (HitDir)
 		{
 		case EHitDirection::Front: MontageToPlay = MonsterData->NormalHitReactMontages.Front; break;
@@ -147,10 +95,8 @@ void UCombatComponent::ApplyStun(EHitDirection HitDir, EHitPart HitPart)
 		}
 	}else
 	{
-
 		if (StatusComp->GetIsRecoveringCC())
 		{
-			//UE_LOG(LogTemp,Warning,TEXT("Recoveringcc is true"));
 			return;
 		}
 		StatusComp->SetIsRecoveringCC(true);
@@ -194,10 +140,6 @@ void UCombatComponent::Attack()
 {
 	//UE_LOG(LogTemp,Warning,TEXT("CombatComp Attack Func start"))
 	SetIsAttacking(true);
-	if (StatusComp)
-	{
-		StatusComp->SetSubState(EMonsterSubState::Attack);
-	}
 	ABaseZombie* Owner = Cast<ABaseZombie>(GetOwner());
 	if (!Owner) return;
 	UAnimMontage* MontageToPlay = nullptr;

@@ -1,4 +1,4 @@
-﻿#include "PrototypeCharacter.h"
+﻿#include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Character/Components/PlayerStatusComponent.h"
 #include "Character/Components/PlayerCombatComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -53,7 +53,7 @@ APrototypeCharacter::APrototypeCharacter()
 	MainCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("MainCamera"));
 	MainCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	MainCamera->bUsePawnControlRotation = false;
-	MainCamera->FieldOfView = 60.0f;
+	MainCamera->FieldOfView = 60.0f;  // 원본 FOV 유지
 
 	// 권총 메쉬
 	PistolMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PistolMesh"));
@@ -115,24 +115,17 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	CheckRunState();
 	if (bIsQuickTurning) return;
 
-	// 카메라 줌 로직 
-	float TargetArmLength = StandingArmLength;
-	float TargetFOV = 90.0f;
-
-	// bIsAiming 변수 대신 컴포넌트에게 물어봄
-	if (CombatComponent && CombatComponent->IsAiming())
+	bool bIsAiming = CombatComponent && CombatComponent->IsAiming();
+	if (bIsAiming)
 	{
-		TargetArmLength = AimArmLength;
-		TargetFOV = AimFOV;
-
-		// 조준 중 회전 동기화
+		// 조준 중: 카메라 방향으로 즉시 회전
 		FRotator NewRot = GetActorRotation();
 		NewRot.Yaw = GetControlRotation().Yaw;
 		SetActorRotation(NewRot);
+		return;
 	}
 	else
 	{
-		// 기존 이동 회전 로직 유지
 		if (!bIsRunning && GetVelocity().SizeSquared() > KINDA_SMALL_NUMBER)
 		{
 			FRotator TargetRotation = FRotator(0.0f, GetControlRotation().Yaw, 0.0f);
@@ -142,9 +135,86 @@ void APrototypeCharacter::Tick(float DeltaTime)
 		}
 	}
 
-	// 카메라 보간
-	CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, TargetArmLength, DeltaTime, 15.0f);
-	MainCamera->FieldOfView = FMath::FInterpTo(MainCamera->FieldOfView, TargetFOV, DeltaTime, 15.0f);
+	float TargetBaseZ = bIsCrouched ? CrouchedCameraHeight : StandingCameraHeight;
+	float TargetArmLength = bIsCrouched ? CrouchedArmLength : StandingArmLength;
+
+	CurrentBaseCameraZ = FMath::FInterpTo(CurrentBaseCameraZ, TargetBaseZ, DeltaTime, 5.0f);
+	CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, TargetArmLength, DeltaTime, 5.0f);
+
+	FVector Velocity = GetVelocity();
+	float Speed = Velocity.Size();
+
+	float ZOffsetBob = 0.0f;
+	float YOffsetBob = 0.0f;
+
+	if (Speed > KINDA_SMALL_NUMBER && GetCharacterMovement()->IsMovingOnGround())
+	{
+		BobTime += DeltaTime * (Speed / 150.0f) * BobFrequency;
+		ZOffsetBob = FMath::Sin(BobTime) * BobAmplitude;
+		YOffsetBob = FMath::Cos(BobTime * 0.5f) * BobHorizontalAmplitude;
+	}
+	else
+	{
+		BobTime = 0.0f;
+	}
+
+	// 원본 카메라 보간 로직 복원
+	float ActualTargetArmLength = bIsAiming ? AimArmLength : StandingArmLength;
+	float ActualTargetFOV = bIsAiming ? AimFOV : 60.0f;  // 원본 FOV (80이 아닌 60)
+
+	// 조준/평상시 카메라 위치 설정 (원본 로직)
+	float TargetArmLengthDest;
+	float TargetFOVDest;
+	FVector TargetSocketOffsetDest;
+	FVector TargetOffsetDest;
+
+	if (bIsAiming)
+	{
+		// 조준 시
+		TargetArmLengthDest = 40.0f;
+		TargetFOVDest = 45.0f;
+		TargetOffsetDest = FVector(0.0f, 70.0f, 65.0f);
+		TargetSocketOffsetDest = FVector(-20.0f, 0.0f, -25.0f);
+	}
+	else
+	{
+		TargetArmLengthDest = StandingArmLength;
+		TargetFOVDest = 60.0f;  // 원본 FOV
+
+		float BobZ = StandingCameraHeight + ZOffsetBob;
+		float BobY = 40.0f + YOffsetBob;
+
+		TargetOffsetDest = FVector(0.0f, 0.0f, 45.0f);
+		TargetSocketOffsetDest = FVector(0.0f, BobY, BobZ);
+	}
+
+	// 보간 속도 설정
+	float InterpSpeed = bIsAiming ? 40.0f : 12.0f;
+
+	CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, TargetArmLengthDest, DeltaTime, InterpSpeed);
+	MainCamera->FieldOfView = FMath::FInterpTo(MainCamera->FieldOfView, TargetFOVDest, DeltaTime, InterpSpeed);
+
+	CameraBoom->TargetOffset = FMath::VInterpTo(CameraBoom->TargetOffset, TargetOffsetDest, DeltaTime, InterpSpeed);
+	CameraBoom->SocketOffset = FMath::VInterpTo(CameraBoom->SocketOffset, TargetSocketOffsetDest, DeltaTime, InterpSpeed);
+
+	// 등반 처리
+	if (bIsClimbing && CurrentLadder)
+	{
+		float MyHeight = GetActorLocation().Z;
+		float TopHeight = CurrentLadder->TopExitPoint->GetComponentLocation().Z;
+		float BottomHeight = CurrentLadder->BottomStartPoint->GetComponentLocation().Z;
+
+		if (MyHeight >= TopHeight)
+		{
+			StopClimbing();
+			SetActorLocation(CurrentLadder->TopExitPoint->GetComponentLocation());
+		}
+		else if (MyHeight <= BottomHeight)
+		{
+			StopClimbing();
+		}
+		return;
+	}
 }
 
 // 데미지 처리
@@ -189,8 +259,6 @@ void APrototypeCharacter::OnDeath()
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
 	GetMesh()->SetSimulatePhysics(true);
-
-	// 필요 시 사망 몽타주 재생 추가할 예정 
 }
 
 EPlayerHitDirection APrototypeCharacter::GetHitDirection(const FVector& ToAttackerDir)
@@ -256,7 +324,6 @@ void APrototypeCharacter::PlayDeathReaction(const FVector& ToAttackerDir)
 
 void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	// (기존 바인딩 코드 유지)
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
@@ -342,6 +409,7 @@ void APrototypeCharacter::CheckRunState()
 		}
 	}
 }
+
 void APrototypeCharacter::Interact(const FInputActionValue& Value)
 {
 	if (bIsClimbing)
@@ -404,11 +472,37 @@ void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 
 void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 {
-	if (bIsRunning || bIsClimbing) return; // 달리기, 등반 중 조준 불가
-
-	if (CombatComponent)
+	if (CombatComponent && CombatComponent->IsPistolEquipped() && !bIsRunning && !bIsClimbing)
 	{
-		CombatComponent->StartAiming();
+		CombatComponent->StartAiming(); // 상태값 변경
+
+		bWasUsingPawnControlRotation = CameraBoom->bUsePawnControlRotation;
+		OriginalSocketOffset = CameraBoom->SocketOffset;
+		OriginalTargetOffset = CameraBoom->TargetOffset;
+
+		// 카메라를 쇄골에 부착
+		CameraBoom->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("clavicle_r"));
+		CameraBoom->SetRelativeLocation(FVector(-25.0f, -10.0f, -20.f));
+		CameraBoom->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
+
+		CameraBoom->TargetArmLength = 80.0f;
+
+		CameraBoom->bUsePawnControlRotation = true;
+		CameraBoom->bInheritPitch = true;
+		CameraBoom->bInheritYaw = true;
+		CameraBoom->bInheritRoll = false;
+
+		CameraBoom->SocketOffset = FVector::ZeroVector;
+		CameraBoom->TargetOffset = FVector::ZeroVector;
+
+		MainCamera->FieldOfView = 50.0f;
+
+		CameraBoom->bEnableCameraLag = false;
+		CameraBoom->bEnableCameraRotationLag = false;
+
+		bUseControllerRotationYaw = true;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed * 0.5f;
 	}
 }
 
@@ -417,6 +511,30 @@ void APrototypeCharacter::StopAiming(const FInputActionValue& Value)
 	if (CombatComponent)
 	{
 		CombatComponent->StopAiming();
+
+		// 카메라를 다시 루트로 복귀
+		CameraBoom->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		CameraBoom->SetRelativeLocation(FVector::ZeroVector);
+		CameraBoom->SetRelativeRotation(FRotator::ZeroRotator);
+
+		CameraBoom->TargetArmLength = StandingArmLength;
+
+		// 원본처럼 저장된 값으로 복귀
+		CameraBoom->SocketOffset = OriginalSocketOffset;
+		CameraBoom->TargetOffset = OriginalTargetOffset;
+		CameraBoom->bUsePawnControlRotation = bWasUsingPawnControlRotation;
+
+		MainCamera->FieldOfView = 60.0f;  
+
+		// Lag 복구
+		CameraBoom->bEnableCameraLag = true;
+		CameraBoom->bEnableCameraRotationLag = true;
+		CameraBoom->CameraLagSpeed = 15.0f;
+
+		// 캐릭터 회전 복구
+		bUseControllerRotationYaw = false;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	}
 }
 
@@ -425,5 +543,6 @@ void APrototypeCharacter::Fire(const FInputActionValue& Value)
 	if (CombatComponent)
 	{
 		CombatComponent->Fire(FireMontage, GetMesh()->GetAnimInstance(), FireCameraShake);
+		CombatComponent->HandIKTargetLocation += FVector(0.0f, 0.0f, 20.0f);
 	}
 }
