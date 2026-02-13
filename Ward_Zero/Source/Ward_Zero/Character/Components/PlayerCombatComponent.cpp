@@ -24,7 +24,7 @@ void UPlayerCombatComponent::SetupCombat(UStaticMeshComponent* InPistolMesh, UCa
 	// 레이저 사이트 생성
 	if (PistolMesh)
 	{
-		LaserSightComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
+		/*LaserSightComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
 			LaserSightSystem,
 			PistolMesh,
 			TEXT("Muzzle"),
@@ -32,7 +32,7 @@ void UPlayerCombatComponent::SetupCombat(UStaticMeshComponent* InPistolMesh, UCa
 			FRotator::ZeroRotator,
 			EAttachLocation::KeepRelativeOffset,
 			false
-		);
+		);*/
 	}
 }
 
