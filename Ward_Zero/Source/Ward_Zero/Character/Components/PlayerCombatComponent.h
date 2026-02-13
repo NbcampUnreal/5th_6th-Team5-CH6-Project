@@ -44,6 +44,8 @@ protected:
 	void UpdateLaserSight();
 	void CalculateAimOffset();
 
+	
+
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
 	bool bIsPistolEquipped = false;
@@ -69,6 +71,9 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Weapon|Aim")
 	float AimPitch;
+
+	UPROPERTY(EditAnywhere, Category="DamageType")
+	TSubclassOf<UDamageType> DamageType;
 
 private:
 	UPROPERTY()

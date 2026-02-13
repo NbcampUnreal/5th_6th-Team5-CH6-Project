@@ -82,6 +82,8 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 	FHitResult Hit;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
+	Params.bTraceComplex = true;
+	Params.bReturnPhysicalMaterial = true;
 
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, CameraStart, CameraEnd, ECC_Visibility, Params);
 
@@ -117,10 +119,10 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 
 	if (bHit)
 	{
-	/*	DrawDebugLine(GetWorld(), CameraStart, Hit.ImpactPoint, FColor::Blue, false, 2.0f, 0, 0.5f);*/
-		DrawDebugLine(GetWorld(), MuzzleLocation, Hit.ImpactPoint, FColor::Yellow, false, 2.0f, 0, 0.5f);
-		FColor ImpactColor = bHit ? FColor::Red : FColor::Yellow;
-		DrawDebugSphere(GetWorld(), Hit.ImpactPoint, 5.0f, 8, ImpactColor, false, 2.0f, 0, 1.0f);
+		DrawDebugLine(GetWorld(), CameraStart, Hit.ImpactPoint, FColor::Blue, false, 0.5f, 0, 0.5f);
+		/*DrawDebugLine(GetWorld(), MuzzleLocation, Hit.ImpactPoint, FColor::Yellow, false, 2.0f, 0, 0.5f);*/
+		/*FColor ImpactColor = bHit ? FColor::Red : FColor::Yellow;
+		DrawDebugSphere(GetWorld(), Hit.ImpactPoint, 5.0f, 8, ImpactColor, false, 2.0f, 0, 1.0f);*/
 
 		UE_LOG(LogTemp, Warning, TEXT("Hit: %s | Distance: %.1f"),
 			*Hit.GetActor()->GetName(), Hit.Distance);
@@ -147,7 +149,7 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 			Hit,
 			GetOwner()->GetInstigatorController(),
 			GetOwner(),
-			UDamageType::StaticClass()
+			DamageType
 		);
 	}
 }
