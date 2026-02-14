@@ -1,0 +1,142 @@
+﻿#include "Weapon/Weapon.h"
+#include "Kismet/GameplayStatics.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "Engine/DamageEvents.h"
+#include "MonsterAI/MonsterAI_CHS/Weapon/WZDamageType.h"
+
+AWeapon::AWeapon()
+{
+	PrimaryActorTick.bCanEverTick = true;
+
+	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
+	SetRootComponent(WeaponMesh);
+	WeaponMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AWeapon::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+
+    // 레이저 포인터 위치 계산 로직
+    if (WeaponMesh)
+    {
+        FVector Start = WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
+        // 총구 방향으로 멀리 쏨
+        FVector End = Start + (WeaponMesh->GetForwardVector() * 10000.0f);
+
+        FHitResult Hit;
+        FCollisionQueryParams Params;
+        Params.AddIgnoredActor(this);
+        Params.AddIgnoredActor(GetOwner()); // 총 주인도 무시
+
+        // 레이저 트레이스
+        if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+        {
+            LaserHitLocation = Hit.ImpactPoint; // 부딪힌 곳 저장
+        }
+        else
+        {
+            LaserHitLocation = End; // 안 부딪히면 허공 끝 저장
+        }
+
+        // (선택) 만약 나이아가라 레이저 이펙트가 있다면 여기서 업데이트
+        if (LaserSightComponent)
+        {
+            LaserSightComponent->SetNiagaraVariableVec3(TEXT("BeamEnd"), LaserHitLocation);
+        }
+    }
+}
+
+void AWeapon::BeginPlay()
+{
+	Super::BeginPlay();	
+}
+
+void AWeapon::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
+{
+	SetOwner(NewOwner);
+	WeaponInstigator = NewInstigator;
+	WeaponOwnerController = NewInstigator ? NewInstigator->GetController() : nullptr;
+
+	AttachToComponent(InParent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, InSocketName);
+
+	// 레이저 켜기 등
+}
+
+void AWeapon::Fire(const FVector& HitTarget)
+{
+    if (!WeaponMesh) return;
+
+    FVector MuzzleSocketLocation = WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
+    FVector OutBeamEnd = HitTarget;
+
+    FHitResult FireHit;
+    FVector Start = MuzzleSocketLocation;
+    FVector End = HitTarget + (HitTarget - Start).GetSafeNormal() * 50.0f; // 조금 더 길게
+
+    bool bBeamHit = GetWorld()->LineTraceSingleByChannel(
+        FireHit, Start, End, ECC_Visibility
+    );
+
+    if (bBeamHit)
+    {
+        OutBeamEnd = FireHit.ImpactPoint;
+
+        // 2. 이펙트 재생 (타격음, 파티클)
+        if (ImpactEffect)
+        {
+            UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+                GetWorld(), ImpactEffect, FireHit.ImpactPoint, FireHit.ImpactNormal.Rotation()
+            );
+        }
+
+        // 3. [핵심] 데미지 전달 (몬스터에게 WZDamageType을 실어서 보냄)
+        // 몬스터는 TakeDamage에서 이 DamageTypeClass를 열어보고 스턴인지 확인합니다.
+        if (FireHit.GetActor())
+        {
+            UGameplayStatics::ApplyPointDamage(
+                FireHit.GetActor(),
+                Damage,
+                (OutBeamEnd - Start).GetSafeNormal(),
+                FireHit,
+                WeaponOwnerController,
+                this,             // DamageCauser는 무기 자신
+                DamageTypeClass   // 여기에 WZDamageType_Gun이 들어감
+            );
+        }
+    }
+
+    if (!bBeamHit)
+    {
+        OutBeamEnd = MuzzleSocketLocation + (HitTarget - MuzzleSocketLocation).GetSafeNormal() * FireRange;
+    }
+
+    if (TraceEffect)
+    {
+        FVector MuzzleLocation = WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
+
+        UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+            GetWorld(),
+            TraceEffect,
+            MuzzleLocation,
+            FRotator::ZeroRotator
+        );
+
+        if (NiagaraComp)
+        {
+            NiagaraComp->SetNiagaraVariableVec3(TEXT("BeamStart"), MuzzleLocation);
+            NiagaraComp->SetNiagaraVariableVec3(TEXT("BeamEnd"), OutBeamEnd);
+        }
+    }
+
+    if (MuzzleFlash)
+    {
+        UNiagaraFunctionLibrary::SpawnSystemAttached(
+            MuzzleFlash, WeaponMesh, TEXT("Muzzle"),
+            FVector::ZeroVector, FRotator::ZeroRotator,
+            EAttachLocation::KeepRelativeOffset, true
+        );
+    }
+}

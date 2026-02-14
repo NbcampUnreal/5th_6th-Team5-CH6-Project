@@ -1,11 +1,10 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "PlayerCombatComponent.generated.h"
 
-class UNiagaraSystem;
-class UNiagaraComponent;
+class AWeapon;
 class UCameraComponent;
 class UAnimMontage;
 
@@ -22,13 +21,15 @@ protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
-	// 초기화
-	void SetupCombat(UStaticMeshComponent* InPistolMesh, UCameraComponent* InCamera);
+	// 초기화 (Character에서 호출)
+	void SetupCombat(UCameraComponent* InCamera);
 
 	// 액션
 	void ToggleEquip(UAnimMontage* EquipMontage, UAnimInstance* AnimInst);
 	void StartAiming();
 	void StopAiming();
+
+	// [중요] 발사 함수: 애니메이션과 쉐이크는 여기서, 실제 발사는 무기에게 위임
 	void Fire(UAnimMontage* FireMontage, UAnimInstance* AnimInst, TSubclassOf<UCameraShakeBase> CamShake);
 
 	// 상태 확인 (Getter)
@@ -40,48 +41,45 @@ public:
 	float GetAimYaw() const { return AimYaw; }
 	float GetAimPitch() const { return AimPitch; }
 
+	// 현재 장착된 무기 가져오기
+	AWeapon* GetEquippedWeapon() const { return EquippedWeapon; }
+
 protected:
-	void UpdateLaserSight();
+	// 무기 스폰 및 장착 헬퍼 함수
+	void SpawnDefaultWeapon();
+
+	// 조준 오프셋(AimOffset) 계산
 	void CalculateAimOffset();
 
-	
+	// 레이저 사이트 위치 업데이트 (무기에서 가져옴)
+	void UpdateHandIK();
 
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	// 에디터에서 설정할 기본 무기 클래스 (예: BP_Pistol)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
+	TSubclassOf<AWeapon> DefaultWeaponClass;
+
+	// 실제로 스폰되어 손에 들고 있는 무기
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	AWeapon* EquippedWeapon;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	bool bIsPistolEquipped = false;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Weapon")
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	bool bIsAiming = false;
 
-	UPROPERTY(EditAnywhere, Category = "Weapon|Effects")
-	UNiagaraSystem* MuzzleFlash;
-
-	UPROPERTY(EditAnywhere, Category = "Weapon|Effects")
-	UNiagaraSystem* ImpactEffect;
-
-	// [중요] 레이저 사이트 에셋 (에디터에서 할당)
-	UPROPERTY(EditAnywhere, Category = "Weapon|Effects")
-	UNiagaraSystem* LaserSightSystem;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Weapon|IK")
+	// IK 및 애니메이션 관련 변수
+	UPROPERTY(BlueprintReadOnly, Category = "Combat|IK")
 	FVector HandIKTargetLocation;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Weapon|Aim")
+	UPROPERTY(BlueprintReadOnly, Category = "Combat|Aim")
 	float AimYaw;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Weapon|Aim")
+	UPROPERTY(BlueprintReadOnly, Category = "Combat|Aim")
 	float AimPitch;
-
-	UPROPERTY(EditAnywhere, Category="DamageType")
-	TSubclassOf<UDamageType> DamageType;
 
 private:
 	UPROPERTY()
-	UStaticMeshComponent* PistolMesh;
-
-	UPROPERTY()
 	UCameraComponent* PlayerCamera;
-
-	UPROPERTY()
-	UNiagaraComponent* LaserSightComponent;
 };

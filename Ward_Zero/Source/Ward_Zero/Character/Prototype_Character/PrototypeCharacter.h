@@ -22,6 +22,18 @@ enum class EPlayerHitDirection : uint8
     Right
 };
 
+UENUM(BlueprintType)
+enum class EQuickTurnType : uint8
+{
+    None,
+    Unarmed_180,
+    Unarmed_L90,
+    Unarmed_R90,
+    Pistol_180,
+    Pistol_L90,
+    Pistol_R90
+};
+
 UCLASS()
 class WARD_ZERO_API APrototypeCharacter : public ACharacter
 {
@@ -52,9 +64,6 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
     UCameraComponent* MainCamera;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
-    UStaticMeshComponent* PistolMesh;
 #pragma endregion 
 
 #pragma region IA
@@ -70,6 +79,7 @@ protected:
     UPROPERTY(EditAnywhere, Category = Input) UInputAction* EquipAction;
     UPROPERTY(EditAnywhere, Category = Input) UInputAction* AimAction;
     UPROPERTY(EditAnywhere, Category = Input) UInputAction* FireAction;
+    UPROPERTY(EditAnywhere, Category = Input) UInputAction* QuickTurnAction;
 #pragma endregion 
 
 #pragma region Montage 
@@ -185,4 +195,42 @@ private:
     void PlayDeathReaction(const FVector& ToAttackerDir);
     EPlayerHitDirection GetHitDirection(const FVector& ToAttackerDir);
 #pragma endregion 
+
+//QuickTurn 
+public:
+    UPROPERTY(BlueprintReadOnly, Category = "Turn")
+    EQuickTurnType QuickTurnType = EQuickTurnType::None;
+
+    UFUNCTION(BlueprintCallable, Category = "Turn")
+    void StartQuickTurn(float TargetYawDelta);
+
+    UFUNCTION(BlueprintCallable, Category = "Turn")
+    void StopQuickTurn();
+  
+    float TurnAlpha = 0.0f;
+    float TurnDuration = 0.0f;     // 애니메이션 길이에 맞춰 설정 
+
+    float TurnStartYaw = 0.0f;     // 회전 시작 당시의 Yaw
+    float TurnYawDelta = 0.0f;     // 회전해야 할 총 각도 (예: 90, 180, -90)
+
+    float ControlStartYaw;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Combat")
+    int32 TurnIndex = 0;
+
+    // 퀵 턴 키 바인딩 함수
+    void PerformQuickTurn180();
+
+    void PerformQuickTurn90(float Angle);
+
+ protected:
+     // 이동 입력 시 각도 체크를 위한 변수
+     void ProcessMovementTurn(FVector2D MovementVector);
+
+     // 각 애니메이션별 재생 시간
+     UPROPERTY(EditDefaultsOnly, Category = "Turn|Duration") 
+     float Duration180 = 0.6f;
+
+     UPROPERTY(EditDefaultsOnly, Category = "Turn|Duration") 
+     float Duration90 = 0.4f;
 };
