@@ -1,157 +1,129 @@
-#include "Character/Components/PlayerCombatComponent.h"
+﻿#include "Character/Components/PlayerCombatComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
-#include "NiagaraFunctionLibrary.h"
-#include "NiagaraComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "GameFramework/Actor.h"
+#include "GameFramework/Character.h"
+#include "Weapon/Weapon.h" // [중요] Weapon 헤더 포함
 
 UPlayerCombatComponent::UPlayerCombatComponent()
 {
-	PrimaryComponentTick.bCanEverTick = true; 
+	PrimaryComponentTick.bCanEverTick = true;
 }
 
 void UPlayerCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 게임 시작 시 무기 생성
+	SpawnDefaultWeapon();
 }
 
-void UPlayerCombatComponent::SetupCombat(UStaticMeshComponent* InPistolMesh, UCameraComponent* InCamera)
+void UPlayerCombatComponent::SetupCombat(UCameraComponent* InCamera)
 {
-	PistolMesh = InPistolMesh;
 	PlayerCamera = InCamera;
+}
 
-	// 레이저 사이트 생성
-	if (PistolMesh)
+void UPlayerCombatComponent::SpawnDefaultWeapon()
+{
+	// 1. 무기 클래스가 설정되어 있는지 확인
+	if (DefaultWeaponClass)
 	{
-		/*LaserSightComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
-			LaserSightSystem,
-			PistolMesh,
-			TEXT("Muzzle"),
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			EAttachLocation::KeepRelativeOffset,
-			false
-		);*/
+		// 2. 무기 액터 스폰
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = GetOwner();
+		SpawnParams.Instigator = Cast<APawn>(GetOwner());
+
+		AWeapon* NewWeapon = GetWorld()->SpawnActor<AWeapon>(DefaultWeaponClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+
+		if (NewWeapon)
+		{
+			EquippedWeapon = NewWeapon;
+
+			// 3. 캐릭터 메쉬의 소켓에 무기 부착
+			ACharacter* Character = Cast<ACharacter>(GetOwner());
+			if (Character)
+			{
+				// Weapon 클래스의 Equip 함수 호출 (여기서 Attach 및 Owner 설정 등이 처리됨)
+				EquippedWeapon->Equip(
+					Character->GetMesh(),
+					TEXT("WeaponSocket"), // 소켓 이름 확인 필요!
+					Character,
+					Character
+				);
+			}
+
+			// 처음엔 숨겨둠 (장착 모션 전까지)
+			EquippedWeapon->SetActorHiddenInGame(true);
+			bIsPistolEquipped = false;
+		}
 	}
 }
 
 void UPlayerCombatComponent::ToggleEquip(UAnimMontage* EquipMontage, UAnimInstance* AnimInst)
 {
-	if (!PistolMesh) return;
+	if (!EquippedWeapon) return;
 	if (bIsAiming) return;
 
 	bIsPistolEquipped = !bIsPistolEquipped;
-	// 애니메이션 재생
-	if (AnimInst && EquipMontage)
+
+	// 1. 무기 보이게/안보이게 설정
+	EquippedWeapon->SetActorHiddenInGame(!bIsPistolEquipped);
+
+	// 2. 애니메이션 재생
+	if (AnimInst && EquipMontage && bIsPistolEquipped)
 	{
-		// 총을 꺼낼 때만 몽타주 재생
-		if (bIsPistolEquipped)
-		{
-			AnimInst->Montage_Play(EquipMontage);
-		}
+		AnimInst->Montage_Play(EquipMontage);
 	}
-
-	PistolMesh->SetVisibility(bIsPistolEquipped);
-
-	UE_LOG(LogTemp, Warning, TEXT("bIsPistolEquipped : %d"), bIsPistolEquipped);
 }
 
 void UPlayerCombatComponent::StartAiming()
 {
-	if (bIsPistolEquipped)
+	if (bIsPistolEquipped && EquippedWeapon)
 	{
 		bIsAiming = true;
-		if (LaserSightComponent) LaserSightComponent->Activate(true);
+		// 무기에게 조준 시작 알림 (레이저 켜기 등)
+		// 만약 Weapon 클래스에 StartAiming이 없다면 추가하거나, 여기서 레이저 관련 로직을 호출해도 됩니다.
+		// 여기서는 Weapon 클래스가 레이저를 관리한다고 가정합니다.
 	}
 }
 
 void UPlayerCombatComponent::StopAiming()
 {
 	bIsAiming = false;
-	if (LaserSightComponent) LaserSightComponent->Deactivate();
+	// 무기에게 조준 중단 알림 (레이저 끄기 등)
 }
 
 void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* AnimInst, TSubclassOf<UCameraShakeBase> CamShake)
 {
-	if (!bIsAiming || !PistolMesh || !PlayerCamera) return;
+	if (!bIsAiming || !EquippedWeapon || !PlayerCamera) return;
 
-	// 레이캐스트 (카메라 중앙 기준)
-	FVector CameraStart = PlayerCamera->GetComponentLocation();
-	FVector CameraEnd = CameraStart + (PlayerCamera->GetForwardVector() * 5000.f);
-	FHitResult Hit;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(GetOwner());
-	Params.bTraceComplex = true;
-	Params.bReturnPhysicalMaterial = true;
-
-	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, CameraStart, CameraEnd, ECC_Visibility, Params);
-
-	// 실제 타격 지점 결정
-	FVector ImpactPoint = bHit ? Hit.ImpactPoint : CameraEnd;
-
-	// 총구 위치
-	FVector MuzzleLocation = PistolMesh->GetSocketLocation(TEXT("Muzzle"));
-
-	// 총구에서 타격지점으로 향하는 방향 계산
-	FVector MuzzleToImpact = (ImpactPoint - MuzzleLocation).GetSafeNormal();
-
-	// 이펙트 - 총구에서 실제 타격 방향으로
-	if (MuzzleFlash)
-	{
-		// 총구 이펙트는 타격 지점을 향하도록 회전
-		FRotator MuzzleRotation = MuzzleToImpact.Rotation();
-		UNiagaraFunctionLibrary::SpawnSystemAttached(MuzzleFlash, PistolMesh, TEXT("Muzzle"),
-			FVector::ZeroVector, MuzzleRotation, EAttachLocation::KeepRelativeOffset, true);
-	}
-
-	// 몽타주
+	// 1. [Component 역할] 애니메이션 재생 (플레이어의 행동)
 	if (AnimInst && FireMontage)
 	{
 		AnimInst->Montage_Play(FireMontage);
 	}
 
-	// 카메라 쉐이크
+	// 2. [Component 역할] 카메라 쉐이크 (플레이어가 느끼는 반동)
 	if (CamShake && GetWorld())
 	{
 		UGameplayStatics::PlayWorldCameraShake(GetWorld(), CamShake, PlayerCamera->GetComponentLocation(), 0.0f, 500.0f);
 	}
 
-	if (bHit)
-	{
-		DrawDebugLine(GetWorld(), CameraStart, Hit.ImpactPoint, FColor::Blue, false, 0.5f, 0, 0.5f);
-		/*DrawDebugLine(GetWorld(), MuzzleLocation, Hit.ImpactPoint, FColor::Yellow, false, 2.0f, 0, 0.5f);*/
-		/*FColor ImpactColor = bHit ? FColor::Red : FColor::Yellow;
-		DrawDebugSphere(GetWorld(), Hit.ImpactPoint, 5.0f, 8, ImpactColor, false, 2.0f, 0, 1.0f);*/
+	// 3. [Component 역할] 목표 지점 계산 (카메라가 보고 있는 곳)
+	FVector CameraStart = PlayerCamera->GetComponentLocation();
+	FVector CameraEnd = CameraStart + (PlayerCamera->GetForwardVector() * 10000.f); // 사거리 충분히
 
-		UE_LOG(LogTemp, Warning, TEXT("Hit: %s | Distance: %.1f"),
-			*Hit.GetActor()->GetName(), Hit.Distance);
-	}
-	else
-	{
-		DrawDebugLine(GetWorld(), CameraStart, CameraEnd, FColor::Red, false, 2.0f, 0, 0.5f);
-	}
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(GetOwner());
+	Params.AddIgnoredActor(EquippedWeapon); // 무기도 충돌 제외
 
-	// 충돌 이펙트 및 데미지
-	if (bHit)
-	{
-		if (ImpactEffect)
-		{
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ImpactEffect,
-				Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
-		}
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, CameraStart, CameraEnd, ECC_Visibility, Params);
 
-		// 데미지는 카메라 방향 기준
-		UGameplayStatics::ApplyPointDamage(
-			Hit.GetActor(),
-			10.0f,
-			(CameraEnd - CameraStart).GetSafeNormal(), // 카메라 방향
-			Hit,
-			GetOwner()->GetInstigatorController(),
-			GetOwner(),
-			DamageType
-		);
-	}
+	FVector HitTarget = bHit ? Hit.ImpactPoint : CameraEnd;
+
+	// 4. [Weapon 역할] 실제 발사 (총구에서 목표 지점까지)
+	EquippedWeapon->Fire(HitTarget);
 }
 
 void UPlayerCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -160,49 +132,27 @@ void UPlayerCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 	if (bIsAiming)
 	{
-		UpdateLaserSight();
+		UpdateHandIK();
 		CalculateAimOffset();
 	}
 }
 
-void UPlayerCombatComponent::UpdateLaserSight()
+void UPlayerCombatComponent::UpdateHandIK()
 {
-	if (!bIsAiming || !PistolMesh || !LaserSightComponent) return;
-
-	// 총구 위치
-	FVector MuzzleLoc = PistolMesh->GetSocketLocation(TEXT("Muzzle"));
-
-	// 카메라 중앙에서 레이캐스트
-	FVector CameraLoc = PlayerCamera->GetComponentLocation();
-	FVector CameraForward = PlayerCamera->GetForwardVector();
-	FVector TraceEnd = CameraLoc + (CameraForward * 10000.0f);
-
-	FHitResult Hit;
-	FCollisionQueryParams Params;
-
-	Params.AddIgnoredActor(GetOwner());
-
-	if (GetWorld()->LineTraceSingleByChannel(Hit, CameraLoc, TraceEnd, ECC_Visibility, Params))
+	// IK 타겟을 무기의 레이저 끝점 등으로 설정
+	if (EquippedWeapon && bIsPistolEquipped)
 	{
-		TraceEnd = Hit.ImpactPoint;
+		// Weapon 클래스에 GetLaserTargetLocation() 함수가 있다고 가정
+		HandIKTargetLocation = EquippedWeapon->GetLaserTargetLocation();
 	}
-
-	// IK 타겟 설정
-	HandIKTargetLocation = TraceEnd;
-
-	// 레이저는 총구에서 타겟까지
-	LaserSightComponent->SetNiagaraVariableVec3(TEXT("BeamEnd"), TraceEnd);
 }
 
 void UPlayerCombatComponent::CalculateAimOffset()
 {
-	if (!bIsAiming) return;
+	if (!bIsAiming || !PlayerCamera) return;
 
 	FVector CameraForward = PlayerCamera->GetForwardVector();
-
-	// [수정] 컴포넌트에는 GetActorRotation이 없습니다. 주인(Owner)에게 물어봐야 합니다.
 	FRotator CharacterRotation = GetOwner()->GetActorRotation();
-	FVector CharacterForward = CharacterRotation.Vector();
 
 	FRotator DeltaRotation = (CameraForward.Rotation() - CharacterRotation);
 	DeltaRotation.Normalize();

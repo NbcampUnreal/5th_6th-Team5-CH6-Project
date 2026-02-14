@@ -46,7 +46,7 @@ APrototypeCharacter::APrototypeCharacter()
 	CameraBoom->CameraLagSpeed = 15.0f;
 	CameraBoom->bEnableCameraRotationLag = true;
 	CameraBoom->CameraRotationLagSpeed = 15.0f;
-	CameraBoom->SocketOffset = FVector(0.0f, 45.0f, 30.0f);
+	CameraBoom->SocketOffset = FVector(0.0f, 45.0f, 10.0f);
 	CameraBoom->ProbeSize = 12.0f;
 
 	// 카메라 생성 및 설정
@@ -54,16 +54,6 @@ APrototypeCharacter::APrototypeCharacter()
 	MainCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	MainCamera->bUsePawnControlRotation = false;
 	MainCamera->FieldOfView = 60.0f;  
-
-	// 권총 메쉬
-	PistolMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PistolMesh"));
-	if (PistolMesh)
-	{
-		PistolMesh->SetupAttachment(GetMesh(), TEXT("WeaponSocket"));
-		PistolMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		PistolMesh->SetVisibility(false);
-		PistolMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-	}
 
 	// 캡슐과 메쉬가 카메라를 막지 않도록 설정
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
@@ -100,7 +90,7 @@ void APrototypeCharacter::BeginPlay()
 	// 컴포넌트 초기화 및 델리게이트 연결
 	if (CombatComponent)
 	{
-		CombatComponent->SetupCombat(PistolMesh, MainCamera);
+		CombatComponent->SetupCombat(MainCamera);
 	}
 
 	if (StatusComponent)
@@ -573,7 +563,7 @@ void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 
 		// 카메라를 쇄골에 부착
 		CameraBoom->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("clavicle_r"));
-		CameraBoom->SetRelativeLocation(FVector(-25.0f, -10.0f, -20.f));
+		CameraBoom->SetRelativeLocation(FVector(-25.0f, -10.0f, -40.0f));
 		CameraBoom->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 
 		CameraBoom->TargetArmLength = 80.0f;
