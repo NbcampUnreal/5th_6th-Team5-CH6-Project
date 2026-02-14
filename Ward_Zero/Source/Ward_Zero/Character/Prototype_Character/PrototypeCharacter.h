@@ -52,9 +52,6 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
     UCameraComponent* MainCamera;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
-    UStaticMeshComponent* PistolMesh;
 #pragma endregion 
 
 #pragma region IA
