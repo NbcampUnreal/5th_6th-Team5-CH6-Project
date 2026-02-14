@@ -82,6 +82,7 @@ protected:
     UPROPERTY(EditAnywhere, Category = Input) UInputAction* EquipAction;
     UPROPERTY(EditAnywhere, Category = Input) UInputAction* AimAction;
     UPROPERTY(EditAnywhere, Category = Input) UInputAction* FireAction;
+    UPROPERTY(EditAnywhere, Category = Input) UInputAction* QuickTurnAction;
 #pragma endregion 
 
 #pragma region Montage 
