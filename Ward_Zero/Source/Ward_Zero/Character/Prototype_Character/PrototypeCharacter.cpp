@@ -114,7 +114,49 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	CheckRunState();
-	if (bIsQuickTurning) return;
+	if (bIsQuickTurning)
+{
+	float SafeDuration = (TurnDuration > KINDA_SMALL_NUMBER) ? TurnDuration : 1.0f;
+	TurnAlpha += DeltaTime / SafeDuration;
+
+	if (TurnAlpha >= 1.0f)
+	{
+		// 턴 종료 시 Actor 회전 고정
+		FRotator FinalRot = GetActorRotation();
+		FinalRot.Yaw = FRotator::NormalizeAxis(TurnStartYaw + TurnYawDelta);
+		SetActorRotation(FinalRot, ETeleportType::TeleportPhysics);
+
+		//턴 종료 시 컨트롤러(카메라) 회전 고정
+		if (Controller)
+		{
+			FRotator FinalControlRot = Controller->GetControlRotation();
+			FinalControlRot.Yaw = FRotator::NormalizeAxis(ControlStartYaw + TurnYawDelta);
+			Controller->SetControlRotation(FinalControlRot);
+		}
+
+		StopQuickTurn();
+	}
+	else
+	{
+		float SmoothAlpha = FMath::InterpEaseInOut(0.0f, 1.0f, TurnAlpha, 2.0f);
+
+		//캐릭터 몸 회전
+		float CurrentYaw = TurnStartYaw + (TurnYawDelta * SmoothAlpha);
+		FRotator NewRot = GetActorRotation();
+		NewRot.Yaw = CurrentYaw;
+		SetActorRotation(NewRot, ETeleportType::None);
+
+		//카메라 회전 
+		if (Controller)
+		{
+			float CurrentControlYaw = ControlStartYaw + (TurnYawDelta * SmoothAlpha);
+			FRotator NewControlRot = Controller->GetControlRotation();
+			NewControlRot.Yaw = CurrentControlYaw;
+			Controller->SetControlRotation(NewControlRot);
+		}
+	}
+	return;
+}
 
 	bool bIsAiming = CombatComponent && CombatComponent->IsAiming();
 	if (bIsAiming)
@@ -257,6 +299,70 @@ EPlayerHitDirection APrototypeCharacter::GetHitDirection(const FVector& ToAttack
 	if (ForwardDot >= 0.5f) return EPlayerHitDirection::Front;
 	else if (ForwardDot <= -0.5f) return EPlayerHitDirection::Back;
 	else return (RightDot > 0.f) ? EPlayerHitDirection::Right : EPlayerHitDirection::Left;
+}
+
+void APrototypeCharacter::StartQuickTurn(float TargetYawDelta)
+{
+	if (bIsQuickTurning || bIsRunning || bIsClimbing) return;
+	if (CombatComponent && CombatComponent->IsAiming()) return;
+
+	bIsQuickTurning = true;
+	TurnAlpha = 0.f;
+	TurnStartYaw = GetActorRotation().Yaw;
+	TurnYawDelta = TargetYawDelta;
+
+	if (Controller)
+	{
+		ControlStartYaw = Controller->GetControlRotation().Yaw;
+	}
+
+	bool bHasPistol = CombatComponent && CombatComponent->IsPistolEquipped();
+
+	// 회전 각도와 무기 유무에 따른 인덱스 및 시간 세팅
+	if (FMath::Abs(TargetYawDelta) > 100.0f) // 180도 턴
+	{
+		TurnIndex = bHasPistol ? 6 : 2; // Pistol 180 : Unarmed 180
+		TurnDuration = Duration180;
+	}
+	else if (TargetYawDelta > 0) // 오른쪽 90도
+	{
+		TurnIndex = bHasPistol ? 8 : 4; // Pistol R90 : Unarmed R90
+		TurnDuration = Duration90;
+	}
+	else // 왼쪽 90도
+	{
+		TurnIndex = bHasPistol ? 7 : 3; // Pistol L90 : Unarmed L90
+		TurnDuration = Duration90;
+	}
+
+	// 물리 이동 일시 정지 
+	GetCharacterMovement()->StopMovementImmediately();
+}
+
+void APrototypeCharacter::StopQuickTurn()
+{
+	bIsQuickTurning = false;
+	TurnAlpha = 0.f;
+	TurnIndex = 0;
+
+	// 조준 상태였다면 다시 컨트롤러 회전 복구
+	if (CombatComponent && CombatComponent->IsAiming())
+	{
+		bUseControllerRotationYaw = true;
+	}
+}
+
+void APrototypeCharacter::PerformQuickTurn180()
+{
+	StartQuickTurn(180.0f);
+}
+
+void APrototypeCharacter::PerformQuickTurn90(float Angle)
+{
+}
+
+void APrototypeCharacter::ProcessMovementTurn(FVector2D MovementVector)
+{
 }
 
 void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
