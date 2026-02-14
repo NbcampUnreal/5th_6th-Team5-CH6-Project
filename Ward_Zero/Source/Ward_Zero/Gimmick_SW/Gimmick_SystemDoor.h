@@ -15,7 +15,7 @@ public:
 	// Sets default values for this actor's properties
 	AGimmick_SystemDoor();
 
-	UFUNCTION(BlueprintCallable, Category = "Door")
+	//UFUNCTION(BlueprintCallable, Category = "Door")
 	
 
 protected:
