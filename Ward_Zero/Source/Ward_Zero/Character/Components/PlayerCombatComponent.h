@@ -32,6 +32,8 @@ public:
 	// [중요] 발사 함수: 애니메이션과 쉐이크는 여기서, 실제 발사는 무기에게 위임
 	void Fire(UAnimMontage* FireMontage, UAnimInstance* AnimInst, TSubclassOf<UCameraShakeBase> CamShake);
 
+	void Reload();
+
 	// 상태 확인 (Getter)
 	bool IsPistolEquipped() const { return bIsPistolEquipped; }
 	bool IsAiming() const { return bIsAiming; }
@@ -53,6 +55,9 @@ protected:
 
 	// 레이저 사이트 위치 업데이트 (무기에서 가져옴)
 	void UpdateHandIK();
+
+	UPROPERTY(EditAnywhere, Category = "Montage")
+	UAnimMontage* ReloadMontage;
 
 public:
 	// 에디터에서 설정할 기본 무기 클래스 (예: BP_Pistol)

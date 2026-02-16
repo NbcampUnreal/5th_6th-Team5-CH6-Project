@@ -52,6 +52,8 @@ void AWeapon::Tick(float DeltaTime)
 void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();	
+
+    CurrentAmmo = MaxCapacity;
 }
 
 void AWeapon::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
@@ -61,13 +63,13 @@ void AWeapon::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOw
 	WeaponOwnerController = NewInstigator ? NewInstigator->GetController() : nullptr;
 
 	AttachToComponent(InParent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, InSocketName);
-
-	// 레이저 켜기 등
 }
 
 void AWeapon::Fire(const FVector& HitTarget)
 {
     if (!WeaponMesh) return;
+
+    if (CurrentAmmo <= 0 || bIsReloading) return;
 
     FVector MuzzleSocketLocation = WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
     FVector OutBeamEnd = HitTarget;
@@ -84,7 +86,7 @@ void AWeapon::Fire(const FVector& HitTarget)
     {
         OutBeamEnd = FireHit.ImpactPoint;
 
-        // 2. 이펙트 재생 (타격음, 파티클)
+        // 이펙트 재생 (타격음, 파티클)
         if (ImpactEffect)
         {
             UNiagaraFunctionLibrary::SpawnSystemAtLocation(
@@ -92,7 +94,7 @@ void AWeapon::Fire(const FVector& HitTarget)
             );
         }
 
-        // 3. [핵심] 데미지 전달 (몬스터에게 WZDamageType을 실어서 보냄)
+        // 데미지 전달 (몬스터에게 WZDamageType을 실어서 보냄)
         // 몬스터는 TakeDamage에서 이 DamageTypeClass를 열어보고 스턴인지 확인합니다.
         if (FireHit.GetActor())
         {
@@ -139,4 +141,33 @@ void AWeapon::Fire(const FVector& HitTarget)
             EAttachLocation::KeepRelativeOffset, true
         );
     }
+
+    SpendRound();
+}
+
+void AWeapon::SpendRound()
+{
+    CurrentAmmo = FMath::Clamp(CurrentAmmo - 1, 0, MaxCapacity);
+
+    UE_LOG(LogTemp, Warning, TEXT("Ammo: %d / %d"), CurrentAmmo, MaxCapacity);
+}
+
+bool AWeapon::IsEmpty() const
+{
+    return CurrentAmmo <= 0;
+}
+
+void AWeapon::StartReload()
+{
+    if (bIsReloading || CurrentAmmo >= MaxCapacity) return;
+
+    bIsReloading = true;
+    UE_LOG(LogTemp, Warning, TEXT("Reload Started..."));
+}
+
+void AWeapon::FinishReload()
+{
+    bIsReloading = false;
+    CurrentAmmo = MaxCapacity;
+    UE_LOG(LogTemp, Warning, TEXT("Reload Finished! Ammo Full."));
 }

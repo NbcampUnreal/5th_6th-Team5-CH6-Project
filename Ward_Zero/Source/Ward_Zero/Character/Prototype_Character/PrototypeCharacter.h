@@ -80,6 +80,8 @@ protected:
     UPROPERTY(EditAnywhere, Category = Input) UInputAction* AimAction;
     UPROPERTY(EditAnywhere, Category = Input) UInputAction* FireAction;
     UPROPERTY(EditAnywhere, Category = Input) UInputAction* QuickTurnAction;
+
+    UPROPERTY(EditAnywhere, Category = Input) UInputAction* ReloadAction;
 #pragma endregion 
 
 #pragma region Montage 
@@ -174,6 +176,7 @@ private:
 protected:
     void Move(const FInputActionValue& Value);
     void Look(const FInputActionValue& Value);
+	void Reload(const FInputActionValue& Value);
     void StartRunning(const FInputActionValue& Value);
     void ToggleCrouch(const FInputActionValue& Value);
     void Interact(const FInputActionValue& Value);

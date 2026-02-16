@@ -3,7 +3,7 @@
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
-#include "Weapon/Weapon.h" // [중요] Weapon 헤더 포함
+#include "Weapon/Weapon.h"
 
 UPlayerCombatComponent::UPlayerCombatComponent()
 {
@@ -73,6 +73,26 @@ void UPlayerCombatComponent::ToggleEquip(UAnimMontage* EquipMontage, UAnimInstan
 	if (AnimInst && EquipMontage && bIsPistolEquipped)
 	{
 		AnimInst->Montage_Play(EquipMontage);
+	}
+}
+
+void UPlayerCombatComponent::Reload()
+{
+	if (!EquippedWeapon || EquippedWeapon->IsReloading()) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("Reload System Active"));
+
+	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	if (OwnerCharacter)
+	{
+		UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance();
+
+		if (AnimInst && ReloadMontage)
+		{
+			AnimInst->Montage_Play(ReloadMontage);
+
+			EquippedWeapon->StartReload();
+		}
 	}
 }
 

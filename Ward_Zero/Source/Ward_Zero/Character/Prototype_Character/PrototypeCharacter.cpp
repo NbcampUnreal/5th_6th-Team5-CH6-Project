@@ -422,6 +422,11 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		}
 		if (FireAction) EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &APrototypeCharacter::Fire);
 
+		if (ReloadAction)
+		{
+			EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &APrototypeCharacter::Reload);
+		}
+
 		if (QuickTurnAction)
 		{
 			EnhancedInputComponent->BindAction(QuickTurnAction, ETriggerEvent::Started, this, &APrototypeCharacter::PerformQuickTurn180);
@@ -492,6 +497,14 @@ void APrototypeCharacter::CheckRunState()
 			GetCharacterMovement()->bOrientRotationToMovement = false;
 			CameraBoom->CameraLagSpeed = 15.0f;
 		}
+	}
+}
+
+void APrototypeCharacter::Reload(const FInputActionValue& Value)
+{
+	if (CombatComponent)
+	{
+		CombatComponent->Reload();
 	}
 }
 

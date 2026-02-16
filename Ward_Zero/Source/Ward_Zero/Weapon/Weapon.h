@@ -27,6 +27,22 @@ public:
     // 무기 장착/해제
     void Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator);
 
+    // 탄약 소비 (Fire에서 호출)
+    void SpendRound();
+
+    // 탄약이 남아있는지 확인
+    bool IsEmpty() const;
+
+    // 재장전 시작 (상태 변경)
+    void StartReload();
+
+    // [중요] 애니메이션 팀에게 알려줄 함수 (탄약 채우기)
+    UFUNCTION(BlueprintCallable)
+    void FinishReload();
+
+    // 현재 재장전 중인가?
+    bool IsReloading() const { return bIsReloading; }
+
     // IK용 타겟 위치 반환 (레이저 끝점 등)
     FVector GetLaserTargetLocation() const
     {
@@ -47,6 +63,15 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, Category = "Weapon Properties")
     float FireRange = 5000.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Config")
+    int32 MaxCapacity = 12; // 탄창 용량
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Config")
+    int32 CurrentAmmo;      // 현재 남은 탄약
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon State")
+    bool bIsReloading = false;
 
     // 이펙트들
     UPROPERTY(EditDefaultsOnly, Category = "Weapon Effects")
