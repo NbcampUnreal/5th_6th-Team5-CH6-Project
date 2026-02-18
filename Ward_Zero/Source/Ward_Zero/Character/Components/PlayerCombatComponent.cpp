@@ -3,7 +3,7 @@
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
-#include "Weapon/Weapon.h" // [중요] Weapon 헤더 포함
+#include "Weapon/Weapon.h"
 
 UPlayerCombatComponent::UPlayerCombatComponent()
 {
@@ -59,7 +59,7 @@ void UPlayerCombatComponent::SpawnDefaultWeapon()
 	}
 }
 
-void UPlayerCombatComponent::ToggleEquip(UAnimMontage* EquipMontage, UAnimInstance* AnimInst)
+void UPlayerCombatComponent::ToggleEquip(UAnimMontage* Montage, UAnimInstance* AnimInst)
 {
 	if (!EquippedWeapon) return;
 	if (bIsAiming) return;
@@ -67,35 +67,70 @@ void UPlayerCombatComponent::ToggleEquip(UAnimMontage* EquipMontage, UAnimInstan
 	bIsPistolEquipped = !bIsPistolEquipped;
 
 	// 1. 무기 보이게/안보이게 설정
-	EquippedWeapon->SetActorHiddenInGame(!bIsPistolEquipped);
+	// 해제는 UnEquip 노티파이에서 처리
+	if (bIsPistolEquipped)
+	{
+		EquippedWeapon->SetActorHiddenInGame(false);
+	}
 
 	// 2. 애니메이션 재생
-	if (AnimInst && EquipMontage && bIsPistolEquipped)
+	if (AnimInst && Montage)
 	{
-		AnimInst->Montage_Play(EquipMontage);
+		AnimInst->Montage_Play(Montage);
 	}
 }
 
-void UPlayerCombatComponent::StartAiming()
+void UPlayerCombatComponent::Reload()
 {
-	if (bIsPistolEquipped && EquippedWeapon)
+	if (!EquippedWeapon || EquippedWeapon->IsReloading()) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("Reload System Active"));
+
+	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	if (OwnerCharacter)
 	{
-		bIsAiming = true;
-		// 무기에게 조준 시작 알림 (레이저 켜기 등)
-		// 만약 Weapon 클래스에 StartAiming이 없다면 추가하거나, 여기서 레이저 관련 로직을 호출해도 됩니다.
-		// 여기서는 Weapon 클래스가 레이저를 관리한다고 가정합니다.
+		UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance();
+
+		if (AnimInst && ReloadMontage)
+		{
+			AnimInst->Montage_Play(ReloadMontage);
+
+			EquippedWeapon->StartReload();
+		}
 	}
+}
+
+bool UPlayerCombatComponent::StartAiming()
+{
+	if (!bIsPistolEquipped || !EquippedWeapon || EquippedWeapon->IsReloading())
+	{		
+		return false;
+	}
+
+	bIsAiming = true;
+	
+	UE_LOG(LogTemp, Warning, TEXT("CombatComp: bIsAiming set to TRUE"));
+
+	return true;
 }
 
 void UPlayerCombatComponent::StopAiming()
 {
+	if (!bIsAiming) return;
 	bIsAiming = false;
-	// 무기에게 조준 중단 알림 (레이저 끄기 등)
+
+	UE_LOG(LogTemp, Error, TEXT("CombatComp: bIsAiming set to FALSE (StopAiming Called)"));
 }
 
 void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* AnimInst, TSubclassOf<UCameraShakeBase> CamShake)
 {
 	if (!bIsAiming || !EquippedWeapon || !PlayerCamera) return;
+
+	if (!EquippedWeapon->HasAmmo())
+	{
+		EquippedWeapon->PlayDryFireSound();
+		return;
+	}
 
 	// 1. [Component 역할] 애니메이션 재생 (플레이어의 행동)
 	if (AnimInst && FireMontage)
@@ -109,20 +144,24 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 		UGameplayStatics::PlayWorldCameraShake(GetWorld(), CamShake, PlayerCamera->GetComponentLocation(), 0.0f, 500.0f);
 	}
 
-	// 3. [Component 역할] 목표 지점 계산 (카메라가 보고 있는 곳)
+	float RecoilPitch = FMath::RandRange(MaxRecoilPitch, MinRecoilPitch);
+	float RecoilYaw = FMath::RandRange(MinRecoilYaw, MaxRecoilYaw);
+
+	TargetRecoilRot.Pitch += RecoilPitch;
+
+	TargetRecoilRot.Yaw += RecoilYaw;
+
 	FVector CameraStart = PlayerCamera->GetComponentLocation();
-	FVector CameraEnd = CameraStart + (PlayerCamera->GetForwardVector() * 10000.f); // 사거리 충분히
+	FVector CameraEnd = CameraStart + (PlayerCamera->GetForwardVector() * 10000.f);
 
 	FHitResult Hit;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
-	Params.AddIgnoredActor(EquippedWeapon); // 무기도 충돌 제외
+	Params.AddIgnoredActor(EquippedWeapon);
 
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, CameraStart, CameraEnd, ECC_Visibility, Params);
-
 	FVector HitTarget = bHit ? Hit.ImpactPoint : CameraEnd;
 
-	// 4. [Weapon 역할] 실제 발사 (총구에서 목표 지점까지)
 	EquippedWeapon->Fire(HitTarget);
 }
 
@@ -135,6 +174,8 @@ void UPlayerCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 		UpdateHandIK();
 		CalculateAimOffset();
 	}
+
+	HandleRecoil(DeltaTime);
 }
 
 void UPlayerCombatComponent::UpdateHandIK()
@@ -162,4 +203,32 @@ void UPlayerCombatComponent::CalculateAimOffset()
 
 	AimYaw = FMath::Clamp(AimYaw, -90.0f, 90.0f);
 	AimPitch = FMath::Clamp(AimPitch, -90.0f, 90.0f);
+}
+
+void UPlayerCombatComponent::HandleRecoil(float DeltaTime)
+{
+	CurrentRecoilRot = FMath::RInterpTo(CurrentRecoilRot, TargetRecoilRot, DeltaTime, RecoilInterpSpeed);
+
+	FRotator DeltaRot = CurrentRecoilRot - LastRecoilRot;
+	LastRecoilRot = CurrentRecoilRot;
+
+	if (APawn* Pawn = Cast<APawn>(GetOwner()))
+	{
+		if (AController* Controller = Pawn->GetController())
+		{
+			FRotator NewControlRot = Controller->GetControlRotation() + DeltaRot;
+			Controller->SetControlRotation(NewControlRot);
+		}
+	}
+
+	if (TargetRecoilRot.IsNearlyZero(0.01f))
+	{
+		TargetRecoilRot = FRotator::ZeroRotator;
+		CurrentRecoilRot = FRotator::ZeroRotator;
+		LastRecoilRot = FRotator::ZeroRotator;
+	}
+	else
+	{
+		TargetRecoilRot = FMath::RInterpTo(TargetRecoilRot, FRotator::ZeroRotator, DeltaTime, RecoilRecoverySpeed);
+	}
 }
