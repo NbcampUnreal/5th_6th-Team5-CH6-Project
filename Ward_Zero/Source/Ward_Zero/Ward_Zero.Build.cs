@@ -22,7 +22,8 @@ public class Ward_Zero : ModuleRules
             "Niagara",
             "GameplayTags",
             "PhysicsCore",
-            "NavigationSystem"
+            "NavigationSystem",
+            "AnimGraphRuntime",
         });
 
         PrivateDependencyModuleNames.AddRange(new string[] { });

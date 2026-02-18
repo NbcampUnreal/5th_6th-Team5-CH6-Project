@@ -127,6 +127,10 @@ void UCombatComponent::ApplyStun(EHitDirection HitDir, EHitPart HitPart)
 	}
 	if (HitPart == EHitPart::Head)
 	{
+		if (StatusComp->GetIsRecoveringCC())
+		{
+			return;
+		}
 		switch (HitDir)
 		{
 		case EHitDirection::Front: MontageToPlay = MonsterData->CriticalHitReactMontages.Front; break;
