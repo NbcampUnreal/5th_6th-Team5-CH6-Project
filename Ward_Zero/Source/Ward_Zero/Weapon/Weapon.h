@@ -49,11 +49,11 @@ public:
         return LaserHitLocation;
     }
 
-protected:
+public:
     // 무기 메쉬 (Skeletal or Static) - 여기선 Static으로 가정
-    UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon Properties")
     UStaticMeshComponent* WeaponMesh;
-
+protected:
     // [핵심] 몬스터에게 전달할 데미지 타입 (블루프린트에서 WZDamageType_Gun 선택)
     UPROPERTY(EditDefaultsOnly, Category = "Weapon Properties")
     TSubclassOf<UWZDamageType> DamageTypeClass;

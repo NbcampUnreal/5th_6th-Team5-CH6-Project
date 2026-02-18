@@ -70,7 +70,7 @@ void UPlayerCombatComponent::ToggleEquip(UAnimMontage* Montage, UAnimInstance* A
 	// 해제는 UnEquip 노티파이에서 처리
 	if (bIsPistolEquipped)
 	{
-		EquippedWeapon->SetActorHiddenInGame(!bIsPistolEquipped);
+		EquippedWeapon->SetActorHiddenInGame(false);
 	}
 
 	// 2. 애니메이션 재생
