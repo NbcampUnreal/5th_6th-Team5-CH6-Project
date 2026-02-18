@@ -41,11 +41,11 @@ class WARD_ZERO_API APrototypeCharacter : public ACharacter
 
 public:
     APrototypeCharacter();
-
-protected:
-    virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
     virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+protected:
+    virtual void BeginPlay() override;   
     virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
         class AController* EventInstigator, AActor* DamageCauser) override;
 
@@ -80,7 +80,6 @@ protected:
     UPROPERTY(EditAnywhere, Category = Input) UInputAction* AimAction;
     UPROPERTY(EditAnywhere, Category = Input) UInputAction* FireAction;
     UPROPERTY(EditAnywhere, Category = Input) UInputAction* QuickTurnAction;
-
     UPROPERTY(EditAnywhere, Category = Input) UInputAction* ReloadAction;
 #pragma endregion 
 
@@ -131,22 +130,25 @@ protected:
 
     // 카메라 밥(Bob) 관련
     float BobTime = 0.0f;
-    UPROPERTY(EditDefaultsOnly, Category = "Camera") float BobFrequency = 5.0f;
-    UPROPERTY(EditDefaultsOnly, Category = "Camera") float BobAmplitude = 2.0f;
-    UPROPERTY(EditDefaultsOnly, Category = "Camera") float BobHorizontalAmplitude = 1.0f;
+    UPROPERTY(EditAnywhere, Category = "Camera") float BobFrequency = 12.0f;
+    UPROPERTY(EditAnywhere, Category = "Camera") float BobAmplitude = 2.0f;
+    UPROPERTY(EditAnywhere, Category = "Camera") float BobHorizontalAmplitude = 1.0f;
 
     // 조준 시 줌 설정
-    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim") float AimArmLength = 80.0f;
-    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim") float AimFOV = 45.0f;
-
-    FVector DefaultTargetOffset;
+    UPROPERTY(EditAnywhere, Category = "Camera|Aim") float AimArmLength = 40.0f;
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim") float AimFOV = 50.0f;
 
     //조준 해제 시 복원용 초기값 저장 변수 
     float OriginalArmLength = 180.0f;
     FVector OriginalSocketOffset;
     FVector OriginalTargetOffset;
     float OriginalFOV = 60.0f;
-    bool bOriginalUsePawnControlRotation = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Aim")
+    FVector AimSocketOffset = FVector(-20.0f, 30.0f, 20.0f);
+
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim")
+    float AimInterpSpeed = 20.0f;
 #pragma endregion 
 
 #pragma region Climb 
