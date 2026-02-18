@@ -12,12 +12,9 @@
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/DamageEvents.h"
-<<<<<<< Updated upstream
 #include "Character/Animation/PlayerAnimInstance.h"
-=======
 #include "Engine/Engine.h"
 #include "Weapon/WZ_HUD_DH.h"
->>>>>>> Stashed changes
 
 APrototypeCharacter::APrototypeCharacter()
 {
@@ -173,12 +170,10 @@ void APrototypeCharacter::Tick(float DeltaTime)
 
 	}
 
-<<<<<<< Updated upstream
 	// 이하 평상시 회전 및 카메라 로직만 실행
 	if (!bIsRunning && !bIsQuickTurning && GetVelocity().SizeSquared() > KINDA_SMALL_NUMBER)
-=======
+
 	if (bIsRunning)
->>>>>>> Stashed changes
 	{
 		bUseControllerRotationYaw = false;
 		GetCharacterMovement()->bOrientRotationToMovement = true;

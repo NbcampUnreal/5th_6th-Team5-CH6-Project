@@ -85,8 +85,12 @@ void AWeapon::Fire(const FVector& HitTarget)
     FVector Start = MuzzleSocketLocation;
     FVector End = HitTarget + (HitTarget - Start).GetSafeNormal() * 50.0f; // 조금 더 길게
 
+    FCollisionQueryParams Params;
+    Params.bTraceComplex = false;
+    Params.bReturnPhysicalMaterial = true;
+
     bool bBeamHit = GetWorld()->LineTraceSingleByChannel(
-        FireHit, Start, End, ECC_Visibility
+        FireHit, Start, End, ECC_Visibility, Params
     );
 
     if (bBeamHit)
@@ -102,6 +106,7 @@ void AWeapon::Fire(const FVector& HitTarget)
 
         if (FireHit.GetActor())
         {
+			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *FireHit.GetActor()->GetName());
             UGameplayStatics::ApplyPointDamage(
                 FireHit.GetActor(),
                 Damage,
