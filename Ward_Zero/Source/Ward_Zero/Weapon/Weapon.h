@@ -49,6 +49,10 @@ public:
         return LaserHitLocation;
     }
 
+    bool HasAmmo() const { return CurrentAmmo > 0; }
+
+    void PlayDryFireSound();
+
 protected:
     // 무기 메쉬 (Skeletal or Static) - 여기선 Static으로 가정
     UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
@@ -83,8 +87,14 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Weapon Effects")
     UNiagaraSystem* LaserSightSystem;
 
+    UPROPERTY(EditAnywhere, Category = "Weapon Effects")
+    UNiagaraSystem* TracerEffect;
+
+    UPROPERTY(EditAnywhere, Category = "Weapon Effects")
+    FName MuzzleSocketName = TEXT("MuzzleFlash");
+
     UPROPERTY(EditDefaultsOnly, Category = "Weapon Effects")
-    UNiagaraSystem* TraceEffect;
+    USoundBase* DryFireSound;
 
 private:
     UPROPERTY()

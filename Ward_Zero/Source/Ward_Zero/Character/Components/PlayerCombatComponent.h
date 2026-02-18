@@ -25,6 +25,7 @@ public:
 	void SetupCombat(UCameraComponent* InCamera);
 
 	// 액션
+<<<<<<< Updated upstream
 	void ToggleEquip(UAnimMontage* Montage, UAnimInstance* AnimInst);
 	void StartAiming();
 	void StopAiming();
@@ -56,6 +57,8 @@ protected:
 	// 레이저 사이트 위치 업데이트 (무기에서 가져옴)
 	void UpdateHandIK();
 
+	void HandleRecoil(float DeltaTime);
+
 	UPROPERTY(EditAnywhere, Category = "Montage")
 	UAnimMontage* ReloadMontage;
 
@@ -71,7 +74,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	bool bIsPistolEquipped = false;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	bool bIsAiming = false;
 
 	// IK 및 애니메이션 관련 변수
@@ -83,6 +86,28 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Combat|Aim")
 	float AimPitch;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|Recoil")
+	float MinRecoilPitch = 5.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|Recoil")
+	float MaxRecoilPitch = 10.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|Recoil")
+	float MinRecoilYaw = -3.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|Recoil")
+	float MaxRecoilYaw = 3.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|Recoil")
+	float RecoilInterpSpeed = 25.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|Recoil")
+	float RecoilRecoverySpeed = 1.0f;
+
+	FRotator TargetRecoilRot = FRotator::ZeroRotator;
+	FRotator CurrentRecoilRot = FRotator::ZeroRotator;
+	FRotator LastRecoilRot = FRotator::ZeroRotator;
 
 private:
 	UPROPERTY()

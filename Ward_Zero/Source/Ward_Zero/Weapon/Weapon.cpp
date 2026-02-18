@@ -1,4 +1,5 @@
 ﻿#include "Weapon/Weapon.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
@@ -69,7 +70,13 @@ void AWeapon::Fire(const FVector& HitTarget)
 {
     if (!WeaponMesh) return;
 
-    if (CurrentAmmo <= 0 || bIsReloading) return;
+    if (CurrentAmmo <= 0)
+    {
+        PlayDryFireSound();
+        return;
+    }
+
+    if (bIsReloading) return;
 
     FVector MuzzleSocketLocation = WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
     FVector OutBeamEnd = HitTarget;
@@ -86,7 +93,6 @@ void AWeapon::Fire(const FVector& HitTarget)
     {
         OutBeamEnd = FireHit.ImpactPoint;
 
-        // 이펙트 재생 (타격음, 파티클)
         if (ImpactEffect)
         {
             UNiagaraFunctionLibrary::SpawnSystemAtLocation(
@@ -94,8 +100,6 @@ void AWeapon::Fire(const FVector& HitTarget)
             );
         }
 
-        // 데미지 전달 (몬스터에게 WZDamageType을 실어서 보냄)
-        // 몬스터는 TakeDamage에서 이 DamageTypeClass를 열어보고 스턴인지 확인합니다.
         if (FireHit.GetActor())
         {
             UGameplayStatics::ApplyPointDamage(
@@ -115,21 +119,26 @@ void AWeapon::Fire(const FVector& HitTarget)
         OutBeamEnd = MuzzleSocketLocation + (HitTarget - MuzzleSocketLocation).GetSafeNormal() * FireRange;
     }
 
-    if (TraceEffect)
-    {
-        FVector MuzzleLocation = WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
+    UMeshComponent* Mesh = FindComponentByClass<UMeshComponent>();
 
-        UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-            GetWorld(),
-            TraceEffect,
-            MuzzleLocation,
-            FRotator::ZeroRotator
+    if (Mesh && TracerEffect)
+    {
+        FTransform SocketTransform = Mesh->GetSocketTransform(MuzzleSocketName);
+        FVector MuzzleLocation = SocketTransform.GetLocation();
+
+        UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAttached(
+            TracerEffect,
+            Mesh,
+            MuzzleSocketName,
+            FVector::ZeroVector,
+            FRotator::ZeroRotator,
+            EAttachLocation::SnapToTarget,
+            true
         );
 
         if (NiagaraComp)
-        {
-            NiagaraComp->SetNiagaraVariableVec3(TEXT("BeamStart"), MuzzleLocation);
-            NiagaraComp->SetNiagaraVariableVec3(TEXT("BeamEnd"), OutBeamEnd);
+        { 
+            NiagaraComp->SetVectorParameter(FName("TracerEnd"), HitTarget);
         }
     }
 
@@ -170,4 +179,13 @@ void AWeapon::FinishReload()
     bIsReloading = false;
     CurrentAmmo = MaxCapacity;
     UE_LOG(LogTemp, Warning, TEXT("Reload Finished! Ammo Full."));
+}
+
+void AWeapon::PlayDryFireSound()
+{
+    if (DryFireSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, DryFireSound, GetActorLocation());
+    }
+    UE_LOG(LogTemp, Warning, TEXT("(총알 없음)"));
 }
