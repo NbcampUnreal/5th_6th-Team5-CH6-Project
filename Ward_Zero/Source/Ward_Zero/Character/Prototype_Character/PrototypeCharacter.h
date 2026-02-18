@@ -87,6 +87,8 @@ protected:
 #pragma region Montage 
     // 몽타주 
     UPROPERTY(EditAnywhere, Category = "Montage") UAnimMontage* EquipMontage;
+
+    UPROPERTY(EditAnywhere, Category = "Montage") UAnimMontage* UnEquipMontage;
     UPROPERTY(EditAnywhere, Category = "Montage") UAnimMontage* FireMontage;
 
     // 피격 몽타주
@@ -178,6 +180,7 @@ protected:
     void Look(const FInputActionValue& Value);
 	void Reload(const FInputActionValue& Value);
     void StartRunning(const FInputActionValue& Value);
+    void EndRunning(const FInputActionValue& Value);
     void ToggleCrouch(const FInputActionValue& Value);
     void Interact(const FInputActionValue& Value);
 
@@ -236,4 +239,15 @@ public:
 
      UPROPERTY(EditDefaultsOnly, Category = "Turn|Duration") 
      float Duration90 = 0.4f;
+
+public:
+    UFUNCTION(BlueprintCallable, Category = "Movement")
+    bool GetIsRunning() const { return bIsRunning; }
+
+    // 애니메이션 레이어 링크용 클래스
+    UPROPERTY(EditAnywhere, Category = "Animations")
+    TSubclassOf<class UAnimInstance> UnarmedLayerClass;
+
+    UPROPERTY(EditAnywhere, Category = "Animations")
+    TSubclassOf<class UAnimInstance> PistolLayerClass;
 };

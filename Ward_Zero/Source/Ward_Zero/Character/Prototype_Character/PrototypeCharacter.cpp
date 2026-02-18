@@ -12,6 +12,7 @@
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/DamageEvents.h"
+#include "Character/Animation/PlayerAnimInstance.h"
 
 APrototypeCharacter::APrototypeCharacter()
 {
@@ -97,6 +98,13 @@ void APrototypeCharacter::BeginPlay()
 	{
 		StatusComponent->OnPlayerDied.AddDynamic(this, &APrototypeCharacter::OnDeath);
 	}
+	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+	{
+		if (UnarmedLayerClass)
+		{
+			AnimInst->LinkAnimClassLayers(UnarmedLayerClass);
+		}
+	}
 }
 
 void APrototypeCharacter::Tick(float DeltaTime)
@@ -159,7 +167,7 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	}
 
 	// 이하 평상시 회전 및 카메라 로직만 실행
-	if (!bIsRunning && GetVelocity().SizeSquared() > KINDA_SMALL_NUMBER)
+	if (!bIsRunning && !bIsQuickTurning && GetVelocity().SizeSquared() > KINDA_SMALL_NUMBER)
 	{
 		FRotator TargetRotation = FRotator(0.0f, GetControlRotation().Yaw, 0.0f);
 		FRotator CurrentRotation = GetActorRotation();
@@ -279,7 +287,7 @@ void APrototypeCharacter::OnDeath()
 
 EPlayerHitDirection APrototypeCharacter::GetHitDirection(const FVector& ToAttackerDir)
 {
-	FVector ToAttacker = (ToAttackerDir - GetActorLocation()).GetSafeNormal();
+	FVector ToAttacker = ToAttackerDir;
 	FVector MyForward = GetActorForwardVector();
 	FVector MyRight = GetActorRightVector();
 
@@ -357,6 +365,7 @@ void APrototypeCharacter::ProcessMovementTurn(FVector2D MovementVector)
 
 void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
 {
+	if (bIsQuickTurning) StopQuickTurn();
 	if (CombatComponent && CombatComponent->IsAiming())
 	{
 		CombatComponent->StopAiming();
@@ -410,7 +419,11 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	{
 		if (MoveAction) EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APrototypeCharacter::Move);
 		if (LookAction) EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APrototypeCharacter::Look);
-		if (RunAction) EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Started, this, &APrototypeCharacter::StartRunning);
+		if (RunAction)
+		{
+			EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Started, this, &APrototypeCharacter::StartRunning);
+			EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &APrototypeCharacter::EndRunning);
+		}
 		if (CrouchAction) EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &APrototypeCharacter::ToggleCrouch);
 		if (InteractAction) EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APrototypeCharacter::Interact);
 
@@ -437,22 +450,21 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 void APrototypeCharacter::Move(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
+	if (Controller == nullptr || bIsQuickTurning) return;
 
 	if (bIsClimbing)
 	{
 		AddMovementInput(FVector::UpVector, MovementVector.Y);
 		return;
 	}
-	if (Controller != nullptr)
-	{
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-		AddMovementInput(ForwardDirection, MovementVector.Y);
-		AddMovementInput(RightDirection, MovementVector.X);
-	}
+	const FRotator Rotation = Controller->GetControlRotation();
+	const FRotator YawRotation(0, Rotation.Yaw, 0);
+	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+	const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+	AddMovementInput(ForwardDirection, MovementVector.Y);
+	AddMovementInput(RightDirection, MovementVector.X);
 }
 
 void APrototypeCharacter::Look(const FInputActionValue& Value)
@@ -483,6 +495,21 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	CameraBoom->CameraLagSpeed = 10.0f;
+}
+
+void APrototypeCharacter::EndRunning(const FInputActionValue& Value)
+{
+	UPlayerAnimInstance* AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
+
+	if (AnimInst)
+	{
+		AnimInst->UpdateLocomotionState(ELocomotionState::Walking);
+	}
+
+	bIsRunning = false;
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	GetCharacterMovement()->bOrientRotationToMovement = false; // Strafe 모드로 복구
+	CameraBoom->CameraLagSpeed = 15.0f;
 }
 
 void APrototypeCharacter::CheckRunState()
@@ -564,7 +591,19 @@ void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 {
 	if (CombatComponent)
 	{
-		CombatComponent->ToggleEquip(EquipMontage, GetMesh()->GetAnimInstance());
+		UAnimMontage* MontageToPlay = CombatComponent->bIsPistolEquipped ? UnEquipMontage : EquipMontage;
+
+		CombatComponent->ToggleEquip(MontageToPlay, GetMesh()->GetAnimInstance());
+
+		TSubclassOf<class UAnimInstance> LayerToLink = CombatComponent->IsPistolEquipped() ? PistolLayerClass : UnarmedLayerClass;
+
+		if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+		{
+			if (LayerToLink)
+			{
+				AnimInst->LinkAnimClassLayers(LayerToLink);
+			}
+		}
 	}
 }
 

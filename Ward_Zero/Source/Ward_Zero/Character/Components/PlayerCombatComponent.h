@@ -25,7 +25,7 @@ public:
 	void SetupCombat(UCameraComponent* InCamera);
 
 	// 액션
-	void ToggleEquip(UAnimMontage* EquipMontage, UAnimInstance* AnimInst);
+	void ToggleEquip(UAnimMontage* Montage, UAnimInstance* AnimInst);
 	void StartAiming();
 	void StopAiming();
 

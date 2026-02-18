@@ -59,7 +59,7 @@ void UPlayerCombatComponent::SpawnDefaultWeapon()
 	}
 }
 
-void UPlayerCombatComponent::ToggleEquip(UAnimMontage* EquipMontage, UAnimInstance* AnimInst)
+void UPlayerCombatComponent::ToggleEquip(UAnimMontage* Montage, UAnimInstance* AnimInst)
 {
 	if (!EquippedWeapon) return;
 	if (bIsAiming) return;
@@ -67,12 +67,16 @@ void UPlayerCombatComponent::ToggleEquip(UAnimMontage* EquipMontage, UAnimInstan
 	bIsPistolEquipped = !bIsPistolEquipped;
 
 	// 1. 무기 보이게/안보이게 설정
-	EquippedWeapon->SetActorHiddenInGame(!bIsPistolEquipped);
+	// 해제는 UnEquip 노티파이에서 처리
+	if (bIsPistolEquipped)
+	{
+		EquippedWeapon->SetActorHiddenInGame(!bIsPistolEquipped);
+	}
 
 	// 2. 애니메이션 재생
-	if (AnimInst && EquipMontage && bIsPistolEquipped)
+	if (AnimInst && Montage)
 	{
-		AnimInst->Montage_Play(EquipMontage);
+		AnimInst->Montage_Play(Montage);
 	}
 }
 
