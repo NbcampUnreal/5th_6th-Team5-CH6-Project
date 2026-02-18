@@ -28,6 +28,10 @@ public:
 <<<<<<< Updated upstream
 	void ToggleEquip(UAnimMontage* Montage, UAnimInstance* AnimInst);
 	void StartAiming();
+=======
+	void ToggleEquip(UAnimMontage* EquipMontage, UAnimInstance* AnimInst);
+	bool StartAiming();
+>>>>>>> Stashed changes
 	void StopAiming();
 
 	// [중요] 발사 함수: 애니메이션과 쉐이크는 여기서, 실제 발사는 무기에게 위임
