@@ -61,11 +61,11 @@ public:
     virtual bool GetIsGround() const override;
     virtual bool GetIsQuickTurning() const override;
     virtual int32 GetTurnIndex() const override;
-    virtual bool IsEquipping() const override; 
+    virtual bool IsEquipping() const override;
     virtual bool GetIsAiming() const override;
     virtual FVector GetHandIKTargetLoc() const override;
-    virtual void SetIsQuickTurning(bool bIsTurning) override; 
-    virtual bool GetIsClimbing() const override; 
+    virtual void SetIsQuickTurning(bool bIsTurning) override;
+    virtual bool GetIsClimbing() const override;
 #pragma endregion
 
 protected:
@@ -156,10 +156,10 @@ public:
 protected:
     void ProcessMovementTurn(FVector2D MovementVector);
 
-    UPROPERTY(EditDefaultsOnly, Category = "Turn|Duration") 
+    UPROPERTY(EditDefaultsOnly, Category = "Turn|Duration")
     float Duration180 = 0.6f;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Turn|Duration") 
+    UPROPERTY(EditDefaultsOnly, Category = "Turn|Duration")
     float Duration90 = 0.4f;
 #pragma endregion 
 
@@ -223,69 +223,20 @@ private:
     UPROPERTY()
     bool bIsQuickTurning = false;
     float TurnAlpha = 0.0f;
-    float TurnDuration = 0.0f;     
-    float TurnStartYaw = 0.0f;     
-    float TurnYawDelta = 0.0f;     
+    float TurnDuration = 0.0f;
+    float TurnStartYaw = 0.0f;
+    float TurnYawDelta = 0.0f;
     float ControlStartYaw = 0.0f;
 
-<<<<<<< Updated upstream
-    float TurnStartYaw = 0.0f;     // 회전 시작 당시의 Yaw
-    float TurnYawDelta = 0.0f;     // 회전해야 할 총 각도 (예: 90, 180, -90)
-
-    float ControlStartYaw;
-
-    UPROPERTY(BlueprintReadOnly, Category = "Combat")
-    int32 TurnIndex = 0;
-
-    // 퀵 턴 키 바인딩 함수
-    void PerformQuickTurn180();
-
-    void PerformQuickTurn90(float Angle);
-
- protected:
-     // 이동 입력 시 각도 체크를 위한 변수
-     void ProcessMovementTurn(FVector2D MovementVector);
-
-     // 각 애니메이션별 재생 시간
-     UPROPERTY(EditDefaultsOnly, Category = "Turn|Duration") 
-     float Duration180 = 0.6f;
-
-     UPROPERTY(EditDefaultsOnly, Category = "Turn|Duration") 
-     float Duration90 = 0.4f;
-
-public:
-    // 애니메이션 레이어 링크용 클래스
-    UPROPERTY(EditAnywhere, Category = "Animations")
-    TSubclassOf<class UAnimInstance> UnarmedLayerClass;
-
-    UPROPERTY(EditAnywhere, Category = "Animations")
-    TSubclassOf<class UAnimInstance> PistolLayerClass;
-
-public:
-    // 인터페이스 함수 오버라이드 선언
-    virtual bool GetIsRunning() const override;
-    virtual bool GetIsPistolEquipped() const override;
-    virtual bool GetIsCrouching() const override;
-    virtual bool GetIsGround() const override;
-    virtual bool GetIsQuickTurning() const override;
-    virtual int32 GetTurnIndex() const override;
-    virtual  bool IsEquipping() const override; 
-    virtual bool GetIsAiming() const override;
-    FVector GetHandIKTargetLoc() const override;
-    virtual void SetIsQuickTurning(bool bIsTurning) override; 
-    virtual bool GetIsClimbing() const override; 
-    virtual UStaticMeshComponent* GetEquippedWeaponMesh() override;
-=======
     // 카메라 및 조준 복원용 변수
     float StandingArmLength = 180.0f;
     float StandingCameraHeight = 45.0f;
     float CurrentBaseCameraZ = 45.0f;
     float BobTime = 0.0f;
-    
+
     float OriginalArmLength = 180.0f;
     FVector OriginalSocketOffset;
     FVector OriginalTargetOffset;
     float OriginalFOV = 60.0f;
 #pragma endregion 
->>>>>>> Stashed changes
 };
