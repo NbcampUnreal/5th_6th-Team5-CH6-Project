@@ -5,6 +5,7 @@
 #include "NiagaraComponent.h"
 #include "Engine/DamageEvents.h"
 #include "MonsterAI/MonsterAI_CHS/Weapon/WZDamageType.h"
+//#include "DrawDebugHelpers.h"
 
 AWeapon::AWeapon()
 {
@@ -97,6 +98,18 @@ void AWeapon::Fire(const FVector& HitTarget)
     {
         OutBeamEnd = FireHit.ImpactPoint;
 
+        // 만약 크로스헤어와 쏘는 곳이 맞는지 확인할때 필요하면 쓰세요 :)
+        /*
+        DrawDebugSphere(
+            GetWorld(),
+            FireHit.ImpactPoint,
+            10.0f,               
+            12,                  
+            FColor::Red,        
+            false,               
+            5.0f
+        );*/
+
         if (ImpactEffect)
         {
             UNiagaraFunctionLibrary::SpawnSystemAtLocation(
@@ -147,12 +160,21 @@ void AWeapon::Fire(const FVector& HitTarget)
         }
     }
 
-    if (MuzzleFlash)
+    if (FireSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
+    }
+
+    if (Mesh && MuzzleFlash)
     {
         UNiagaraFunctionLibrary::SpawnSystemAttached(
-            MuzzleFlash, WeaponMesh, TEXT("Muzzle"),
-            FVector::ZeroVector, FRotator::ZeroRotator,
-            EAttachLocation::KeepRelativeOffset, true
+            MuzzleFlash,
+            Mesh,
+            MuzzleSocketName, // "MuzzleFlash" 소켓 이름
+            FVector::ZeroVector,
+            FRotator::ZeroRotator,
+            EAttachLocation::SnapToTarget, // 소켓 위치와 회전에 딱 맞춤
+            true // Auto Destroy (끝나면 자동 삭제)
         );
     }
 
@@ -164,11 +186,6 @@ void AWeapon::SpendRound()
     CurrentAmmo = FMath::Clamp(CurrentAmmo - 1, 0, MaxCapacity);
 
     UE_LOG(LogTemp, Warning, TEXT("Ammo: %d / %d"), CurrentAmmo, MaxCapacity);
-}
-
-bool AWeapon::IsEmpty() const
-{
-    return CurrentAmmo <= 0;
 }
 
 void AWeapon::StartReload()

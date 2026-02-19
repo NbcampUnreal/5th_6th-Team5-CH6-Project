@@ -4,9 +4,11 @@
 #include "GameFramework/Actor.h"
 #include "Weapon.generated.h"
 
-// 몬스터 팀이 만든 데미지 타입을 쓰기 위해 전방 선언
+// 전방 선언 (Forward Declarations)
 class UWZDamageType;
 class UNiagaraSystem;
+class UNiagaraComponent;
+class USoundBase;
 
 UCLASS()
 class WARD_ZERO_API AWeapon : public AActor
@@ -17,11 +19,14 @@ public:
     AWeapon();
 
 protected:
+#pragma region 기본 액터 함수 (Actor Overrides)
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
+#pragma endregion
 
 public:
-    // 무기 발사 함수 (카메라 정보를 밖에서 받아옵니다)
+#pragma region 전투 및 무기 조작 (Combat & Weapon Operations)
+    // 무기 발사 (카메라 정보를 밖에서 받아옵니다)
     void Fire(const FVector& HitTarget);
 
     // 무기 장착/해제
@@ -30,9 +35,6 @@ public:
     // 탄약 소비 (Fire에서 호출)
     void SpendRound();
 
-    // 탄약이 남아있는지 확인
-    bool IsEmpty() const;
-
     // 재장전 시작 (상태 변경)
     void StartReload();
 
@@ -40,65 +42,77 @@ public:
     UFUNCTION(BlueprintCallable)
     void FinishReload();
 
+    // 빈 총 소리 재생
+    void PlayDryFireSound();
+#pragma endregion
+
+#pragma region 상태 확인 (Getters & State Checks)
+    // 탄약이 남아있는지 확인
+    bool HasAmmo() const { return CurrentAmmo > 0; }
+
     // 현재 재장전 중인가?
     bool IsReloading() const { return bIsReloading; }
 
     // IK용 타겟 위치 반환 (레이저 끝점 등)
-    FVector GetLaserTargetLocation() const
-    {
-        return LaserHitLocation;
-    }
+    FVector GetLaserTargetLocation() const { return LaserHitLocation; }
+#pragma endregion
 
-    bool HasAmmo() const { return CurrentAmmo > 0; }
-
-    void PlayDryFireSound();
-
-public:
-    // 무기 메쉬 (Skeletal or Static) - 여기선 Static으로 가정
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon Properties")
+#pragma region 컴포넌트 (Components)
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Components")
     UStaticMeshComponent* WeaponMesh;
-protected:
-    // [핵심] 몬스터에게 전달할 데미지 타입 (블루프린트에서 WZDamageType_Gun 선택)
-    UPROPERTY(EditDefaultsOnly, Category = "Weapon Properties")
-    TSubclassOf<UWZDamageType> DamageTypeClass;
+#pragma endregion
 
-    UPROPERTY(EditDefaultsOnly, Category = "Weapon Properties")
+protected:
+#pragma region 무기 능력치 설정 (Weapon Config & Stats)
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Stats")
     float Damage = 10.0f;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Weapon Properties")
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Stats")
     float FireRange = 5000.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Config")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
     int32 MaxCapacity = 12; // 탄창 용량
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Config")
-    int32 CurrentAmmo;      // 현재 남은 탄약
+    // 몬스터에게 전달할 데미지 타입
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Stats")
+    TSubclassOf<UWZDamageType> DamageTypeClass;
+#pragma endregion
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon State")
+#pragma region 무기 상태 (Weapon State)
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|State")
+    int32 CurrentAmmo;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|State")
     bool bIsReloading = false;
+#pragma endregion
 
-    // 이펙트들
-    UPROPERTY(EditDefaultsOnly, Category = "Weapon Effects")
-    UNiagaraSystem* MuzzleFlash;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Weapon Effects")
-    UNiagaraSystem* ImpactEffect;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Weapon Effects")
-    UNiagaraSystem* LaserSightSystem;
-
-    UPROPERTY(EditAnywhere, Category = "Weapon Effects")
-    UNiagaraSystem* TracerEffect;
-
-    UPROPERTY(EditAnywhere, Category = "Weapon Effects")
+#pragma region 시각/청각 이펙트 (VFX & SFX)
+    UPROPERTY(EditAnywhere, Category = "Weapon|Effects")
     FName MuzzleSocketName = TEXT("MuzzleFlash");
 
-    UPROPERTY(EditDefaultsOnly, Category = "Weapon Effects")
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Effects|VFX")
+    UNiagaraSystem* MuzzleFlash;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Effects|VFX")
+    UNiagaraSystem* ImpactEffect;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Effects|VFX")
+    UNiagaraSystem* LaserSightSystem;
+
+    UPROPERTY(EditAnywhere, Category = "Weapon|Effects|VFX")
+    UNiagaraSystem* TracerEffect;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Effects|SFX")
     USoundBase* DryFireSound;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Effects|SFX")
+    USoundBase* FireSound;
+#pragma endregion
+
 private:
+#pragma region 내부 처리용 변수 (Internal Data)
     UPROPERTY()
-    class UNiagaraComponent* LaserSightComponent;
+    UNiagaraComponent* LaserSightComponent;
 
     // 공격의 주체 (데미지 전달용)
     UPROPERTY()
@@ -107,5 +121,6 @@ private:
     UPROPERTY()
     APawn* WeaponInstigator;
 
-	FVector LaserHitLocation;
+    FVector LaserHitLocation;
+#pragma endregion
 };
