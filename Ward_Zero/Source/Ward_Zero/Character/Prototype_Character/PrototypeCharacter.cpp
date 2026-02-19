@@ -15,6 +15,7 @@
 #include "Character/Animation/PlayerAnimInstance.h"
 #include "Engine/Engine.h"
 #include "Weapon/WZ_HUD_DH.h"
+#include "Weapon/Weapon.h"
 
 APrototypeCharacter::APrototypeCharacter()
 {
@@ -831,4 +832,13 @@ void APrototypeCharacter::SetIsQuickTurning(bool bIsTurning)
 bool APrototypeCharacter::GetIsClimbing() const
 {
 	return bIsClimbing;
+}
+
+UStaticMeshComponent* APrototypeCharacter::GetEquippedWeaponMesh()
+{
+	if (CombatComponent == nullptr) return nullptr;
+
+	if (CombatComponent->EquippedWeapon == nullptr) return nullptr;
+
+	return CombatComponent->EquippedWeapon->WeaponMesh;
 }

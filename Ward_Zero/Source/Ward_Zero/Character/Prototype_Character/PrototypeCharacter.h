@@ -264,4 +264,5 @@ public:
     FVector GetHandIKTargetLoc() const override;
     virtual void SetIsQuickTurning(bool bIsTurning) override; 
     virtual bool GetIsClimbing() const override; 
+    virtual UStaticMeshComponent* GetEquippedWeaponMesh() override;
 };

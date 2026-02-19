@@ -4,6 +4,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "Weapon/Weapon.h"
+#include "Character/Animation/PlayerAnimInstance.h"
 
 UPlayerCombatComponent::UPlayerCombatComponent()
 {
@@ -71,6 +72,14 @@ void UPlayerCombatComponent::ToggleEquip(UAnimMontage* Montage, UAnimInstance* A
 	if (bIsPistolEquipped)
 	{
 		EquippedWeapon->SetActorHiddenInGame(false);
+	}
+	
+	UPlayerAnimInstance* MyAnimInst = Cast<UPlayerAnimInstance>(AnimInst);
+
+	if (MyAnimInst)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Weapon Mesh Success"));
+		MyAnimInst->WeaponMesh = EquippedWeapon->WeaponMesh;
 	}
 
 	// 2. 애니메이션 재생

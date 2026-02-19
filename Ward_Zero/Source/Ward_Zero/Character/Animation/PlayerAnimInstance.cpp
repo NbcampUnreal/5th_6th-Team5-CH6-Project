@@ -33,6 +33,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		HandIKTargetLocation = AnimInterface->GetHandIKTargetLoc();
 		bIsAiming = AnimInterface->GetIsAiming();
 		bIsClimbing = AnimInterface->GetIsClimbing();
+		WeaponMesh = AnimInterface->GetEquippedWeaponMesh();
 	}
 
 	UpdateMovementCalculations(DeltaSeconds);

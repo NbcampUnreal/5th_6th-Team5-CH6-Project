@@ -27,4 +27,5 @@ public:
 	virtual bool GetIsAiming() const = 0;
 	virtual bool GetIsClimbing() const = 0;
 	virtual void SetIsQuickTurning(bool bIsTurning) = 0;
+	virtual UStaticMeshComponent* GetEquippedWeaponMesh() = 0;
 };

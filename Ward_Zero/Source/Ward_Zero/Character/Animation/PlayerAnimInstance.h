@@ -164,6 +164,11 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement|Cached")
 	float CachedBrakingDecelerationWalking;
 
+public:
+	UPROPERTY(BlueprintReadOnly, Category = "Weapon | Mesh")
+	UStaticMeshComponent* WeaponMesh;
+	
+
 private:
 	// Thread Safe
 	void UpdateMovementCalculations(float DeltaSeconds);
