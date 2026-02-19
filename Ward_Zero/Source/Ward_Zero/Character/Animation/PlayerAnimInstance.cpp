@@ -1,17 +1,17 @@
 ﻿#include "PlayerAnimInstance.h"
-#include "Character/Prototype_Character/PrototypeCharacter.h"
+#include "GameFramework/Character.h" // 기본 물리 데이터는 ACharacter에서 가져오기 
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Character/Animation/Interface/PlayerAnimInterface.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "KismetAnimationLibrary.h"
 
 void UPlayerAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
-	Character = Cast<APrototypeCharacter>(TryGetPawnOwner());
+	Character = Cast<ACharacter>(TryGetPawnOwner());
 	if (Character)
 	{
 		MovementComp = Character->GetCharacterMovement();
-		CombatComp = Character->GetComponentByClass<UPlayerCombatComponent>();
 	}
 }
 
@@ -20,13 +20,26 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	Super::NativeUpdateAnimation(DeltaSeconds);
 	if (!Character || !MovementComp) return;
 
-	// 캐릭터 기본 상태 동기화
+	// 인터페이스를 거쳐 데이터를 가져오기 
+	if (IPlayerAnimInterface* AnimInterface = Cast<IPlayerAnimInterface>(TryGetPawnOwner()))
+	{
+		bIsRunning = AnimInterface->GetIsRunning();
+		bIsCrouching = AnimInterface->GetIsCrouching();
+		bIsGround = AnimInterface->GetIsGround();
+		bIsPistolEquipped = AnimInterface->GetIsPistolEquipped();
+		bIsQuickTurning = AnimInterface->GetIsQuickTurning();
+		TurnIndex = AnimInterface->GetTurnIndex();
+		bIsEquipping = AnimInterface->IsEquipping();
+		HandIKTargetLocation = AnimInterface->GetHandIKTargetLoc();
+		bIsAiming = AnimInterface->GetIsAiming();
+		bIsClimbing = AnimInterface->GetIsClimbing();
+	}
+
+	UpdateMovementCalculations(DeltaSeconds);
+
+	// 엔진 물리 데이터 동기화 
 	Velocity = Character->GetVelocity();
 	Acceleration = MovementComp->GetCurrentAcceleration();
-	bIsCrouching = MovementComp->IsCrouching();
-
-	bIsRunning = Character->GetIsRunning();
-	bIsPistolEquipped = CombatComp->IsPistolEquipped();
 
 	// Distance Matching 노드를 위한 무브먼트 데이터 캐싱
 	CachedLastUpdateVelocity = MovementComp->GetLastUpdateVelocity();
@@ -143,6 +156,16 @@ void UPlayerAnimInstance::UpdateOrientationWarping(float DeltaSeconds)
 bool UPlayerAnimInstance::ShouldDistanceMatchStop() const
 {
 	return bHasVelocity && !bIsAcceleration;
+}
+
+void UPlayerAnimInstance::AnimNotify_StopQuickTurn()
+{
+	if (IPlayerAnimInterface* AnimInterface = Cast<IPlayerAnimInterface>(TryGetPawnOwner()))
+	{
+		AnimInterface->SetIsQuickTurning(false);
+
+		bIsQuickTurning = false;
+	}
 }
 
 void UPlayerAnimInstance::UpdateLocomotionState(ELocomotionState StateName)

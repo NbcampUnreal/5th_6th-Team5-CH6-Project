@@ -5,6 +5,7 @@
 #include "InputActionValue.h"
 #include "Character/Components/PlayerStatusComponent.h" 
 #include "Character/Components/PlayerCombatComponent.h" 
+#include "Character/Animation/Interface/PlayerAnimInterface.h"
 #include "PrototypeCharacter.generated.h"
 
 class USpringArmComponent;
@@ -35,7 +36,7 @@ enum class EQuickTurnType : uint8
 };
 
 UCLASS()
-class WARD_ZERO_API APrototypeCharacter : public ACharacter
+class WARD_ZERO_API APrototypeCharacter : public ACharacter, public IPlayerAnimInterface
 {
     GENERATED_BODY()
 
@@ -243,13 +244,24 @@ public:
      float Duration90 = 0.4f;
 
 public:
-    UFUNCTION(BlueprintCallable, Category = "Movement")
-    bool GetIsRunning() const { return bIsRunning; }
-
     // 애니메이션 레이어 링크용 클래스
     UPROPERTY(EditAnywhere, Category = "Animations")
     TSubclassOf<class UAnimInstance> UnarmedLayerClass;
 
     UPROPERTY(EditAnywhere, Category = "Animations")
     TSubclassOf<class UAnimInstance> PistolLayerClass;
+
+public:
+    // 인터페이스 함수 오버라이드 선언
+    virtual bool GetIsRunning() const override;
+    virtual bool GetIsPistolEquipped() const override;
+    virtual bool GetIsCrouching() const override;
+    virtual bool GetIsGround() const override;
+    virtual bool GetIsQuickTurning() const override;
+    virtual int32 GetTurnIndex() const override;
+    virtual  bool IsEquipping() const override; 
+    virtual bool GetIsAiming() const override;
+    FVector GetHandIKTargetLoc() const override;
+    virtual void SetIsQuickTurning(bool bIsTurning) override; 
+    virtual bool GetIsClimbing() const override; 
 };

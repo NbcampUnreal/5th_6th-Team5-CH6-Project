@@ -771,3 +771,64 @@ void APrototypeCharacter::Fire(const FInputActionValue& Value)
 		CombatComponent->HandIKTargetLocation += FVector(0.0f, 0.0f, 20.0f);
 	}
 }
+
+bool APrototypeCharacter::GetIsRunning() const
+{
+	return bIsRunning;
+}
+
+bool APrototypeCharacter::GetIsPistolEquipped() const
+{
+	return CombatComponent ? CombatComponent->IsPistolEquipped() : false;
+}
+
+bool APrototypeCharacter::GetIsCrouching() const
+{
+	// ACharacter의 기본 내장 변수인 bIsCrouched 반환
+	return bIsCrouched;
+}
+
+bool APrototypeCharacter::GetIsGround() const
+{
+	return GetCharacterMovement()->IsMovingOnGround();
+}
+
+bool APrototypeCharacter::GetIsQuickTurning() const
+{
+	return bIsQuickTurning;
+}
+
+int32 APrototypeCharacter::GetTurnIndex() const
+{
+	return TurnIndex;
+}
+
+bool APrototypeCharacter::IsEquipping() const
+{
+	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+	{
+		return AnimInst->Montage_IsPlaying(EquipMontage) || AnimInst->Montage_IsPlaying(UnEquipMontage);
+	}
+	return false;
+}
+
+bool APrototypeCharacter::GetIsAiming() const
+{
+	return CombatComponent ? CombatComponent->IsAiming() : false;
+}
+
+FVector APrototypeCharacter::GetHandIKTargetLoc() const
+{
+	return CombatComponent ? CombatComponent->GetHandIKTarget() : FVector::ZeroVector;
+}
+
+void APrototypeCharacter::SetIsQuickTurning(bool bIsTurning)
+{
+	bIsQuickTurning = bIsTurning;
+	if (!bIsTurning) StopQuickTurn();
+}
+
+bool APrototypeCharacter::GetIsClimbing() const
+{
+	return bIsClimbing;
+}

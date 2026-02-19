@@ -47,7 +47,7 @@ public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds) override;
-
+	
 	// 상태 변경 함수 
 	UFUNCTION(BlueprintCallable, Category = "Locomotion")
 	void UpdateLocomotionState(ELocomotionState StateName);
@@ -56,26 +56,49 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Movement|Distance Matching", meta = (BlueprintThreadSafe))
 	bool ShouldDistanceMatchStop() const;
 
+	UFUNCTION(BlueprintCallable, Category = "AnimNotify")
+	void AnimNotify_StopQuickTurn();
+
 protected:
 	// 참조 변수 
 	UPROPERTY(BlueprintReadOnly, Category = "Ref")
-	TObjectPtr<class APrototypeCharacter> Character;
+	TObjectPtr<class ACharacter> Character; //APrototypeCharacter 참조 -> ACharacter 참조 
 
 	UPROPERTY(BlueprintReadOnly, Category = "Ref")
 	TObjectPtr<class UCharacterMovementComponent> MovementComp;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Ref")
-	TObjectPtr<class UPlayerCombatComponent> CombatComp;
-
+	
 	// 캐릭터 상태 변수 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	bool bIsCrouching;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	bool bIsGround;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	bool bIsRunning;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	bool bIsPistolEquipped;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	bool bIsQuickTurning;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	int32 TurnIndex;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	bool bIsClimbing;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	bool bIsEquipping;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	FVector HandIKTargetLocation;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	bool bIsAiming;
+
+
 
 	// 물리 및 이동 데이터 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
