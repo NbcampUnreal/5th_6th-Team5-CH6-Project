@@ -5,16 +5,22 @@
 #include "NiagaraComponent.h"
 #include "Engine/DamageEvents.h"
 #include "MonsterAI/MonsterAI_CHS/Weapon/WZDamageType.h"
+#include "GameFramework/Character.h"
+#include "Magazine/MagazineBase.h"
+
 //#include "DrawDebugHelpers.h"
 
 AWeapon::AWeapon()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
+	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	SetRootComponent(WeaponMesh);
 	WeaponMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    GunMagMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GunMagMesh"));
+    GunMagMesh->SetupAttachment(WeaponMesh, TEXT("MagSocket"));
 }
 
 void AWeapon::Tick(float DeltaTime)
@@ -200,6 +206,9 @@ void AWeapon::FinishReload()
 {
     bIsReloading = false;
     CurrentAmmo = MaxCapacity;
+
+    ShowMagazine();
+
     UE_LOG(LogTemp, Warning, TEXT("Reload Finished! Ammo Full."));
 }
 
@@ -210,4 +219,57 @@ void AWeapon::PlayDryFireSound()
         UGameplayStatics::PlaySoundAtLocation(this, DryFireSound, GetActorLocation());
     }
     UE_LOG(LogTemp, Warning, TEXT("(총알 없음)"));
+}
+//기존 탄창이 사라질 때 노티파이 이벤트 
+void AWeapon::HideMagazine()
+{
+    //총에 붙어있는 탄창 숨기기 
+    if (GunMagMesh)
+    {
+        GunMagMesh->SetVisibility(false);
+    }
+
+    if (MagazineClass)
+    {
+        AMagazineBase* DropMag = GetWorld()->SpawnActor<AMagazineBase>
+            (
+                MagazineClass,
+                GunMagMesh->GetComponentLocation(),
+                GunMagMesh->GetComponentRotation()
+            );
+
+        if (DropMag)
+        {
+            DropMag->Drop();
+        }
+    }
+
+    //캐릭터 손에 있는 탄창을 권총 탄창에 스폰해서 붙이기.
+    ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
+    if (OwnerChar && MagazineClass)
+    {
+        CurrHandMag = GetWorld()->SpawnActor<AMagazineBase>(MagazineClass);
+        if (CurrHandMag)
+        {
+            CurrHandMag->AttachToComponent(
+                OwnerChar->GetMesh(),
+                FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+                TEXT("MagSocket")
+            );
+        }
+    }
+}
+//새 탄창이 들어갈 때 노티파이 이벤트 
+void AWeapon::ShowMagazine()
+{
+    //손에 있던 탄창 엑터 제거 
+    if (CurrHandMag)
+    {
+        CurrHandMag->Destroy();
+        CurrHandMag = nullptr;
+    }
+    if (GunMagMesh)
+    {
+        GunMagMesh->SetVisibility(true); 
+    }
 }

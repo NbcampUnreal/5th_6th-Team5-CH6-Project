@@ -16,6 +16,7 @@
 #include "Engine/Engine.h"
 #include "Weapon/WZ_HUD_DH.h"
 #include "Weapon/Weapon.h"
+#include "FlashLight/FlashLight.h"
 
 APrototypeCharacter::APrototypeCharacter()
 {
@@ -105,18 +106,22 @@ void APrototypeCharacter::BeginPlay()
 	{
 		StatusComponent->OnPlayerDied.AddDynamic(this, &APrototypeCharacter::OnDeath);
 	}
-	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+	UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (IsValid(AnimInst) && UnarmedLayerClass)
 	{
-		if (UnarmedLayerClass)
-		{
-			AnimInst->LinkAnimClassLayers(UnarmedLayerClass);
-		}
+		AnimInst->LinkAnimClassLayers(UnarmedLayerClass);
+	}
+	else if (!AnimInst)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BeginPlay: AnimInstance Not Ready"));
 	}
 }
 
 void APrototypeCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (!CameraBoom || !MainCamera || !GetCharacterMovement()) return;
 
 	CheckRunState();
 	if (bIsQuickTurning)
@@ -420,10 +425,7 @@ void APrototypeCharacter::ProcessMovementTurn(FVector2D MovementVector)
 void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
 {
 	if (bIsQuickTurning) StopQuickTurn();
-	if (CombatComponent && CombatComponent->IsAiming())
-	{
-		CombatComponent->StopAiming();
-	}
+	if (CombatComponent && CombatComponent->IsAiming()) CombatComponent->StopAiming();
 
 	EPlayerHitDirection HitDir = GetHitDirection(ToAttackerDir);
 	UAnimMontage* MontageToPlay = nullptr;
@@ -431,14 +433,15 @@ void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
 	switch (HitDir)
 	{
 	case EPlayerHitDirection::Front: MontageToPlay = HitMontage_Front; break;
-	case EPlayerHitDirection::Back: MontageToPlay = HitMontage_Back; break;
+	case EPlayerHitDirection::Back:  MontageToPlay = HitMontage_Back; break;
 	case EPlayerHitDirection::Right: MontageToPlay = HitMontage_Right ? HitMontage_Right : HitMontage_Front; break;
-	case EPlayerHitDirection::Left: MontageToPlay = HitMontage_Left ? HitMontage_Left : HitMontage_Front; break;
+	case EPlayerHitDirection::Left:  MontageToPlay = HitMontage_Left ? HitMontage_Left : HitMontage_Front; break;
 	}
 
-	if (MontageToPlay)
+	UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (AnimInst && MontageToPlay)
 	{
-		PlayAnimMontage(MontageToPlay);
+		AnimInst->Montage_Play(MontageToPlay);
 	}
 }
 
@@ -655,23 +658,71 @@ void APrototypeCharacter::StopClimbing()
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
 
+void APrototypeCharacter::EquipFlashLight()
+{
+	if (FlashLightClass)
+	{
+		FlashLight = GetWorld()->SpawnActor<AFlashLight>(FlashLightClass);
+		FlashLight->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("FlashLightSocket"));
+	}
+	UPlayerAnimInstance* AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
+	if (AnimInst)
+	{
+		AnimInst->bIsMirroring = true;
+		PlayAnimMontage(RaiseLight);
+	}
+}
+
+void APrototypeCharacter::ToggleFlashLight()
+{
+	UPlayerAnimInstance* AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
+	if (!AnimInst) return;
+
+	//손전등을 들고 있다면 
+	if (AnimInst->bIsMirroring)
+	{
+		PlayAnimMontage(LowerLight);
+		AnimInst->bIsMirroring = false; 
+		
+		if (FlashLight)
+		{
+			FlashLight->Destroy();
+			FlashLight = nullptr; 
+		}
+	}
+	else
+	{
+		if (FlashLight == nullptr)
+		{
+			EquipFlashLight();
+		}
+	}
+
+}
+
 void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 {
-	if (CombatComponent)
+	if (!CombatComponent) return;
+
+	UAnimMontage* MontageToPlay = CombatComponent->bIsPistolEquipped ? UnEquipMontage : EquipMontage;
+
+	// 몽타주 재생 전 체크
+	UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (AnimInst && MontageToPlay)
 	{
-		UAnimMontage* MontageToPlay = CombatComponent->bIsPistolEquipped ? UnEquipMontage : EquipMontage;
+		CombatComponent->ToggleEquip(MontageToPlay, AnimInst);
+	}
 
-		CombatComponent->ToggleEquip(MontageToPlay, GetMesh()->GetAnimInstance());
+	// 레이어 링크 전 체크
+	TSubclassOf<UAnimInstance> LayerToLink = CombatComponent->IsPistolEquipped() ? PistolLayerClass : UnarmedLayerClass;
 
-		TSubclassOf<class UAnimInstance> LayerToLink = CombatComponent->IsPistolEquipped() ? PistolLayerClass : UnarmedLayerClass;
-
-		if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
-		{
-			if (LayerToLink)
-			{
-				AnimInst->LinkAnimClassLayers(LayerToLink);
-			}
-		}
+	if (AnimInst && LayerToLink) 
+	{
+		AnimInst->LinkAnimClassLayers(LayerToLink);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Animation Layer or Instance Nothing!"));
 	}
 }
 
@@ -714,53 +765,60 @@ void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 
 void APrototypeCharacter::StopAiming(const FInputActionValue& Value)
 {
-	if (CombatComponent)
-	{
-		CombatComponent->StopAiming();
-	}
+	if (CombatComponent) CombatComponent->StopAiming();
 
 	if (APlayerController* PC = Cast<APlayerController>(Controller))
 	{
 		if (AWZ_HUD_DH* HUD = Cast<AWZ_HUD_DH>(PC->GetHUD()))
 		{
-			HUD->SetCrosshairVisibility(false); // 꺼!
+			HUD->SetCrosshairVisibility(false);
 		}
 	}
 
 	if (CameraBoom)
 	{
-		CameraBoom->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
-		CameraBoom->SetWorldLocationAndRotation(GetActorLocation(), GetActorRotation());
-		CameraBoom->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("root"));
-
-		// 보스 코드 원본 복구
-		CameraBoom->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-
-		// 위치 미세 조정
-		CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
-		CameraBoom->SetRelativeRotation(FRotator::ZeroRotator);
-
-		// 설정 복구
-		CameraBoom->bUsePawnControlRotation = true;
-		CameraBoom->bInheritPitch = true;
-		CameraBoom->bInheritYaw = true;
-		CameraBoom->bInheritRoll = false;
-
-		if (MainCamera)
+		if (GetMesh() && RootComponent)
 		{
-			MainCamera->bUsePawnControlRotation = false;
-			MainCamera->SetRelativeRotation(FRotator::ZeroRotator);
-		}
+			CameraBoom->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 
-		CameraBoom->bEnableCameraLag = true;
-		CameraBoom->bEnableCameraRotationLag = true;
-		CameraBoom->CameraLagSpeed = 15.0f;
-		CameraBoom->CameraRotationLagSpeed = 15.0f;
+			FVector NewLoc = GetActorLocation();
+			FRotator NewRot = GetActorRotation();
+
+			CameraBoom->SetWorldLocationAndRotation(NewLoc, NewRot);
+
+			CameraBoom->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("root"));
+
+			CameraBoom->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+			CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
+			CameraBoom->SetRelativeRotation(FRotator::ZeroRotator);
+
+			CameraBoom->bUsePawnControlRotation = true;
+			CameraBoom->bInheritPitch = true;
+			CameraBoom->bInheritYaw = true;
+			CameraBoom->bInheritRoll = false;
+
+			if (MainCamera)
+			{
+				MainCamera->bUsePawnControlRotation = false;
+				MainCamera->SetRelativeRotation(FRotator::ZeroRotator);
+			}
+
+			CameraBoom->bEnableCameraLag = true;
+			CameraBoom->bEnableCameraRotationLag = true;
+			CameraBoom->CameraLagSpeed = 15.0f;
+			CameraBoom->CameraRotationLagSpeed = 15.0f;
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("StopAiming: Mesh or RootComponent is Nullptr"));
+		}
 	}
 
-	if (GetCharacterMovement())
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
-		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+		float SafeSpeed = (WalkSpeed > 0.0f) ? WalkSpeed : 600.0f;
+		MoveComp->MaxWalkSpeed = SafeSpeed;
 	}
 }
 
@@ -834,11 +892,21 @@ bool APrototypeCharacter::GetIsClimbing() const
 	return bIsClimbing;
 }
 
-UStaticMeshComponent* APrototypeCharacter::GetEquippedWeaponMesh()
+USkeletalMeshComponent* APrototypeCharacter::GetEquippedWeaponMesh()
 {
 	if (CombatComponent == nullptr) return nullptr;
 
 	if (CombatComponent->EquippedWeapon == nullptr) return nullptr;
 
 	return CombatComponent->EquippedWeapon->WeaponMesh;
+}
+
+AWeapon* APrototypeCharacter::GetEquippedWeapon()
+{
+	return CombatComponent ? CombatComponent->GetEquippedWeapon() : nullptr;
+}
+
+bool APrototypeCharacter::GetIsReloading() const
+{
+	return CombatComponent ? CombatComponent->GetIsReloading() : false;
 }

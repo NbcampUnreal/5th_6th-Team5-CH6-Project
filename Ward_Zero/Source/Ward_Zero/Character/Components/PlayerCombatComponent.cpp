@@ -241,3 +241,17 @@ void UPlayerCombatComponent::HandleRecoil(float DeltaTime)
 		TargetRecoilRot = FMath::RInterpTo(TargetRecoilRot, FRotator::ZeroRotator, DeltaTime, RecoilRecoverySpeed);
 	}
 }
+
+bool UPlayerCombatComponent::GetIsReloading() const
+{
+	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	if (OwnerCharacter && ReloadMontage)
+	{
+		UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance();
+		if (AnimInst)
+		{
+			return AnimInst->Montage_IsPlaying(ReloadMontage);
+		}
+	}
+	return false;
+}

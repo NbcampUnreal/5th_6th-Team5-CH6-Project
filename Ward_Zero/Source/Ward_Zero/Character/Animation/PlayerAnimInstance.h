@@ -66,6 +66,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Ref")
 	TObjectPtr<class UCharacterMovementComponent> MovementComp;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	class AWeapon* EquippedWeapon;
 	
 	// 캐릭터 상태 변수 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
@@ -98,7 +101,8 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	bool bIsAiming;
 
-
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	bool bIsReloading;
 
 	// 물리 및 이동 데이터 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
@@ -166,7 +170,14 @@ protected:
 
 public:
 	UPROPERTY(BlueprintReadOnly, Category = "Weapon | Mesh")
-	UStaticMeshComponent* WeaponMesh;
+	USkeletalMeshComponent* WeaponMesh;
+
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	TSubclassOf<UMirrorDataTable> MDT_FlashLight;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Animation")
+	bool bIsMirroring = false; 
 	
 
 private:

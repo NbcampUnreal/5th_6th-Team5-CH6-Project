@@ -9,6 +9,7 @@ class UWZDamageType;
 class UNiagaraSystem;
 class UNiagaraComponent;
 class USoundBase;
+class AMagazineBase;
 
 UCLASS()
 class WARD_ZERO_API AWeapon : public AActor
@@ -59,7 +60,25 @@ public:
 
 #pragma region 컴포넌트 (Components)
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Components")
-    UStaticMeshComponent* WeaponMesh;
+    TObjectPtr<USkeletalMeshComponent> WeaponMesh; //탄창 엑터 클래스 
+
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Reload")
+    TSubclassOf<AMagazineBase> MagazineClass; //실제 탄창 
+
+    UPROPERTY()
+    AActor* CurrHandMag; //현재 손에 들고있는 탄창 
+
+   UPROPERTY(VisibleAnywhere)
+   TObjectPtr<UStaticMeshComponent> GunMagMesh;//총에 붙어있는 탄창 
+
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Reload")
+    FName HandSocketName = TEXT("MagSocket");
+
+    UPROPERTY(EditAnywhere, Category = "Weapon | Effects")
+    class UNiagaraSystem* ShellEjectEffect;
+
+    UPROPERTY(EditAnywhere, Category = "Weapon | Sockets")
+    FName ShellEjectSocketName = TEXT("ShellEject");
 #pragma endregion
 
 protected:
@@ -123,4 +142,10 @@ private:
 
     FVector LaserHitLocation;
 #pragma endregion
+public:
+    UFUNCTION(BlueprintCallable)
+    void HideMagazine();
+
+    UFUNCTION(BlueprintCallable)
+    void ShowMagazine();
 };
