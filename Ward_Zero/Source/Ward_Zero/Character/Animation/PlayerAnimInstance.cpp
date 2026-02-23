@@ -4,6 +4,7 @@
 #include "Character/Animation/Interface/PlayerAnimInterface.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "KismetAnimationLibrary.h"
+#include "Character/Prototype_Character/PrototypeCharacter.h"
 
 void UPlayerAnimInstance::NativeInitializeAnimation()
 {
@@ -34,6 +35,9 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsAiming = AnimInterface->GetIsAiming();
 		bIsClimbing = AnimInterface->GetIsClimbing();
 		WeaponMesh = AnimInterface->GetEquippedWeaponMesh();
+		EquippedWeapon = AnimInterface->GetEquippedWeapon();
+		bIsReloading = AnimInterface->GetIsReloading();
+		bIsUseFlashLight = AnimInterface->GetIsUseFlashLight();
 	}
 
 	UpdateMovementCalculations(DeltaSeconds);
@@ -49,6 +53,14 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	CachedGroundFriction = MovementComp->GroundFriction;
 	CachedBrakingFrictionFactor = MovementComp->BrakingFrictionFactor;
 	CachedBrakingDecelerationWalking = MovementComp->BrakingDecelerationWalking;
+
+	//Unarmed FlashLight 
+	float TargetAlpha = bIsUseFlashLight ? 1.0f : 0.0f;
+	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetAlpha, DeltaSeconds, 5.0f);
+
+	//Pistol FlashLight 
+	float TargetIKAlpha = (bIsUseFlashLight && bIsPistolEquipped && !bIsEquipping) ? 1.0f : 0.0f;
+	FlashlightIKAlpha = FMath::FInterpTo(FlashlightIKAlpha, TargetIKAlpha, DeltaSeconds, 10.0f);
 }
 
 void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)

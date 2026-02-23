@@ -15,6 +15,7 @@ class UInputMappingContext;
 class UInputAction;
 class ALadder;
 class UCameraShakeBase;
+class AFlashLight;
 
 UENUM(BlueprintType)
 enum class EPlayerHitDirection : uint8
@@ -66,7 +67,9 @@ public:
     virtual FVector GetHandIKTargetLoc() const override;
     virtual void SetIsQuickTurning(bool bIsTurning) override;
     virtual bool GetIsClimbing() const override;
-    virtual UStaticMeshComponent* GetEquippedWeaponMesh() override;
+    virtual USkeletalMeshComponent* GetEquippedWeaponMesh() override;
+    virtual class AWeapon* GetEquippedWeapon() override;
+    virtual bool GetIsReloading() const override;
 #pragma endregion
 
 protected:
@@ -82,6 +85,7 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Camera")
     UCameraComponent* MainCamera;
+
 #pragma endregion 
 
 #pragma region 입력 시스템 (Input System)
@@ -99,6 +103,7 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* FireAction;
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* QuickTurnAction;
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* ReloadAction;
+    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* FlashLightAction;
 
     // 입력 처리 바인딩 함수
     void Move(const FInputActionValue& Value);
@@ -112,6 +117,7 @@ protected:
     void StopAiming(const FInputActionValue& Value);
     void Fire(const FInputActionValue& Value);
     void Reload(const FInputActionValue& Value);
+    void ToggleFlashLight(const FInputActionValue& Value);
 #pragma endregion 
 
 #pragma region 이동 및 카메라 설정 (Movement & Camera Config)
@@ -179,6 +185,27 @@ public:
     void StopClimbing();
 #pragma endregion
 
+public:
+#pragma region 손전등 시스템 FlashLight
+    UPROPERTY(EditAnywhere, Category = "FlashLight")
+    TSubclassOf<AFlashLight> FlashLightClass;
+
+    UPROPERTY()
+    TObjectPtr<AFlashLight> FlashLight;
+
+    UFUNCTION()
+    void EquipFlashLight();
+    
+    UFUNCTION()
+    void ToggleLight(bool IsLight);
+
+    UFUNCTION()
+    virtual bool GetIsUseFlashLight() const override; 
+
+    UPROPERTY(BlueprintReadOnly, Category = "FlashLight")
+    bool bIsUseFlashLight = false; 
+#pragma endregion 
+
 protected:
 #pragma region 애니메이션 및 몽타주 (Animation & Montages)
     // 애니메이션 레이어 링크
@@ -201,6 +228,10 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Animations|Death") UAnimMontage* DeathMontage_Back;
     UPROPERTY(EditDefaultsOnly, Category = "Animations|Death") UAnimMontage* DeathMontage_Left;
     UPROPERTY(EditDefaultsOnly, Category = "Animations|Death") UAnimMontage* DeathMontage_Right;
+
+    // 손전등 몽타주 
+    UPROPERTY(EditDefaultsOnly, Category = "Animations|FlashLight") UAnimMontage* RaiseLight;
+    UPROPERTY(EditDefaultsOnly, Category = "Animations|FlashLight") UAnimMontage* LowerLight;
 
     // 카메라 쉐이크
     UPROPERTY(EditAnywhere, Category = "Animations|Effects") TSubclassOf<UCameraShakeBase> FireCameraShake;

@@ -16,6 +16,7 @@
 #include "Engine/Engine.h"
 #include "Weapon/WZ_HUD_DH.h"
 #include "Weapon/Weapon.h"
+#include "FlashLight/FlashLight.h"
 
 APrototypeCharacter::APrototypeCharacter()
 {
@@ -105,18 +106,22 @@ void APrototypeCharacter::BeginPlay()
 	{
 		StatusComponent->OnPlayerDied.AddDynamic(this, &APrototypeCharacter::OnDeath);
 	}
-	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+	UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (IsValid(AnimInst) && UnarmedLayerClass)
 	{
-		if (UnarmedLayerClass)
-		{
-			AnimInst->LinkAnimClassLayers(UnarmedLayerClass);
-		}
+		AnimInst->LinkAnimClassLayers(UnarmedLayerClass);
+	}
+	else if (!AnimInst)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BeginPlay: AnimInstance Not Ready"));
 	}
 }
 
 void APrototypeCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (!CameraBoom || !MainCamera || !GetCharacterMovement()) return;
 
 	CheckRunState();
 	if (bIsQuickTurning)
@@ -163,35 +168,37 @@ void APrototypeCharacter::Tick(float DeltaTime)
 		return;
 	}
 
-	if (CombatComponent && CombatComponent->IsAiming())
+	if (!bIsQuickTurning)
 	{
-		FRotator NewRot = GetActorRotation();
-		NewRot.Yaw = GetControlRotation().Yaw;
-		SetActorRotation(NewRot);		
-
-	}
-
-	// 이하 평상시 회전 및 카메라 로직만 실행
-	if (!bIsRunning && !bIsQuickTurning && GetVelocity().SizeSquared() > KINDA_SMALL_NUMBER)
-
-	if (bIsRunning)
-	{
-		bUseControllerRotationYaw = false;
-		GetCharacterMovement()->bOrientRotationToMovement = true;
-	}
-	else
-	{
-		GetCharacterMovement()->bOrientRotationToMovement = false;
-
-		bUseControllerRotationYaw = false;
-
-		float CurrentSpeed = GetVelocity().SizeSquared();
-		if (CurrentSpeed > 10.0f) // 움직일 때만
+		if (CombatComponent && CombatComponent->IsAiming())
 		{
-			FRotator TargetRotation = FRotator(0.0f, GetControlRotation().Yaw, 0.0f);
-			FRotator CurrentRotation = GetActorRotation();
-			FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, 5.0f);
-			SetActorRotation(NewRotation);
+			// 조준 중일 때
+			FRotator NewRot = GetActorRotation();
+			NewRot.Yaw = GetControlRotation().Yaw;
+			SetActorRotation(NewRot);
+		}
+		else
+		{
+			// 평상시 (조준 안 할 때)
+			bUseControllerRotationYaw = false;
+
+			if (bIsRunning)
+			{
+				GetCharacterMovement()->bOrientRotationToMovement = true;
+			}
+			else
+			{
+				GetCharacterMovement()->bOrientRotationToMovement = false;
+
+				float CurrentSpeed = GetVelocity().SizeSquared();
+				if (CurrentSpeed > 10.0f)
+				{
+					FRotator TargetRotation = FRotator(0.0f, GetControlRotation().Yaw, 0.0f);
+					FRotator CurrentRotation = GetActorRotation();
+					FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, 5.0f);
+					SetActorRotation(NewRotation);
+				}
+			}
 		}
 	}
 
@@ -204,14 +211,37 @@ void APrototypeCharacter::Tick(float DeltaTime)
 
 	if (CombatComponent && CombatComponent->IsAiming())
 	{
-		// [조준 시 목표]
 		TargetArmLengthDest = AimArmLength;
-		TargetFOVDest = AimFOV;          
+		TargetFOVDest = AimFOV;
+		TargetTargetOffsetDest = FVector::ZeroVector;
 
 		TargetSocketOffsetDest = AimSocketOffset;
 
-		TargetTargetOffsetDest = FVector::ZeroVector;
+		float CurrentTime = GetWorld()->GetTimeSeconds();
 
+		float BreathDeltaYaw = 0.6f * 1.2f * FMath::Cos(1.2f * CurrentTime) * DeltaTime;
+		float BreathDeltaPitch = -0.6f * 2.4f * FMath::Sin(2.4f * CurrentTime) * DeltaTime;
+
+		float TotalDeltaYaw = BreathDeltaYaw;
+		float TotalDeltaPitch = BreathDeltaPitch;
+
+		float Speed = GetVelocity().Size();
+		if (Speed > 10.0f && GetCharacterMovement()->IsMovingOnGround())
+		{
+			float WalkDeltaYaw = 0.4f * 6.0f * FMath::Cos(6.0f * CurrentTime) * DeltaTime;
+			float WalkDeltaPitch = -0.4f * 12.0f * FMath::Sin(12.0f * CurrentTime) * DeltaTime;
+
+			TotalDeltaYaw += WalkDeltaYaw;
+			TotalDeltaPitch += WalkDeltaPitch;
+		}
+
+		if (Controller)
+		{
+			FRotator CurrentControlRot = Controller->GetControlRotation();
+			CurrentControlRot.Yaw += TotalDeltaYaw;
+			CurrentControlRot.Pitch += TotalDeltaPitch;
+			Controller->SetControlRotation(CurrentControlRot);
+		}
 	}
 	else
 	{
@@ -420,10 +450,7 @@ void APrototypeCharacter::ProcessMovementTurn(FVector2D MovementVector)
 void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
 {
 	if (bIsQuickTurning) StopQuickTurn();
-	if (CombatComponent && CombatComponent->IsAiming())
-	{
-		CombatComponent->StopAiming();
-	}
+	if (CombatComponent && CombatComponent->IsAiming()) CombatComponent->StopAiming();
 
 	EPlayerHitDirection HitDir = GetHitDirection(ToAttackerDir);
 	UAnimMontage* MontageToPlay = nullptr;
@@ -431,14 +458,15 @@ void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
 	switch (HitDir)
 	{
 	case EPlayerHitDirection::Front: MontageToPlay = HitMontage_Front; break;
-	case EPlayerHitDirection::Back: MontageToPlay = HitMontage_Back; break;
+	case EPlayerHitDirection::Back:  MontageToPlay = HitMontage_Back; break;
 	case EPlayerHitDirection::Right: MontageToPlay = HitMontage_Right ? HitMontage_Right : HitMontage_Front; break;
-	case EPlayerHitDirection::Left: MontageToPlay = HitMontage_Left ? HitMontage_Left : HitMontage_Front; break;
+	case EPlayerHitDirection::Left:  MontageToPlay = HitMontage_Left ? HitMontage_Left : HitMontage_Front; break;
 	}
 
-	if (MontageToPlay)
+	UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (AnimInst && MontageToPlay)
 	{
-		PlayAnimMontage(MontageToPlay);
+		AnimInst->Montage_Play(MontageToPlay);
 	}
 }
 
@@ -473,11 +501,7 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	{
 		if (MoveAction) EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APrototypeCharacter::Move);
 		if (LookAction) EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APrototypeCharacter::Look);
-		if (RunAction)
-		{
-			EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Started, this, &APrototypeCharacter::StartRunning);
-			EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &APrototypeCharacter::EndRunning);
-		}
+		if (RunAction) EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Started, this, &APrototypeCharacter::StartRunning);
 		if (CrouchAction) EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &APrototypeCharacter::ToggleCrouch);
 		if (InteractAction) EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APrototypeCharacter::Interact);
 
@@ -497,6 +521,11 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		if (QuickTurnAction)
 		{
 			EnhancedInputComponent->BindAction(QuickTurnAction, ETriggerEvent::Started, this, &APrototypeCharacter::PerformQuickTurn180);
+		}
+
+		if (FlashLightAction)
+		{
+			EnhancedInputComponent->BindAction(FlashLightAction, ETriggerEvent::Started, this, &APrototypeCharacter::ToggleFlashLight);
 		}
 	}
 }
@@ -545,16 +574,20 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 {
 	if (CombatComponent && CombatComponent->IsAiming()) return;
 
-	if (bIsCrouched || bIsRunning || bIsClimbing) return;
+	if (bIsCrouched || bIsClimbing) return;
 
-	bIsRunning = true;
-	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
-
-	bUseControllerRotationYaw = false;
-
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-
-	CameraBoom->CameraLagSpeed = 10.0f;
+	if (bIsRunning)
+	{
+		EndRunning(Value);
+	}
+	else
+	{
+		bIsRunning = true;
+		GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
+		bUseControllerRotationYaw = false;
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+		CameraBoom->CameraLagSpeed = 10.0f;
+	}
 }
 
 void APrototypeCharacter::EndRunning(const FInputActionValue& Value)
@@ -576,21 +609,13 @@ void APrototypeCharacter::CheckRunState()
 {
 	if (bIsRunning)
 	{
-		float CurrentSpeed = GetVelocity().Size();
-		if (CurrentSpeed <= KINDA_SMALL_NUMBER) // 멈춤
+		if (bIsRunning)
 		{
-			bIsRunning = false;
-
-			if (CombatComponent && CombatComponent->IsAiming())
+			float CurrentSpeed = GetVelocity().Size();
+			if (CurrentSpeed <= KINDA_SMALL_NUMBER)
 			{
-				GetCharacterMovement()->MaxWalkSpeed = WalkSpeed * 0.5f;
+				EndRunning(FInputActionValue());
 			}
-			else
-			{
-				GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
-			}		
-
-			CameraBoom->CameraLagSpeed = 15.0f;
 		}
 	}
 }
@@ -601,6 +626,13 @@ void APrototypeCharacter::Reload(const FInputActionValue& Value)
 	{
 		CombatComponent->Reload();
 	}
+}
+
+void APrototypeCharacter::ToggleFlashLight(const FInputActionValue& Value)
+{
+	bIsUseFlashLight = !bIsUseFlashLight;
+	
+	ToggleLight(bIsUseFlashLight);
 }
 
 void APrototypeCharacter::Interact(const FInputActionValue& Value)
@@ -655,23 +687,75 @@ void APrototypeCharacter::StopClimbing()
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
 
+void APrototypeCharacter::EquipFlashLight()
+{
+	if (FlashLightClass)
+	{
+		FlashLight = GetWorld()->SpawnActor<AFlashLight>(FlashLightClass);
+		FlashLight->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("FlashLightSocket"));
+		FlashLight->SetActorEnableCollision(false);
+	}
+	UPlayerAnimInstance* AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
+	if (AnimInst)
+	{
+		AnimInst->bIsMirroring = true;
+		PlayAnimMontage(RaiseLight);
+	}
+}
+
+void APrototypeCharacter::ToggleLight(bool IsLight)
+{
+	UPlayerAnimInstance* AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
+	if (!AnimInst) return;
+
+	//손전등 ON 
+	if (IsLight)
+	{
+		if (FlashLight == nullptr)
+		{
+			EquipFlashLight(); 
+		}
+	}//손전등 OFF
+	else
+	{
+		if (FlashLight)
+		{
+			PlayAnimMontage(LowerLight); // 집어넣는 동작 재생
+			FlashLight->Destroy();
+			FlashLight = nullptr;
+		}
+	}
+
+}
+
+bool APrototypeCharacter::GetIsUseFlashLight() const
+{
+	return bIsUseFlashLight;
+}
+
 void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 {
-	if (CombatComponent)
+	if (!CombatComponent) return;
+
+	UAnimMontage* MontageToPlay = CombatComponent->bIsPistolEquipped ? UnEquipMontage : EquipMontage;
+
+	// 몽타주 재생 전 체크
+	UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (AnimInst && MontageToPlay)
 	{
-		UAnimMontage* MontageToPlay = CombatComponent->bIsPistolEquipped ? UnEquipMontage : EquipMontage;
+		CombatComponent->ToggleEquip(MontageToPlay, AnimInst);
+	}
 
-		CombatComponent->ToggleEquip(MontageToPlay, GetMesh()->GetAnimInstance());
+	// 레이어 링크 전 체크
+	TSubclassOf<UAnimInstance> LayerToLink = CombatComponent->IsPistolEquipped() ? PistolLayerClass : UnarmedLayerClass;
 
-		TSubclassOf<class UAnimInstance> LayerToLink = CombatComponent->IsPistolEquipped() ? PistolLayerClass : UnarmedLayerClass;
-
-		if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
-		{
-			if (LayerToLink)
-			{
-				AnimInst->LinkAnimClassLayers(LayerToLink);
-			}
-		}
+	if (AnimInst && LayerToLink) 
+	{
+		AnimInst->LinkAnimClassLayers(LayerToLink);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Animation Layer or Instance Nothing!"));
 	}
 }
 
@@ -679,10 +763,10 @@ void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 {
 	if (CombatComponent && CombatComponent->StartAiming())
 	{
-		CameraBoom->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("clavicle_r"));
+		//CameraBoom->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("clavicle_r"));
 
-		CameraBoom->SetRelativeLocation(FVector::ZeroVector);
-		CameraBoom->SetRelativeRotation(FRotator::ZeroRotator);
+		//CameraBoom->SetRelativeLocation(FVector::ZeroVector);
+		//CameraBoom->SetRelativeRotation(FRotator::ZeroRotator);
 
 		CameraBoom->bUsePawnControlRotation = true;
 		CameraBoom->bInheritPitch = false;
@@ -700,9 +784,15 @@ void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 
 		if (APlayerController* PC = Cast<APlayerController>(Controller))
 		{
+			if (PC->PlayerCameraManager)
+			{
+				PC->PlayerCameraManager->ViewPitchMin = -20.0f;
+				PC->PlayerCameraManager->ViewPitchMax = 10.0f;
+			}
+
 			if (AWZ_HUD_DH* HUD = Cast<AWZ_HUD_DH>(PC->GetHUD()))
 			{
-				HUD->SetCrosshairVisibility(true); // 켜!
+				HUD->SetCrosshairVisibility(true);
 			}
 		}
 	}
@@ -714,53 +804,44 @@ void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 
 void APrototypeCharacter::StopAiming(const FInputActionValue& Value)
 {
-	if (CombatComponent)
-	{
-		CombatComponent->StopAiming();
-	}
+	if (CombatComponent) CombatComponent->StopAiming();
+
+	bUseControllerRotationYaw = false;
 
 	if (APlayerController* PC = Cast<APlayerController>(Controller))
 	{
+		if (PC->PlayerCameraManager)
+		{
+			PC->PlayerCameraManager->ViewPitchMin = -60.0f;
+			PC->PlayerCameraManager->ViewPitchMax = 50.0f;
+		}
+
 		if (AWZ_HUD_DH* HUD = Cast<AWZ_HUD_DH>(PC->GetHUD()))
 		{
-			HUD->SetCrosshairVisibility(false); // 꺼!
+			HUD->SetCrosshairVisibility(false);
 		}
 	}
 
-	if (CameraBoom)
+	CameraBoom->bUsePawnControlRotation = true;
+    CameraBoom->bInheritPitch = true;
+    CameraBoom->bInheritYaw = true;
+    CameraBoom->bInheritRoll = false;
+    
+    if (MainCamera)
+    {
+        MainCamera->bUsePawnControlRotation = false;
+        MainCamera->SetRelativeRotation(FRotator::ZeroRotator);
+    }
+
+    CameraBoom->bEnableCameraLag = true;
+    CameraBoom->bEnableCameraRotationLag = true;
+    CameraBoom->CameraLagSpeed = 15.0f;
+    CameraBoom->CameraRotationLagSpeed = 15.0f;
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
-		CameraBoom->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
-		CameraBoom->SetWorldLocationAndRotation(GetActorLocation(), GetActorRotation());
-		CameraBoom->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("root"));
-
-		// 보스 코드 원본 복구
-		CameraBoom->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-
-		// 위치 미세 조정
-		CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
-		CameraBoom->SetRelativeRotation(FRotator::ZeroRotator);
-
-		// 설정 복구
-		CameraBoom->bUsePawnControlRotation = true;
-		CameraBoom->bInheritPitch = true;
-		CameraBoom->bInheritYaw = true;
-		CameraBoom->bInheritRoll = false;
-
-		if (MainCamera)
-		{
-			MainCamera->bUsePawnControlRotation = false;
-			MainCamera->SetRelativeRotation(FRotator::ZeroRotator);
-		}
-
-		CameraBoom->bEnableCameraLag = true;
-		CameraBoom->bEnableCameraRotationLag = true;
-		CameraBoom->CameraLagSpeed = 15.0f;
-		CameraBoom->CameraRotationLagSpeed = 15.0f;
-	}
-
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+		float SafeSpeed = (WalkSpeed > 0.0f) ? WalkSpeed : 600.0f;
+		MoveComp->MaxWalkSpeed = SafeSpeed;
 	}
 }
 
@@ -834,11 +915,21 @@ bool APrototypeCharacter::GetIsClimbing() const
 	return bIsClimbing;
 }
 
-UStaticMeshComponent* APrototypeCharacter::GetEquippedWeaponMesh()
+USkeletalMeshComponent* APrototypeCharacter::GetEquippedWeaponMesh()
 {
 	if (CombatComponent == nullptr) return nullptr;
 
 	if (CombatComponent->EquippedWeapon == nullptr) return nullptr;
 
 	return CombatComponent->EquippedWeapon->WeaponMesh;
+}
+
+AWeapon* APrototypeCharacter::GetEquippedWeapon()
+{
+	return CombatComponent ? CombatComponent->GetEquippedWeapon() : nullptr;
+}
+
+bool APrototypeCharacter::GetIsReloading() const
+{
+	return CombatComponent ? CombatComponent->GetIsReloading() : false;
 }

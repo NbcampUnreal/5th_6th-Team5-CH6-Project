@@ -57,6 +57,7 @@ public:
 	FVector GetHandIKTarget() const { return HandIKTargetLocation; }
 	float GetAimYaw() const { return AimYaw; }
 	float GetAimPitch() const { return AimPitch; }
+	bool GetIsReloading() const;
 #pragma endregion
 
 #pragma region 무기 설정 및 상태 (Weapon Config & State)

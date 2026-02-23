@@ -9,6 +9,7 @@ class UWZDamageType;
 class UNiagaraSystem;
 class UNiagaraComponent;
 class USoundBase;
+class AMagazineBase;
 
 UCLASS()
 class WARD_ZERO_API AWeapon : public AActor
@@ -42,13 +43,22 @@ public:
     UFUNCTION(BlueprintCallable)
     void FinishReload();
 
-    // 빈 총 소리 재생
+    UFUNCTION(BlueprintCallable)
+    void HideMagazine();
+
+    UFUNCTION(BlueprintCallable)
+    void ShowMagazine();
+
     void PlayDryFireSound();
+
+    void PlayReloadSound();
 #pragma endregion
 
 #pragma region 상태 확인 (Getters & State Checks)
     // 탄약이 남아있는지 확인
     bool HasAmmo() const { return CurrentAmmo > 0; }
+
+	bool IsFullAmmo() const { return CurrentAmmo >= MaxCapacity; }
 
     // 현재 재장전 중인가?
     bool IsReloading() const { return bIsReloading; }
@@ -59,7 +69,25 @@ public:
 
 #pragma region 컴포넌트 (Components)
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Components")
-    UStaticMeshComponent* WeaponMesh;
+    TObjectPtr<USkeletalMeshComponent> WeaponMesh; //탄창 엑터 클래스 
+
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Reload")
+    TSubclassOf<AMagazineBase> MagazineClass; //실제 탄창 
+
+    UPROPERTY()
+    AActor* CurrHandMag; //현재 손에 들고있는 탄창 
+
+   UPROPERTY(VisibleAnywhere)
+   TObjectPtr<UStaticMeshComponent> GunMagMesh;//총에 붙어있는 탄창 
+
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Reload")
+    FName HandSocketName = TEXT("MagSocket");
+
+    UPROPERTY(EditAnywhere, Category = "Weapon | Effects")
+    class UNiagaraSystem* ShellEjectEffect;
+
+    UPROPERTY(EditAnywhere, Category = "Weapon | Sockets")
+    FName ShellEjectSocketName = TEXT("ShellEject");
 #pragma endregion
 
 protected:
@@ -107,6 +135,9 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, Category = "Weapon|Effects|SFX")
     USoundBase* FireSound;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Effects|SFX")
+    USoundBase* ReloadSound;
 #pragma endregion
 
 private:
@@ -123,4 +154,5 @@ private:
 
     FVector LaserHitLocation;
 #pragma endregion
+
 };
