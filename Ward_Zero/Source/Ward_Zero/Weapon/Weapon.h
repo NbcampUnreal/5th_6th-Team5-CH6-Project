@@ -43,13 +43,22 @@ public:
     UFUNCTION(BlueprintCallable)
     void FinishReload();
 
-    // 빈 총 소리 재생
+    UFUNCTION(BlueprintCallable)
+    void HideMagazine();
+
+    UFUNCTION(BlueprintCallable)
+    void ShowMagazine();
+
     void PlayDryFireSound();
+
+    void PlayReloadSound();
 #pragma endregion
 
 #pragma region 상태 확인 (Getters & State Checks)
     // 탄약이 남아있는지 확인
     bool HasAmmo() const { return CurrentAmmo > 0; }
+
+	bool IsFullAmmo() const { return CurrentAmmo >= MaxCapacity; }
 
     // 현재 재장전 중인가?
     bool IsReloading() const { return bIsReloading; }
@@ -126,6 +135,9 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, Category = "Weapon|Effects|SFX")
     USoundBase* FireSound;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Effects|SFX")
+    USoundBase* ReloadSound;
 #pragma endregion
 
 private:
@@ -142,10 +154,5 @@ private:
 
     FVector LaserHitLocation;
 #pragma endregion
-public:
-    UFUNCTION(BlueprintCallable)
-    void HideMagazine();
 
-    UFUNCTION(BlueprintCallable)
-    void ShowMagazine();
 };

@@ -199,6 +199,7 @@ void AWeapon::StartReload()
     if (bIsReloading || CurrentAmmo >= MaxCapacity) return;
 
     bIsReloading = true;
+    PlayReloadSound();
     UE_LOG(LogTemp, Warning, TEXT("Reload Started..."));
 }
 
@@ -220,6 +221,16 @@ void AWeapon::PlayDryFireSound()
     }
     UE_LOG(LogTemp, Warning, TEXT("(총알 없음)"));
 }
+
+void AWeapon::PlayReloadSound()
+{
+    if (ReloadSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, ReloadSound, GetActorLocation());
+    }
+	UE_LOG(LogTemp, Warning, TEXT("장전 소리"));
+}
+
 //기존 탄창이 사라질 때 노티파이 이벤트 
 void AWeapon::HideMagazine()
 {

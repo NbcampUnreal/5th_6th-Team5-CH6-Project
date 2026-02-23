@@ -93,6 +93,8 @@ void UPlayerCombatComponent::Reload()
 {
 	if (!EquippedWeapon || EquippedWeapon->IsReloading()) return;
 
+	if (EquippedWeapon->IsFullAmmo()) return;
+
 	UE_LOG(LogTemp, Warning, TEXT("Reload System Active"));
 
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
@@ -135,19 +137,21 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 {
 	if (!bIsAiming || !EquippedWeapon || !PlayerCamera) return;
 
+	if (EquippedWeapon->IsReloading()) return;
+
 	if (!EquippedWeapon->HasAmmo())
 	{
 		EquippedWeapon->PlayDryFireSound();
 		return;
 	}
 
-	// 1. [Component 역할] 애니메이션 재생 (플레이어의 행동)
+	// 애니메이션 재생 (플레이어의 행동)
 	if (AnimInst && FireMontage)
 	{
 		AnimInst->Montage_Play(FireMontage);
 	}
 
-	// 2. [Component 역할] 카메라 쉐이크 (플레이어가 느끼는 반동)
+	// 카메라 쉐이크 (플레이어가 느끼는 반동)
 	if (CamShake && GetWorld())
 	{
 		UGameplayStatics::PlayWorldCameraShake(GetWorld(), CamShake, PlayerCamera->GetComponentLocation(), 0.0f, 500.0f);
