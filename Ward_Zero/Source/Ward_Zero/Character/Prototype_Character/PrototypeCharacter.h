@@ -103,6 +103,7 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* FireAction;
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* QuickTurnAction;
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* ReloadAction;
+    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* FlashLightAction;
 
     // 입력 처리 바인딩 함수
     void Move(const FInputActionValue& Value);
@@ -116,6 +117,7 @@ protected:
     void StopAiming(const FInputActionValue& Value);
     void Fire(const FInputActionValue& Value);
     void Reload(const FInputActionValue& Value);
+    void ToggleFlashLight(const FInputActionValue& Value);
 #pragma endregion 
 
 #pragma region 이동 및 카메라 설정 (Movement & Camera Config)
@@ -195,7 +197,13 @@ public:
     void EquipFlashLight();
     
     UFUNCTION()
-    void ToggleFlashLight();
+    void ToggleLight(bool IsLight);
+
+    UFUNCTION()
+    virtual bool GetIsUseFlashLight() const override; 
+
+    UPROPERTY(BlueprintReadOnly, Category = "FlashLight")
+    bool bIsUseFlashLight = false; 
 #pragma endregion 
 
 protected:

@@ -501,6 +501,11 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		{
 			EnhancedInputComponent->BindAction(QuickTurnAction, ETriggerEvent::Started, this, &APrototypeCharacter::PerformQuickTurn180);
 		}
+
+		if (FlashLightAction)
+		{
+			EnhancedInputComponent->BindAction(FlashLightAction, ETriggerEvent::Started, this, &APrototypeCharacter::ToggleFlashLight);
+		}
 	}
 }
 
@@ -606,6 +611,13 @@ void APrototypeCharacter::Reload(const FInputActionValue& Value)
 	}
 }
 
+void APrototypeCharacter::ToggleFlashLight(const FInputActionValue& Value)
+{
+	bIsUseFlashLight = !bIsUseFlashLight;
+	
+	ToggleLight(bIsUseFlashLight);
+}
+
 void APrototypeCharacter::Interact(const FInputActionValue& Value)
 {
 	if (bIsClimbing)
@@ -664,6 +676,7 @@ void APrototypeCharacter::EquipFlashLight()
 	{
 		FlashLight = GetWorld()->SpawnActor<AFlashLight>(FlashLightClass);
 		FlashLight->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("FlashLightSocket"));
+		FlashLight->SetActorEnableCollision(false);
 	}
 	UPlayerAnimInstance* AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
 	if (AnimInst)
@@ -673,31 +686,34 @@ void APrototypeCharacter::EquipFlashLight()
 	}
 }
 
-void APrototypeCharacter::ToggleFlashLight()
+void APrototypeCharacter::ToggleLight(bool IsLight)
 {
 	UPlayerAnimInstance* AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
 	if (!AnimInst) return;
 
-	//손전등을 들고 있다면 
-	if (AnimInst->bIsMirroring)
-	{
-		PlayAnimMontage(LowerLight);
-		AnimInst->bIsMirroring = false; 
-		
-		if (FlashLight)
-		{
-			FlashLight->Destroy();
-			FlashLight = nullptr; 
-		}
-	}
-	else
+	//손전등 ON 
+	if (IsLight)
 	{
 		if (FlashLight == nullptr)
 		{
-			EquipFlashLight();
+			EquipFlashLight(); 
+		}
+	}//손전등 OFF
+	else
+	{
+		if (FlashLight)
+		{
+			PlayAnimMontage(LowerLight); // 집어넣는 동작 재생
+			FlashLight->Destroy();
+			FlashLight = nullptr;
 		}
 	}
 
+}
+
+bool APrototypeCharacter::GetIsUseFlashLight() const
+{
+	return bIsUseFlashLight;
 }
 
 void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)

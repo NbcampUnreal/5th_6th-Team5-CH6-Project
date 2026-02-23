@@ -104,6 +104,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	bool bIsReloading;
 
+	UPROPERTY(BlueprintReadOnly, Category = "FlashLight")
+	bool bIsUseFlashLight;
+
 	// 물리 및 이동 데이터 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	FVector Velocity;
@@ -178,6 +181,12 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Animation")
 	bool bIsMirroring = false; 
+
+	UPROPERTY(BlueprintReadOnly, Category = "Animation")
+	float FlashlightAlpha = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Animation")
+	float FlashlightIKAlpha = 0.0f;
 	
 
 private:
