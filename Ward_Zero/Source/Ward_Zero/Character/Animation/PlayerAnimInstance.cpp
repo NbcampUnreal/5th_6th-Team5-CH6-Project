@@ -5,6 +5,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "KismetAnimationLibrary.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
+#include "Weapon/Weapon.h"
 
 void UPlayerAnimInstance::NativeInitializeAnimation()
 {
@@ -34,10 +35,14 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		HandIKTargetLocation = AnimInterface->GetHandIKTargetLoc();
 		bIsAiming = AnimInterface->GetIsAiming();
 		bIsClimbing = AnimInterface->GetIsClimbing();
-		WeaponMesh = AnimInterface->GetEquippedWeaponMesh();
-		EquippedWeapon = AnimInterface->GetEquippedWeapon();
 		bIsReloading = AnimInterface->GetIsReloading();
 		bIsUseFlashLight = AnimInterface->GetIsUseFlashLight();
+
+		USkeletalMeshComponent* TempMesh = AnimInterface->GetEquippedWeaponMesh();
+		WeaponMesh = IsValid(TempMesh) ? TempMesh : nullptr; 
+
+		AWeapon* TempWeapon = AnimInterface->GetEquippedWeapon();
+		EquippedWeapon = IsValid(TempWeapon) ? TempWeapon : nullptr;
 	}
 
 	UpdateMovementCalculations(DeltaSeconds);
