@@ -202,6 +202,26 @@ void APrototypeCharacter::Tick(float DeltaTime)
 		}
 	}
 
+	if (GEngine)
+	{
+		if (StatusComponent)
+		{
+			FString StatusMsg = FString::Printf(TEXT("HP: %.0f / Stamina: %.0f"),
+				StatusComponent->CurrHealth, StatusComponent->CurrStamina);
+
+			GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Green, StatusMsg);
+		}
+
+		if (CombatComponent && CombatComponent->EquippedWeapon)
+		{
+			FString AmmoMsg = FString::Printf(TEXT("Ammo: %d / %d"),
+				CombatComponent->EquippedWeapon->GetCurrentAmmo(),
+				CombatComponent->EquippedWeapon->GetMaxCapacity());
+
+			GEngine->AddOnScreenDebugMessage(2, 0.0f, FColor::Yellow, AmmoMsg);
+		}
+	}
+
 #pragma region Camera Aim & Bobbing
 
 	float TargetArmLengthDest;
@@ -576,6 +596,8 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 
 	if (bIsCrouched || bIsClimbing) return;
 
+	if (StatusComponent && !StatusComponent->CanSprint()) return;
+
 	if (bIsRunning)
 	{
 		EndRunning(Value);
@@ -611,6 +633,12 @@ void APrototypeCharacter::CheckRunState()
 	{
 		if (bIsRunning)
 		{
+			if(StatusComponent && !StatusComponent->CanSprint())
+			{
+				EndRunning(FInputActionValue());
+				return;
+			}
+
 			float CurrentSpeed = GetVelocity().Size();
 			if (CurrentSpeed <= KINDA_SMALL_NUMBER)
 			{

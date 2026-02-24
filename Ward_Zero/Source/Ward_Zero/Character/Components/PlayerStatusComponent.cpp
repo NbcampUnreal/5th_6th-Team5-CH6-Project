@@ -1,8 +1,9 @@
-#include "Character/Components/PlayerStatusComponent.h"
+﻿#include "Character/Components/PlayerStatusComponent.h"
+#include "Character/Prototype_Character/PrototypeCharacter.h"
 
 UPlayerStatusComponent::UPlayerStatusComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
 }
 
 void UPlayerStatusComponent::BeginPlay()
@@ -11,6 +12,38 @@ void UPlayerStatusComponent::BeginPlay()
 
 	CurrHealth = MaxHealth;
 	bIsDead = false;
+
+	CurrStamina = MaxStamina;
+	bIsExhausted = false;
+}
+
+void UPlayerStatusComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (bIsDead) return;
+
+	APrototypeCharacter* Player = Cast<APrototypeCharacter>(GetOwner());
+	if (!Player) return;
+
+	if (Player->GetIsRunning())
+	{		
+		CurrStamina = FMath::Clamp(CurrStamina - (StaminaDrainRate * DeltaTime), 0.0f, MaxStamina);
+
+		if (CurrStamina <= 0.0f)
+		{
+			bIsExhausted = true;
+		}
+	}
+	else
+	{
+		CurrStamina = FMath::Clamp(CurrStamina + (StaminaRegenRate * DeltaTime), 0.0f, MaxStamina);
+
+		if (bIsExhausted && CurrStamina >= MinStaminaToSprint)
+		{
+			bIsExhausted = false;
+		}
+	}
 }
 
 float UPlayerStatusComponent::ApplyDamage(float DamageAmount)
