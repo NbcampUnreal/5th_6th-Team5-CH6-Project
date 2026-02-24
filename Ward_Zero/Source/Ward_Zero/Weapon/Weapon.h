@@ -63,6 +63,12 @@ public:
     // 현재 재장전 중인가?
     bool IsReloading() const { return bIsReloading; }
 
+    UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+    int32 GetCurrentAmmo() const { return CurrentAmmo; }
+
+    UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+    int32 GetMaxCapacity() const { return MaxCapacity; }
+
     // IK용 타겟 위치 반환 (레이저 끝점 등)
     FVector GetLaserTargetLocation() const { return LaserHitLocation; }
 #pragma endregion

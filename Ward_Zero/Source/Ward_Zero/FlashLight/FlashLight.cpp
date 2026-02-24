@@ -19,4 +19,3 @@ AFlashLight::AFlashLight()
 	SpotLight->AttenuationRadius = LightAttenuationRadius;
 }
 
-
