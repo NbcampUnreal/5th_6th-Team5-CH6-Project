@@ -206,6 +206,24 @@ public:
     bool bIsUseFlashLight = false; 
 #pragma endregion 
 
+public:
+#pragma region 발소리 시스템 (Footstep System)
+
+    UFUNCTION(BlueprintCallable, Category = "Audio|Footstep")
+    void PlayFootstepSound(FName FootBoneName);
+
+protected:
+    // 장소에 따른 3가지 발소리 에셋 (에디터에서 넣을 수 있게 세팅)
+    UPROPERTY(EditDefaultsOnly, Category = "Audio|Footstep")
+    USoundBase* Sound_DefaultStep;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Audio|Footstep")
+    USoundBase* Sound_WoodStep;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Audio|Footstep")
+    USoundBase* Sound_MetalStep; 
+#pragma endregion
+
 protected:
 #pragma region 애니메이션 및 몽타주 (Animation & Montages)
     // 애니메이션 레이어 링크

@@ -38,9 +38,11 @@ void UStatusComponent::SetMainState(EMonsterMainState NewState)
 {
 	if (MainState == NewState)
 	{
+		UE_LOG(LogTemp,Warning,TEXT("SetMainState: Don't change State"));
 		return;
 	}
 	MainState = NewState;
+	UE_LOG(LogTemp,Log,TEXT("SetMainState: change state"));
 	OnMainStateChanged.Broadcast(NewState);
 }
 

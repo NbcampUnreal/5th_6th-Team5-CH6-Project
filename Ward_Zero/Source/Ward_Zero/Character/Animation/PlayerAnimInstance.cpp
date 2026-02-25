@@ -64,7 +64,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetAlpha, DeltaSeconds, 5.0f);
 
 	//Pistol FlashLight 
-	float TargetIKAlpha = (bIsUseFlashLight && bIsPistolEquipped && !bIsEquipping) ? 1.0f : 0.0f;
+	float TargetIKAlpha = (bIsUseFlashLight && bIsPistolEquipped && !bIsEquipping && !bIsReloading) ? 1.0f : 0.0f;
 	FlashlightIKAlpha = FMath::FInterpTo(FlashlightIKAlpha, TargetIKAlpha, DeltaSeconds, 10.0f);
 }
 

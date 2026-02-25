@@ -16,6 +16,8 @@
 #include "Engine/Engine.h"
 #include "Weapon/WZ_HUD_DH.h"
 #include "Weapon/Weapon.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
+#include "Kismet/GameplayStatics.h"
 #include "FlashLight/FlashLight.h"
 
 APrototypeCharacter::APrototypeCharacter()
@@ -124,6 +126,14 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	if (!CameraBoom || !MainCamera || !GetCharacterMovement()) return;
 
 	CheckRunState();
+
+	if (FlashLight)
+	{
+		// 장전 중이거나, 무기를 장착/해제 몽타주 호출 시 손전등 숨김. 
+		bool bShouldHide = GetIsReloading() || IsEquipping();
+		FlashLight->SetActorHiddenInGame(bShouldHide);
+	}
+
 	if (bIsQuickTurning)
 	{
 		float SafeDuration = (TurnDuration > KINDA_SMALL_NUMBER) ? TurnDuration : 1.0f;
@@ -720,9 +730,15 @@ void APrototypeCharacter::EquipFlashLight()
 	if (FlashLightClass)
 	{
 		FlashLight = GetWorld()->SpawnActor<AFlashLight>(FlashLightClass);
-		FlashLight->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("FlashLightSocket"));
+
+		// 무기장착여부에 따른 소켓 결정 
+		FName SocketName = GetIsPistolEquipped() ? TEXT("FlashLightSocket_Pistol") : TEXT("FlashLightSocket_Normal");
+
+		// 손전등 부착 
+		FlashLight->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
 		FlashLight->SetActorEnableCollision(false);
 	}
+
 	UPlayerAnimInstance* AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
 	if (AnimInst)
 	{
@@ -960,4 +976,46 @@ AWeapon* APrototypeCharacter::GetEquippedWeapon()
 bool APrototypeCharacter::GetIsReloading() const
 {
 	return CombatComponent ? CombatComponent->GetIsReloading() : false;
+}
+
+void APrototypeCharacter::PlayFootstepSound(FName FootBoneName)
+{
+	FVector FootLocation = GetMesh()->GetSocketLocation(FootBoneName);
+
+	FVector Start = FootLocation;
+	FVector End = Start - FVector(0.0f, 0.0f, 50.0f);
+	FHitResult HitResult;
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this); 
+	QueryParams.bReturnPhysicalMaterial = true;
+
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, QueryParams))
+	{
+		USoundBase* SoundToPlay = Sound_DefaultStep;
+
+
+		if (HitResult.PhysMaterial.IsValid())
+		{
+			EPhysicalSurface SurfaceType = HitResult.PhysMaterial->SurfaceType;
+
+			switch (SurfaceType)
+			{
+			case SurfaceType1: // 엔진 세팅의 1번 재질
+				SoundToPlay = Sound_WoodStep;
+				break;
+			case SurfaceType2: // 엔진 세팅의 2번 재질
+				SoundToPlay = Sound_MetalStep;
+				break;
+			default:           // 아무 세팅 안 된 기본 바닥
+				SoundToPlay = Sound_DefaultStep;
+				break;
+			}
+		}
+
+		if (SoundToPlay)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, SoundToPlay, HitResult.ImpactPoint);
+		}
+	}
 }
