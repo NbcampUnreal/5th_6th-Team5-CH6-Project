@@ -44,10 +44,7 @@ void ABaseZombie_AIController::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	if (BT_BaseZombie != nullptr)
-	{
-		RunBehaviorTree(BT_BaseZombie);
-	}
+	
 	AIPerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &ABaseZombie_AIController::OnTargetDetected);
 	
 	
@@ -55,11 +52,20 @@ void ABaseZombie_AIController::BeginPlay()
 
 void ABaseZombie_AIController::HandleMainStateChange(EMonsterMainState NewState)
 {
-	GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::MainState,static_cast<uint8>(NewState));
-	if (NewState == EMonsterMainState::Combat)
+	if (GetBlackboardComponent())
 	{
-		GetBlackboardComponent()->SetValueAsObject(WZAIKeys::TargetActor,UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+		UE_LOG(LogTemp,Warning,TEXT("AIC_HandleMainStateChange: blackboard valid"));
+		GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::MainState,static_cast<uint8>(NewState));
+		if (NewState == EMonsterMainState::Combat)
+		{
+			GetBlackboardComponent()->SetValueAsObject(WZAIKeys::TargetActor,UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+		}
+	
+	}else
+	{
+		UE_LOG(LogTemp,Warning,TEXT("AIC_HandleMainStateChange: blackboard not valid"));
 	}
+	
 }
 
 void ABaseZombie_AIController::HandleSubStateChange(EMonsterSubState NewState)
@@ -72,6 +78,10 @@ void ABaseZombie_AIController::OnPossess(APawn* InPawn)
 	Super::OnPossess(InPawn);
 	if (ABaseZombie* Zombie = Cast<ABaseZombie>(InPawn))
 	{
+		if (BT_BaseZombie != nullptr)
+		{
+			RunBehaviorTree(BT_BaseZombie);
+		}
 		StatusComp = Zombie->FindComponentByClass<UStatusComponent>();
 		
 		if (StatusComp)
@@ -79,7 +89,9 @@ void ABaseZombie_AIController::OnPossess(APawn* InPawn)
 			UpdatePerceptionConfig();
 			StatusComp->OnMainStateChanged.AddDynamic(this, &ABaseZombie_AIController::HandleMainStateChange);
 			StatusComp->OnSubStateChanged.AddDynamic(this, &ABaseZombie_AIController::HandleSubStateChange);
-
+			UE_LOG(LogTemp,Warning,TEXT("call SetMainState"));
+			StatusComp->SetMainState(StatusComp->GetStartState());
+			
 		}
 	}
 }
