@@ -78,7 +78,7 @@ void ABaseZombie::BeginPlay()
 	{
 		StatusComponent->InitData(MonsterData);
 		StatusComponent->OnMainStateChanged.AddDynamic(this, &ABaseZombie::HandleStateChange);
-		StatusComponent->SetMainState(StatusComponent->GetStartState());
+		//StatusComponent->SetMainState(StatusComponent->GetStartState());
 	}else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Zombie [%s] has no StatusComponent or MonsterData!"), *GetName());
