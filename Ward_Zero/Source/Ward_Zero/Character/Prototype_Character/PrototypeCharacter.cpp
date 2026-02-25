@@ -16,6 +16,8 @@
 #include "Engine/Engine.h"
 #include "Weapon/WZ_HUD_DH.h"
 #include "Weapon/Weapon.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
+#include "Kismet/GameplayStatics.h"
 #include "FlashLight/FlashLight.h"
 
 APrototypeCharacter::APrototypeCharacter()
@@ -960,4 +962,46 @@ AWeapon* APrototypeCharacter::GetEquippedWeapon()
 bool APrototypeCharacter::GetIsReloading() const
 {
 	return CombatComponent ? CombatComponent->GetIsReloading() : false;
+}
+
+void APrototypeCharacter::PlayFootstepSound(FName FootBoneName)
+{
+	FVector FootLocation = GetMesh()->GetSocketLocation(FootBoneName);
+
+	FVector Start = FootLocation;
+	FVector End = Start - FVector(0.0f, 0.0f, 50.0f);
+	FHitResult HitResult;
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this); 
+	QueryParams.bReturnPhysicalMaterial = true;
+
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, QueryParams))
+	{
+		USoundBase* SoundToPlay = Sound_DefaultStep;
+
+
+		if (HitResult.PhysMaterial.IsValid())
+		{
+			EPhysicalSurface SurfaceType = HitResult.PhysMaterial->SurfaceType;
+
+			switch (SurfaceType)
+			{
+			case SurfaceType1: // 엔진 세팅의 1번 재질
+				SoundToPlay = Sound_WoodStep;
+				break;
+			case SurfaceType2: // 엔진 세팅의 2번 재질
+				SoundToPlay = Sound_MetalStep;
+				break;
+			default:           // 아무 세팅 안 된 기본 바닥
+				SoundToPlay = Sound_DefaultStep;
+				break;
+			}
+		}
+
+		if (SoundToPlay)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, SoundToPlay, HitResult.ImpactPoint);
+		}
+	}
 }
