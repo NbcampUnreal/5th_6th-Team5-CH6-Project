@@ -126,6 +126,14 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	if (!CameraBoom || !MainCamera || !GetCharacterMovement()) return;
 
 	CheckRunState();
+
+	if (FlashLight)
+	{
+		// 장전 중이거나, 무기를 장착/해제 몽타주 호출 시 손전등 숨김. 
+		bool bShouldHide = GetIsReloading() || IsEquipping();
+		FlashLight->SetActorHiddenInGame(bShouldHide);
+	}
+
 	if (bIsQuickTurning)
 	{
 		float SafeDuration = (TurnDuration > KINDA_SMALL_NUMBER) ? TurnDuration : 1.0f;
@@ -722,9 +730,15 @@ void APrototypeCharacter::EquipFlashLight()
 	if (FlashLightClass)
 	{
 		FlashLight = GetWorld()->SpawnActor<AFlashLight>(FlashLightClass);
-		FlashLight->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("FlashLightSocket"));
+
+		// 무기장착여부에 따른 소켓 결정 
+		FName SocketName = GetIsPistolEquipped() ? TEXT("FlashLightSocket_Pistol") : TEXT("FlashLightSocket_Normal");
+
+		// 손전등 부착 
+		FlashLight->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
 		FlashLight->SetActorEnableCollision(false);
 	}
+
 	UPlayerAnimInstance* AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
 	if (AnimInst)
 	{
