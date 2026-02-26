@@ -19,6 +19,7 @@
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "Kismet/GameplayStatics.h"
 #include "FlashLight/FlashLight.h"
+//#include "Gimmic_CY/InteractionBase.h"
 
 APrototypeCharacter::APrototypeCharacter()
 {
@@ -681,7 +682,7 @@ void APrototypeCharacter::ToggleFlashLight(const FInputActionValue& Value)
 
 void APrototypeCharacter::Interact(const FInputActionValue& Value)
 {
-	if (bIsClimbing)
+	/*if (bIsClimbing)
 	{
 		StopClimbing();
 		return;
@@ -700,7 +701,22 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 		{
 			IInteract::Execute_OnInteract(HitActor, this);
 		}
-	}
+	}*/
+
+	/*TArray<AActor*> OverlappedActors;
+	GetCapsuleComponent()->GetOverlappingActors(OverlappedActors);
+
+	for (AActor* OverlappedActor : OverlappedActors)
+	{
+		if (OverlappedActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+		{
+			if (IInteractionBase* InteractbalesInterface = Cast<IInteractionBase>(OverlappedActor))
+			{
+				InteractbalesInterface->OnIneracted(this);
+				break;
+			}
+		}
+	}*/
 }
 
 void APrototypeCharacter::StartClimbing(ALadder* Ladder)
