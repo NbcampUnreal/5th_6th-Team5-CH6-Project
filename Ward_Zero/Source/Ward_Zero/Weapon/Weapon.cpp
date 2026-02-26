@@ -7,6 +7,7 @@
 #include "MonsterAI/MonsterAI_CHS/Weapon/WZDamageType.h"
 #include "GameFramework/Character.h"
 #include "Magazine/MagazineBase.h"
+#include "Curves/CurveVector.h"
 
 //#include "DrawDebugHelpers.h"
 

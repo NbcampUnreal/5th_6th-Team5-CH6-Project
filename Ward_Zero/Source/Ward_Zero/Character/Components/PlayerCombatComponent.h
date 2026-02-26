@@ -39,16 +39,35 @@ public:
 	// [중요] 발사 함수: 애니메이션과 쉐이크는 여기서, 실제 발사는 무기에게 위임
 	void Fire(UAnimMontage* FireMontage, UAnimInstance* AnimInst, TSubclassOf<UCameraShakeBase> CamShake);
 
+	void StartFire(UAnimMontage* InFireMontage, UAnimInstance* InAnimInst, TSubclassOf<UCameraShakeBase> InCamShake);
+	void StopFire();
+
 	// 재장전
 	void Reload();
+
+private:
+	FTimerHandle FireTimer;
+	void AutoFireLogic();
+
+	UPROPERTY()	
+	UAnimMontage* CachedFireMontage;
+
+	UPROPERTY()	
+	UAnimInstance* CachedAnimInst;
+
+	TSubclassOf<UCameraShakeBase> CachedCamShake;
 #pragma endregion
 
+public:
 #pragma region 상태 확인 (Getters & State Checks)
 	// 무기 장착 여부
-	bool IsPistolEquipped() const { return bIsPistolEquipped; }
+	bool IsPistolEquipped() const { return bIsWeaponDrawn && CurrentWeaponIndex == 1; }
 
 	// 조준 중인지 여부
 	bool IsAiming() const { return bIsAiming; }
+	bool IsFiring() const { return bIsFiring; }
+
+	bool IsWeaponDrawn() const { return bIsWeaponDrawn; }
 
 	// 현재 장착된 무기 가져오기
 	AWeapon* GetEquippedWeapon() const { return EquippedWeapon; }
@@ -58,22 +77,38 @@ public:
 	float GetAimYaw() const { return AimYaw; }
 	float GetAimPitch() const { return AimPitch; }
 	bool GetIsReloading() const;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|State")
+	bool bIsFiring = false;
 #pragma endregion
 
 #pragma region 무기 설정 및 상태 (Weapon Config & State)
-	// 에디터에서 설정할 기본 무기 클래스 (예: BP_Pistol)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Config")
-	TSubclassOf<AWeapon> DefaultWeaponClass;
+	TSubclassOf<AWeapon> PistolClass;
 
-	// 실제로 스폰되어 손에 들고 있는 무기
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Config")
+	TSubclassOf<AWeapon> SMGClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|State")
+	AWeapon* PistolWeapon;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|State")
+	AWeapon* SMGWeapon;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|State")
 	AWeapon* EquippedWeapon;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|State")
-	bool bIsPistolEquipped = false;
+	int32 CurrentWeaponIndex = 1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|State")
+	bool bIsWeaponDrawn = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|State")
 	bool bIsAiming = false;
+
+	void ChangeWeapon(int32 NewWeaponIndex, UAnimInstance* AnimInst);
+	
 #pragma endregion
 
 #pragma region IK 및 조준 오프셋 (IK & Aim Offset)
@@ -87,7 +122,7 @@ public:
 	float AimPitch;
 #pragma endregion
 
-protected:
+private:
 #pragma region 내부 헬퍼 함수 (Internal Helpers)
 	// 무기 스폰 및 장착 헬퍼 함수
 	void SpawnDefaultWeapon();
@@ -100,6 +135,8 @@ protected:
 
 	// 반동 처리
 	void HandleRecoil(float DeltaTime);
+
+	int32 CurrentShotsFired = 0;
 #pragma endregion
 
 #pragma region 애니메이션 및 반동 설정 (Animation & Recoil Config)
