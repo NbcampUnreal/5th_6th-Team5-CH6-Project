@@ -24,6 +24,9 @@ public class Ward_Zero : ModuleRules
             "PhysicsCore",
             "NavigationSystem",
             "AnimGraphRuntime",
+            "GameplayAbilities",  
+            "GameplayTags",  
+            "GameplayTasks"
         });
 
         PrivateDependencyModuleNames.AddRange(new string[] { });
