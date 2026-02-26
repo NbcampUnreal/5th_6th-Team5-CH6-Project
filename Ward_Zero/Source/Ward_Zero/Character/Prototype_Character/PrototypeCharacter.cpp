@@ -19,7 +19,7 @@
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "Kismet/GameplayStatics.h"
 #include "FlashLight/FlashLight.h"
-//#include "Gimmic_CY/InteractionBase.h"
+#include "Gimmic_CY/InteractionBase.h"
 
 APrototypeCharacter::APrototypeCharacter()
 {
@@ -682,28 +682,28 @@ void APrototypeCharacter::ToggleFlashLight(const FInputActionValue& Value)
 
 void APrototypeCharacter::Interact(const FInputActionValue& Value)
 {
-	/*if (bIsClimbing)
-	{
-		StopClimbing();
-		return;
-	}
+	//if (bIsClimbing)
+	//{
+	//	StopClimbing();
+	//	return;
+	//}
 
-	FVector Start = MainCamera->GetComponentLocation();
-	FVector End = Start + (MainCamera->GetForwardVector() * 250.0f);
-	FHitResult Hit;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);
+	//FVector Start = MainCamera->GetComponentLocation();
+	//FVector End = Start + (MainCamera->GetForwardVector() * 250.0f);
+	//FHitResult Hit;
+	//FCollisionQueryParams Params;
+	//Params.AddIgnoredActor(this);
 
-	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
-	{
-		AActor* HitActor = Hit.GetActor();
-		if (HitActor && HitActor->GetClass()->ImplementsInterface(UInteract::StaticClass()))
-		{
-			IInteract::Execute_OnInteract(HitActor, this);
-		}
-	}*/
+	//if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+	//{
+	//	AActor* HitActor = Hit.GetActor();
+	//	if (HitActor && HitActor->GetClass()->ImplementsInterface(UInteract::StaticClass()))
+	//	{
+	//		IInteract::Execute_OnInteract(HitActor, this);
+	//	}
+	//}
 
-	/*TArray<AActor*> OverlappedActors;
+	TArray<AActor*> OverlappedActors;
 	GetCapsuleComponent()->GetOverlappingActors(OverlappedActors);
 
 	for (AActor* OverlappedActor : OverlappedActors)
@@ -716,7 +716,7 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 				break;
 			}
 		}
-	}*/
+	}
 }
 
 void APrototypeCharacter::StartClimbing(ALadder* Ladder)
