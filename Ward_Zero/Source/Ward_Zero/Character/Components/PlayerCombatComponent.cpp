@@ -5,6 +5,7 @@
 #include "GameFramework/Character.h"
 #include "Weapon/Weapon.h"
 #include "Character/Animation/PlayerAnimInstance.h"
+#include "Curves/CurveVector.h"
 
 UPlayerCombatComponent::UPlayerCombatComponent()
 {
@@ -26,56 +27,50 @@ void UPlayerCombatComponent::SetupCombat(UCameraComponent* InCamera)
 
 void UPlayerCombatComponent::SpawnDefaultWeapon()
 {
-	// 1. 무기 클래스가 설정되어 있는지 확인
-	if (DefaultWeaponClass)
+	ACharacter* Character = Cast<ACharacter>(GetOwner());
+	if (!Character) return;
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = GetOwner();
+	SpawnParams.Instigator = Cast<APawn>(GetOwner());
+
+	if (PistolClass)
 	{
-		// 2. 무기 액터 스폰
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = GetOwner();
-		SpawnParams.Instigator = Cast<APawn>(GetOwner());
-
-		AWeapon* NewWeapon = GetWorld()->SpawnActor<AWeapon>(DefaultWeaponClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-
-		if (NewWeapon)
+		PistolWeapon = GetWorld()->SpawnActor<AWeapon>(PistolClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		if (PistolWeapon)
 		{
-			EquippedWeapon = NewWeapon;
-
-			// 3. 캐릭터 메쉬의 소켓에 무기 부착
-			ACharacter* Character = Cast<ACharacter>(GetOwner());
-			if (Character)
-			{
-				// Weapon 클래스의 Equip 함수 호출 (여기서 Attach 및 Owner 설정 등이 처리됨)
-				EquippedWeapon->Equip(
-					Character->GetMesh(),
-					TEXT("WeaponSocket"), // 소켓 이름 확인 필요!
-					Character,
-					Character
-				);
-			}
-
-			// 처음엔 숨겨둠 (장착 모션 전까지)
-			EquippedWeapon->SetActorHiddenInGame(true);
-			bIsPistolEquipped = false;
+			PistolWeapon->Equip(Character->GetMesh(), TEXT("WeaponSocket"), Character, Character);
+			PistolWeapon->SetActorHiddenInGame(true);
 		}
 	}
+
+	if (SMGClass)
+	{
+		SMGWeapon = GetWorld()->SpawnActor<AWeapon>(SMGClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		if (SMGWeapon)
+		{
+			SMGWeapon->Equip(Character->GetMesh(), TEXT("SMG_Socket"), Character, Character);
+			SMGWeapon->SetActorHiddenInGame(true);
+		}
+	}
+
+	EquippedWeapon = PistolWeapon;
+	CurrentWeaponIndex = 1;
+	bIsWeaponDrawn = false;
 }
 
 void UPlayerCombatComponent::ToggleEquip(UAnimMontage* Montage, UAnimInstance* AnimInst)
 {
-	if (!EquippedWeapon) return;
-	if (bIsAiming) return;
+	if (!EquippedWeapon || bIsAiming) return;
 
-	bIsPistolEquipped = !bIsPistolEquipped;
+	bIsWeaponDrawn = !bIsWeaponDrawn;
 
-	// 1. 무기 보이게/안보이게 설정
-	// 해제는 UnEquip 노티파이에서 처리
-	if (bIsPistolEquipped)
+	if (bIsWeaponDrawn)
 	{
 		EquippedWeapon->SetActorHiddenInGame(false);
 	}
 	
 	UPlayerAnimInstance* MyAnimInst = Cast<UPlayerAnimInstance>(AnimInst);
-
 	if (MyAnimInst)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Weapon Mesh Success"));
@@ -113,15 +108,8 @@ void UPlayerCombatComponent::Reload()
 
 bool UPlayerCombatComponent::StartAiming()
 {
-	if (!bIsPistolEquipped || !EquippedWeapon || EquippedWeapon->IsReloading())
-	{		
-		return false;
-	}
-
+	if (!bIsWeaponDrawn || !EquippedWeapon || EquippedWeapon->IsReloading()) return false;
 	bIsAiming = true;
-	
-	UE_LOG(LogTemp, Warning, TEXT("CombatComp: bIsAiming set to TRUE"));
-
 	return true;
 }
 
@@ -157,12 +145,31 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 		UGameplayStatics::PlayWorldCameraShake(GetWorld(), CamShake, PlayerCamera->GetComponentLocation(), 0.0f, 500.0f);
 	}
 
-	float RecoilPitch = FMath::RandRange(MaxRecoilPitch, MinRecoilPitch);
-	float RecoilYaw = FMath::RandRange(MinRecoilYaw, MaxRecoilYaw);
+	float RecoilPitch = 0.0f;
+	float RecoilYaw = 0.0f;
+
+	if (EquippedWeapon->RecoilCurve)
+	{
+		FVector CurveValue = EquippedWeapon->RecoilCurve->GetVectorValue(CurrentShotsFired);
+
+		RecoilPitch = CurveValue.Y;
+		RecoilYaw = CurveValue.Z;
+
+		// 약간의 랜덤함 추가
+		RecoilPitch += FMath::RandRange(-0.5f, 0.5f);
+		RecoilYaw += FMath::RandRange(-0.5f, 0.5f);
+	}
+	else
+	{
+		RecoilPitch = FMath::RandRange(MaxRecoilPitch, MinRecoilPitch);
+		RecoilYaw = FMath::RandRange(MinRecoilYaw, MaxRecoilYaw);
+	}
 
 	TargetRecoilRot.Pitch += RecoilPitch;
-
 	TargetRecoilRot.Yaw += RecoilYaw;
+
+	// 다음 총알을 위해 발사 횟수 증가
+	CurrentShotsFired++;
 
 	FVector CameraStart = PlayerCamera->GetComponentLocation();
 	FVector CameraEnd = CameraStart + (PlayerCamera->GetForwardVector() * 10000.f);
@@ -194,9 +201,8 @@ void UPlayerCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 void UPlayerCombatComponent::UpdateHandIK()
 {
 	// IK 타겟을 무기의 레이저 끝점 등으로 설정
-	if (EquippedWeapon && bIsPistolEquipped)
+	if (EquippedWeapon && bIsWeaponDrawn)
 	{
-		// Weapon 클래스에 GetLaserTargetLocation() 함수가 있다고 가정
 		HandIKTargetLocation = EquippedWeapon->GetLaserTargetLocation();
 	}
 }
@@ -258,4 +264,72 @@ bool UPlayerCombatComponent::GetIsReloading() const
 		}
 	}
 	return false;
+}
+
+void UPlayerCombatComponent::ChangeWeapon(int32 NewWeaponIndex, UAnimInstance* AnimInst)
+{
+	if (bIsAiming || CurrentWeaponIndex == NewWeaponIndex) return;
+
+	if (bIsWeaponDrawn && EquippedWeapon)
+	{
+		EquippedWeapon->SetActorHiddenInGame(true);
+	}
+
+	CurrentWeaponIndex = NewWeaponIndex;
+	if (CurrentWeaponIndex == 1) EquippedWeapon = PistolWeapon;
+	else if (CurrentWeaponIndex == 2) EquippedWeapon = SMGWeapon;
+
+	// 무기를 꺼낸 상태(Q)였다면, 새로 바꾼 무기를 즉시 보여줌
+	if (bIsWeaponDrawn && EquippedWeapon)
+	{
+		EquippedWeapon->SetActorHiddenInGame(false);
+
+		UPlayerAnimInstance* MyAnimInst = Cast<UPlayerAnimInstance>(AnimInst);
+		if (MyAnimInst) MyAnimInst->WeaponMesh = EquippedWeapon->WeaponMesh;
+	}
+}
+
+void UPlayerCombatComponent::StartFire(UAnimMontage* InFireMontage, UAnimInstance* InAnimInst, TSubclassOf<UCameraShakeBase> InCamShake)
+{
+	if (!bIsWeaponDrawn || !EquippedWeapon) return;
+
+	bIsFiring = true;
+	CurrentShotsFired = 0;
+
+	CachedFireMontage = InFireMontage;
+	CachedAnimInst = InAnimInst;
+	CachedCamShake = InCamShake;
+
+	if (EquippedWeapon->IsAutomatic())
+	{
+		GetWorld()->GetTimerManager().SetTimer(FireTimer, this, &UPlayerCombatComponent::AutoFireLogic, EquippedWeapon->GetFireRate(), true, 0.0f);
+	}
+	else
+	{
+		AutoFireLogic();
+	}
+}
+
+void UPlayerCombatComponent::StopFire()
+{
+	GetWorld()->GetTimerManager().ClearTimer(FireTimer);
+
+	bIsFiring = false;
+	CurrentShotsFired = 0;
+}
+
+void UPlayerCombatComponent::AutoFireLogic()
+{
+	if (!EquippedWeapon || !bIsAiming || EquippedWeapon->IsReloading())
+	{
+		StopFire();
+		return;
+	}
+
+	Fire(CachedFireMontage, CachedAnimInst, CachedCamShake);
+
+	if (!EquippedWeapon->HasAmmo())
+	{
+		StopFire();
+	}
 }

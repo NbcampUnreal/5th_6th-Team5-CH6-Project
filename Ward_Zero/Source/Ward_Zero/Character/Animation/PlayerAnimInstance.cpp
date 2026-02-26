@@ -43,6 +43,8 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 		AWeapon* TempWeapon = AnimInterface->GetEquippedWeapon();
 		EquippedWeapon = IsValid(TempWeapon) ? TempWeapon : nullptr;
+
+		bIsSMGEquipped = AnimInterface->GetIsSMGEquipped();
 	}
 
 	UpdateMovementCalculations(DeltaSeconds);
@@ -66,6 +68,20 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	//Pistol FlashLight 
 	float TargetIKAlpha = (bIsUseFlashLight && bIsPistolEquipped && !bIsEquipping && !bIsReloading) ? 1.0f : 0.0f;
 	FlashlightIKAlpha = FMath::FInterpTo(FlashlightIKAlpha, TargetIKAlpha, DeltaSeconds, 10.0f);
+
+	//SMG IK Alpha 
+	bool bIKCondition = bIsSMGEquipped && !bIsReloading && !bIsEquipping && !bIsQuickTurning;
+	float TargetSMGAlpha = bIKCondition ? 1.0f : 0.0f;
+
+	if (bIsEquipping || !bIsSMGEquipped)
+	{
+		SMGHandIKAlpha = 0.0f;
+	}
+	else
+	{
+		float InterpSpeed = bIKCondition ? 5.0f : 20.0f;
+		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, TargetSMGAlpha, DeltaSeconds, InterpSpeed);
+	}
 }
 
 void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)

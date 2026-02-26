@@ -7,6 +7,7 @@
 #include "MonsterAI/MonsterAI_CHS/Weapon/WZDamageType.h"
 #include "GameFramework/Character.h"
 #include "Magazine/MagazineBase.h"
+#include "Curves/CurveVector.h"
 
 //#include "DrawDebugHelpers.h"
 
@@ -52,7 +53,7 @@ void AWeapon::Tick(float DeltaTime)
         // (선택) 만약 나이아가라 레이저 이펙트가 있다면 여기서 업데이트
         if (LaserSightComponent)
         {
-            LaserSightComponent->SetNiagaraVariableVec3(TEXT("BeamEnd"), LaserHitLocation);
+            LaserSightComponent->SetVariableVec3(TEXT("BeamEnd"), LaserHitLocation);
         }
     }
 }

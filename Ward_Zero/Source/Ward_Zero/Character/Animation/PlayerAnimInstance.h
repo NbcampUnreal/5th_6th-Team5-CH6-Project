@@ -107,6 +107,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "FlashLight")
 	bool bIsUseFlashLight;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	bool bIsSMGEquipped;
+
 	// 물리 및 이동 데이터 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	FVector Velocity;
@@ -187,8 +190,16 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Animation")
 	float FlashlightIKAlpha = 0.0f;
-	
 
+public:
+	UPROPERTY(BlueprintReadOnly, Category = "IK")
+	float SMGHandIKAlpha;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "IK")
+	FVector SMGHandIKLocation;
+
+	UPROPERTY(BlueprintReadOnly, Category = "IK")
+	FRotator SMGHandIKRotation;
 private:
 	// Thread Safe
 	void UpdateMovementCalculations(float DeltaSeconds);
