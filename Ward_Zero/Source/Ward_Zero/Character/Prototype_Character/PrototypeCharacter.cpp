@@ -265,7 +265,13 @@ void APrototypeCharacter::Tick(float DeltaTime)
 			TotalDeltaPitch += WalkDeltaPitch;
 		}
 
-		if (Controller)
+		bool bShouldSway = true;
+		if (CombatComponent && (CombatComponent->GetIsReloading() || CombatComponent->IsFiring()))
+		{
+			bShouldSway = false;
+		}
+
+		if (Controller && bShouldSway)
 		{
 			FRotator CurrentControlRot = Controller->GetControlRotation();
 			CurrentControlRot.Yaw += TotalDeltaYaw;
@@ -352,6 +358,43 @@ void APrototypeCharacter::Tick(float DeltaTime)
 			StopClimbing();
 		}
 		return;
+	}
+}
+
+void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		// 이동 및 움직임 입력 바인딩
+		if (MoveAction) EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APrototypeCharacter::Move);
+		if (LookAction) EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APrototypeCharacter::Look);
+		if (RunAction) EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Started, this, &APrototypeCharacter::StartRunning);
+		if (CrouchAction) EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &APrototypeCharacter::ToggleCrouch);
+		if (QuickTurnAction) EnhancedInputComponent->BindAction(QuickTurnAction, ETriggerEvent::Started, this, &APrototypeCharacter::PerformQuickTurn180);
+
+		// 상호작용 입력 바인딩
+		if (InteractAction) EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APrototypeCharacter::Interact);
+
+		// 전투 입력 바인딩
+		if (EquipAction) EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Started, this, &APrototypeCharacter::ToggleEquip);
+		if (AimAction)
+		{
+			EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &APrototypeCharacter::StartAiming);
+			EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &APrototypeCharacter::StopAiming);
+		}
+		if (FireAction)
+		{
+			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &APrototypeCharacter::Fire);
+			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &APrototypeCharacter::StopFire);
+		}
+		if (ReloadAction) EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &APrototypeCharacter::Reload);		
+		if (EquipSlot1Action) EnhancedInputComponent->BindAction(EquipSlot1Action, ETriggerEvent::Started, this, &APrototypeCharacter::SelectWeapon1);
+		if (EquipSlot2Action) EnhancedInputComponent->BindAction(EquipSlot2Action, ETriggerEvent::Started, this, &APrototypeCharacter::SelectWeapon2);
+
+		// 아이템 사용 입력 바인딩
+		if (FlashLightAction) EnhancedInputComponent->BindAction(FlashLightAction, ETriggerEvent::Started, this, &APrototypeCharacter::ToggleFlashLight);
 	}
 }
 
@@ -520,43 +563,6 @@ void APrototypeCharacter::PlayDeathReaction(const FVector& ToAttackerDir)
 	else
 	{
 		GetMesh()->SetSimulatePhysics(true);
-	}
-}
-
-void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
-	{
-		if (MoveAction) EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APrototypeCharacter::Move);
-		if (LookAction) EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APrototypeCharacter::Look);
-		if (RunAction) EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Started, this, &APrototypeCharacter::StartRunning);
-		if (CrouchAction) EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &APrototypeCharacter::ToggleCrouch);
-		if (InteractAction) EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APrototypeCharacter::Interact);
-
-		if (EquipAction) EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Started, this, &APrototypeCharacter::ToggleEquip);
-		if (AimAction)
-		{
-			EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &APrototypeCharacter::StartAiming);
-			EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &APrototypeCharacter::StopAiming);
-		}
-		if (FireAction) EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &APrototypeCharacter::Fire);
-
-		if (ReloadAction)
-		{
-			EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &APrototypeCharacter::Reload);
-		}
-
-		if (QuickTurnAction)
-		{
-			EnhancedInputComponent->BindAction(QuickTurnAction, ETriggerEvent::Started, this, &APrototypeCharacter::PerformQuickTurn180);
-		}
-
-		if (FlashLightAction)
-		{
-			EnhancedInputComponent->BindAction(FlashLightAction, ETriggerEvent::Started, this, &APrototypeCharacter::ToggleFlashLight);
-		}
 	}
 }
 
@@ -781,26 +787,25 @@ void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 {
 	if (!CombatComponent) return;
 
-	UAnimMontage* MontageToPlay = CombatComponent->bIsPistolEquipped ? UnEquipMontage : EquipMontage;
+	UAnimMontage* MontageToPlay = CombatComponent->IsWeaponDrawn() ? UnEquipMontage : EquipMontage;
 
-	// 몽타주 재생 전 체크
 	UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
 	if (AnimInst && MontageToPlay)
 	{
 		CombatComponent->ToggleEquip(MontageToPlay, AnimInst);
 	}
 
-	// 레이어 링크 전 체크
-	TSubclassOf<UAnimInstance> LayerToLink = CombatComponent->IsPistolEquipped() ? PistolLayerClass : UnarmedLayerClass;
-
-	if (AnimInst && LayerToLink) 
+	TSubclassOf<UAnimInstance> LayerToLink;
+	if (CombatComponent->IsWeaponDrawn())
 	{
-		AnimInst->LinkAnimClassLayers(LayerToLink);
+		LayerToLink = (CombatComponent->CurrentWeaponIndex == 1) ? PistolLayerClass : SMGLayerClass;
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Animation Layer or Instance Nothing!"));
+		LayerToLink = UnarmedLayerClass;
 	}
+
+	if (AnimInst && LayerToLink) AnimInst->LinkAnimClassLayers(LayerToLink);
 }
 
 void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
@@ -893,8 +898,15 @@ void APrototypeCharacter::Fire(const FInputActionValue& Value)
 {
 	if (CombatComponent)
 	{
-		CombatComponent->Fire(FireMontage, GetMesh()->GetAnimInstance(), FireCameraShake);
-		CombatComponent->HandIKTargetLocation += FVector(0.0f, 0.0f, 20.0f);
+		CombatComponent->StartFire(FireMontage, GetMesh()->GetAnimInstance(), FireCameraShake);
+	}
+}
+
+void APrototypeCharacter::StopFire(const FInputActionValue& Value)
+{
+	if (CombatComponent)
+	{
+		CombatComponent->StopFire();
 	}
 }
 
@@ -988,34 +1000,49 @@ void APrototypeCharacter::PlayFootstepSound(FName FootBoneName)
 
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this); 
-	QueryParams.bReturnPhysicalMaterial = true;
 
 	if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, QueryParams))
 	{
-		USoundBase* SoundToPlay = Sound_DefaultStep;
+		USoundBase* SoundToPlay = Sound_DefaultStep; // 기본 소리
 
-
-		if (HitResult.PhysMaterial.IsValid())
+		AActor* HitActor = HitResult.GetActor();
+		if (HitActor)
 		{
-			EPhysicalSurface SurfaceType = HitResult.PhysMaterial->SurfaceType;
-
-			switch (SurfaceType)
+			if (HitActor->ActorHasTag(TEXT("Metal")))
 			{
-			case SurfaceType1: // 엔진 세팅의 1번 재질
-				SoundToPlay = Sound_WoodStep;
-				break;
-			case SurfaceType2: // 엔진 세팅의 2번 재질
 				SoundToPlay = Sound_MetalStep;
-				break;
-			default:           // 아무 세팅 안 된 기본 바닥
-				SoundToPlay = Sound_DefaultStep;
-				break;
 			}
 		}
 
+		// 최종 결정된 소리를 재생
 		if (SoundToPlay)
 		{
 			UGameplayStatics::PlaySoundAtLocation(this, SoundToPlay, HitResult.ImpactPoint);
+		}
+	}
+
+}
+
+void APrototypeCharacter::SelectWeapon1(const FInputActionValue& Value)
+{
+	if (CombatComponent)
+	{
+		CombatComponent->ChangeWeapon(1, GetMesh() ? GetMesh()->GetAnimInstance() : nullptr);
+		if (CombatComponent->IsWeaponDrawn())
+		{
+			if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance()) AnimInst->LinkAnimClassLayers(PistolLayerClass);
+		}
+	}
+}
+
+void APrototypeCharacter::SelectWeapon2(const FInputActionValue& Value)
+{
+	if (CombatComponent)
+	{
+		CombatComponent->ChangeWeapon(2, GetMesh() ? GetMesh()->GetAnimInstance() : nullptr);
+		if (CombatComponent->IsWeaponDrawn())
+		{
+			if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance()) AnimInst->LinkAnimClassLayers(SMGLayerClass);
 		}
 	}
 }

@@ -105,6 +105,10 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* ReloadAction;
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* FlashLightAction;
 
+    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* EquipSlot1Action;
+
+    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* EquipSlot2Action;
+
     // 입력 처리 바인딩 함수
     void Move(const FInputActionValue& Value);
     void Look(const FInputActionValue& Value);
@@ -118,6 +122,10 @@ protected:
     void Fire(const FInputActionValue& Value);
     void Reload(const FInputActionValue& Value);
     void ToggleFlashLight(const FInputActionValue& Value);
+    void SelectWeapon1(const FInputActionValue& Value);
+    void SelectWeapon2(const FInputActionValue& Value);
+    void StopFire(const FInputActionValue& Value);
+
 #pragma endregion 
 
 #pragma region 이동 및 카메라 설정 (Movement & Camera Config)
@@ -218,9 +226,6 @@ protected:
     USoundBase* Sound_DefaultStep;
 
     UPROPERTY(EditDefaultsOnly, Category = "Audio|Footstep")
-    USoundBase* Sound_WoodStep;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Audio|Footstep")
     USoundBase* Sound_MetalStep; 
 #pragma endregion
 
@@ -229,6 +234,8 @@ protected:
     // 애니메이션 레이어 링크
     UPROPERTY(EditAnywhere, Category = "Animations|Layers") TSubclassOf<class UAnimInstance> UnarmedLayerClass;
     UPROPERTY(EditAnywhere, Category = "Animations|Layers") TSubclassOf<class UAnimInstance> PistolLayerClass;
+
+    UPROPERTY(EditAnywhere, Category = "Animations|Layers") TSubclassOf<class UAnimInstance> SMGLayerClass;
 
     // 액션 몽타주
     UPROPERTY(EditAnywhere, Category = "Animations|Action") UAnimMontage* EquipMontage;

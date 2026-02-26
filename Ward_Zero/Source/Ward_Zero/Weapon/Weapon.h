@@ -10,6 +10,7 @@ class UNiagaraSystem;
 class UNiagaraComponent;
 class USoundBase;
 class AMagazineBase;
+class UCurveVector;
 
 UCLASS()
 class WARD_ZERO_API AWeapon : public AActor
@@ -63,6 +64,10 @@ public:
     // 현재 재장전 중인가?
     bool IsReloading() const { return bIsReloading; }
 
+    bool IsAutomatic() const { return bIsAutomatic; }
+
+    float GetFireRate() const { return FireRate; }
+
     UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
     int32 GetCurrentAmmo() const { return CurrentAmmo; }
 
@@ -104,14 +109,25 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Weapon|Stats")
     float FireRange = 5000.0f;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Stats")
+    bool bIsAutomatic = false;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Stats")
+    float FireRate = 0.5f; // n초마다 1발 발사
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
     int32 MaxCapacity = 12; // 탄창 용량
 
     // 몬스터에게 전달할 데미지 타입
     UPROPERTY(EditDefaultsOnly, Category = "Weapon|Stats")
     TSubclassOf<UWZDamageType> DamageTypeClass;
+
+ public:
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Recoil")
+    UCurveVector* RecoilCurve;
 #pragma endregion
 
+ protected:
 #pragma region 무기 상태 (Weapon State)
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|State")
     int32 CurrentAmmo;
