@@ -31,4 +31,5 @@ public:
 	virtual class AWeapon* GetEquippedWeapon() = 0;
 	virtual bool GetIsReloading() const = 0;
 	virtual bool GetIsUseFlashLight() const = 0;
+	virtual bool GetIsSMGEquipped() const = 0;
 };
