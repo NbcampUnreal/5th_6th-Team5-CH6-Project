@@ -70,6 +70,7 @@ public:
     virtual USkeletalMeshComponent* GetEquippedWeaponMesh() override;
     virtual class AWeapon* GetEquippedWeapon() override;
     virtual bool GetIsReloading() const override;
+    virtual bool GetIsSMGEquipped() const override; 
 #pragma endregion
 
 protected:
@@ -241,6 +242,10 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Animations|Action") UAnimMontage* EquipMontage;
     UPROPERTY(EditAnywhere, Category = "Animations|Action") UAnimMontage* UnEquipMontage;
     UPROPERTY(EditAnywhere, Category = "Animations|Action") UAnimMontage* FireMontage;
+
+    //SMG
+    UPROPERTY(EditAnywhere, Category = "Animations|Action") UAnimMontage* SMG_EquipMontage;
+    UPROPERTY(EditAnywhere, Category = "Animations|Action") UAnimMontage* SMG_LowerMontage;
 
     // 피격 몽타주
     UPROPERTY(EditDefaultsOnly, Category = "Animations|Hit") UAnimMontage* HitMontage_Front;

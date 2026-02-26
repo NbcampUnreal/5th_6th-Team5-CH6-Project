@@ -49,7 +49,7 @@ void UPlayerCombatComponent::SpawnDefaultWeapon()
 		SMGWeapon = GetWorld()->SpawnActor<AWeapon>(SMGClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 		if (SMGWeapon)
 		{
-			SMGWeapon->Equip(Character->GetMesh(), TEXT("WeaponSocket"), Character, Character);
+			SMGWeapon->Equip(Character->GetMesh(), TEXT("SMG_Socket"), Character, Character);
 			SMGWeapon->SetActorHiddenInGame(true);
 		}
 	}

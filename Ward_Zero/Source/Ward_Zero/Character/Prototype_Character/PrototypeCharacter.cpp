@@ -990,6 +990,15 @@ bool APrototypeCharacter::GetIsReloading() const
 	return CombatComponent ? CombatComponent->GetIsReloading() : false;
 }
 
+bool APrototypeCharacter::GetIsSMGEquipped() const
+{
+	if (CombatComponent)
+	{
+		return (CombatComponent->CurrentWeaponIndex == 2) && CombatComponent->IsWeaponDrawn();
+	}
+	return false;
+}
+
 void APrototypeCharacter::PlayFootstepSound(FName FootBoneName)
 {
 	FVector FootLocation = GetMesh()->GetSocketLocation(FootBoneName);
@@ -1039,6 +1048,8 @@ void APrototypeCharacter::SelectWeapon2(const FInputActionValue& Value)
 {
 	if (CombatComponent)
 	{
+		UAnimMontage* MontageToPlay = CombatComponent->IsWeaponDrawn() ? SMG_LowerMontage : SMG_EquipMontage;
+
 		CombatComponent->ChangeWeapon(2, GetMesh() ? GetMesh()->GetAnimInstance() : nullptr);
 		if (CombatComponent->IsWeaponDrawn())
 		{
