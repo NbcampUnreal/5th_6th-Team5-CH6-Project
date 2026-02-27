@@ -29,7 +29,7 @@ public class Ward_Zero : ModuleRules
             "GameplayTasks"
         });
 
-        PrivateDependencyModuleNames.AddRange(new string[] { "ImageWrapper", "RenderCore", "SlateCore" });
+        PrivateDependencyModuleNames.AddRange(new string[] { });
 
         PublicIncludePaths.AddRange(new string[] {
             "Ward_Zero",

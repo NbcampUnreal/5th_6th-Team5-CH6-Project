@@ -110,9 +110,6 @@ bool UPlayerCombatComponent::StartAiming()
 {
 	if (!bIsWeaponDrawn || !EquippedWeapon || EquippedWeapon->IsReloading()) return false;
 	bIsAiming = true;
-
-	CurrentSpread = MaxSpread;
-
 	return true;
 }
 
@@ -175,11 +172,7 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 	CurrentShotsFired++;
 
 	FVector CameraStart = PlayerCamera->GetComponentLocation();
-	FVector CameraForward = PlayerCamera->GetForwardVector();
-
-	FVector SpreadDirection = FMath::VRandCone(CameraForward, FMath::DegreesToRadians(CurrentSpread));
-	FVector CameraEnd = CameraStart + (SpreadDirection * 10000.f);
-	CurrentSpread = FMath::Clamp(CurrentSpread + FireSpreadPenalty, MinSpread, MaxSpread);
+	FVector CameraEnd = CameraStart + (PlayerCamera->GetForwardVector() * 10000.f);
 
 	FHitResult Hit;
 	FCollisionQueryParams Params;
@@ -200,12 +193,6 @@ void UPlayerCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	{
 		UpdateHandIK();
 		CalculateAimOffset();
-
-		UpdateSpread(DeltaTime);
-	}
-	else
-	{
-		CurrentSpread = MaxSpread;
 	}
 
 	HandleRecoil(DeltaTime);
@@ -344,22 +331,5 @@ void UPlayerCombatComponent::AutoFireLogic()
 	if (!EquippedWeapon->HasAmmo())
 	{
 		StopFire();
-	}
-}
-
-void UPlayerCombatComponent::UpdateSpread(float DeltaTime)
-{
-	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
-	if (!OwnerCharacter) return;
-
-	float Speed = OwnerCharacter->GetVelocity().Size();
-
-	if (Speed > 10.0f)
-	{
-		CurrentSpread = FMath::FInterpTo(CurrentSpread, MaxSpread, DeltaTime, SpreadExpandRate);
-	}
-	else
-	{
-		CurrentSpread = FMath::FInterpTo(CurrentSpread, MinSpread, DeltaTime, SpreadShrinkRate);
 	}
 }

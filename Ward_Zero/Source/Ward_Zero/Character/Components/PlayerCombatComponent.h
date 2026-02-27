@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "PlayerCombatComponent.generated.h"
-//#include "Character/Components/InteractionComponent.h"
 
 // 전방 선언 (Forward Declarations)
 class AWeapon;
@@ -123,7 +122,7 @@ public:
 	float AimPitch;
 #pragma endregion
 
-protected:
+private:
 #pragma region 내부 헬퍼 함수 (Internal Helpers)
 	// 무기 스폰 및 장착 헬퍼 함수
 	void SpawnDefaultWeapon();
@@ -136,8 +135,6 @@ protected:
 
 	// 반동 처리
 	void HandleRecoil(float DeltaTime);
-
-	void UpdateSpread(float DeltaTime);
 
 	int32 CurrentShotsFired = 0;
 #pragma endregion
@@ -177,30 +174,4 @@ private:
 	UPROPERTY()
 	UCameraComponent* PlayerCamera;
 #pragma endregion
-
-public:
-#pragma region 조준점 스프레드 (Crosshair Spread)
-
-		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Spread")
-		float CurrentSpread = 0.0f;
-
-protected:
-	UPROPERTY(EditDefaultsOnly, Category = "Combat|Spread")
-	float MaxSpread = 5.0f; // 최대 벌어짐 각도
-
-	UPROPERTY(EditDefaultsOnly, Category = "Combat|Spread")
-	float MinSpread = 0.0f; // 최소 벌어짐 각도 0 = 100% 정확
-
-	UPROPERTY(EditDefaultsOnly, Category = "Combat|Spread")
-	float SpreadShrinkRate = 3.0f; // 가만히 있을 때 조준선이 모이는 속도
-
-	UPROPERTY(EditDefaultsOnly, Category = "Combat|Spread")
-	float SpreadExpandRate = 15.0f; // 움직일 때 조준선이 벌어지는 속도
-
-	UPROPERTY(EditDefaultsOnly, Category = "Combat|Spread")
-	float FireSpreadPenalty = 2.5f; // 총을 한 발 쏠 때마다 반동으로 벌어지는 패널티 수치
-#pragma endregion
-
-//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Interaction")
-//UInteractionComponent* InteractionComp;
 };
