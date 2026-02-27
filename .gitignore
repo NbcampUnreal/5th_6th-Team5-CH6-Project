@@ -23,3 +23,8 @@ Saved/
 # Visual Studio cache
 .vs/
 *.ipch
+
+# Houdini Engine
+/Plugins/HoudiniEngine/
+/Intermediate/HoudiniEngine/
+/Saved/HoudiniEngine/
