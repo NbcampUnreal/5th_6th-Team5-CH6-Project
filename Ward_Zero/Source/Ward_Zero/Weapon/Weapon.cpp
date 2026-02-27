@@ -97,6 +97,12 @@ void AWeapon::Fire(const FVector& HitTarget)
     Params.bTraceComplex = false;
     Params.bReturnPhysicalMaterial = true;
 
+    Params.AddIgnoredActor(this);
+    if (GetOwner())
+    {
+        Params.AddIgnoredActor(GetOwner());
+    }
+
     bool bBeamHit = GetWorld()->LineTraceSingleByChannel(
         FireHit, Start, End, ECC_Visibility, Params
     );
