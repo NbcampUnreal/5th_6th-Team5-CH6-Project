@@ -703,7 +703,54 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 	//	}
 	//}
 
-	TArray<AActor*> OverlappedActors;
+	//InteractionComp = CreateDefaultSubobject<UInteractionComponent>(TEXT("InteractionComp"));
+	/*if (InteractionComp)
+	{
+		InteractionComp->TryInteract();
+	}*/
+
+	FVector Start = GetActorLocation();
+	FVector End = Start; // 블루프린트와 동일하게 위치 고정
+
+	float Radius = 100.f;
+
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
+
+	TArray<FHitResult> OutHits;
+
+	bool bHit = UKismetSystemLibrary::SphereTraceMultiForObjects(
+		GetWorld(),
+		Start,
+		End,
+		Radius,
+		ObjectTypes,
+		false,
+		{ this },
+		EDrawDebugTrace::None,
+		OutHits,
+		true
+	);
+
+	if (!bHit) return;
+
+	for (const FHitResult& Hit : OutHits)
+	{
+		AActor* HitActor = Hit.GetActor();
+
+		if (!HitActor) continue;
+
+		if (HitActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+		{
+			if (IInteractionBase* InteractbalesInterface = Cast<IInteractionBase>(HitActor))
+			{
+				InteractbalesInterface->OnIneracted(this);
+				break;
+			}
+		}
+	}
+
+	/*TArray<AActor*> OverlappedActors;
 	GetCapsuleComponent()->GetOverlappingActors(OverlappedActors);
 
 	for (AActor* OverlappedActor : OverlappedActors)
@@ -716,7 +763,7 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 				break;
 			}
 		}
-	}
+	}*/
 }
 
 void APrototypeCharacter::StartClimbing(ALadder* Ladder)
