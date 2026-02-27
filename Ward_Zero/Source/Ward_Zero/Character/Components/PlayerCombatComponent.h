@@ -203,4 +203,6 @@ protected:
 
 //UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Interaction")
 //UInteractionComponent* InteractionComp;
+
+//아무거나 썼어요 히히
 };
