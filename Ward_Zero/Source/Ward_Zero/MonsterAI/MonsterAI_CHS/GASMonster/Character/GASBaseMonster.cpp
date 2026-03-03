@@ -3,7 +3,7 @@
 
 #include "GASBaseMonster.h"
 #include "Components/CapsuleComponent.h"
-
+#include "GameFramework/CharacterMovementComponent.h"
 
 
 AGASBaseMonster::AGASBaseMonster()
@@ -15,7 +15,8 @@ AGASBaseMonster::AGASBaseMonster()
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
-	
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+		UDefaultAttributeSet_BossMonster::GetBaseSpeedAttribute()).AddUObject(this,&AGASBaseMonster::OnMoveSpeedChanged);
 	DefaultAttributeSet_BossMonster = CreateDefaultSubobject<UDefaultAttributeSet_BossMonster>(FName("DefaultAttributeSet_BossMonster"));
 }
 
@@ -64,6 +65,7 @@ void AGASBaseMonster::PossessedBy(AController* NewController)
 					AbilitySystemComponent->GiveAbility(Spec);
 				}
 			}
+			
 		}
 		
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(DefaultAttributeSet_BossMonster->GetHealthAttribute())
@@ -72,11 +74,28 @@ void AGASBaseMonster::PossessedBy(AController* NewController)
 	}
 }
 
+
+
+
+
 void AGASBaseMonster::OnHealthChangedCallback(const FOnAttributeChangeData& Data) const
 {
 }
 
 void AGASBaseMonster::OnStaminaChangedCallback(const FOnAttributeChangeData& Data) const
 {
+}
+
+void AGASBaseMonster::OnMoveSpeedChanged(const FOnAttributeChangeData& Data) const
+{
+	UpdateMoveSpeed(Data.NewValue);
+}
+
+void AGASBaseMonster::UpdateMoveSpeed(float NewSpeed) const
+{
+	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
+	{
+		MovementComp->MaxWalkSpeed = NewSpeed;
+	}
 }
 

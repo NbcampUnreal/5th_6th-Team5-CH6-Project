@@ -42,6 +42,8 @@ protected:
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category = "GAS|Attributes")
 	TSubclassOf<UGameplayEffect> DefaultAttributeEffect;
 
+	void OnMoveSpeedChanged(const FOnAttributeChangeData& Data) const;
+	void UpdateMoveSpeed(float NewSpeed) const;
 public:
 	UPROPERTY(BlueprintAssignable)
 	FOnAttributeChangedDelegate OnHealthChanged;

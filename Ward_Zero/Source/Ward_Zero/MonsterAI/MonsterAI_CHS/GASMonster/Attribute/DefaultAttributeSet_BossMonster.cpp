@@ -44,6 +44,11 @@ void UDefaultAttributeSet_BossMonster::PostGameplayEffectExecute(const struct FG
 			}
 		}
 	}
+	
+	if (Data.EvaluatedData.Attribute == GetBaseSpeedAttribute())
+	{
+		SetBaseSpeed(FMath::Clamp(GetBaseSpeed(),0.0f,1000));
+	}
 }
 
 void UDefaultAttributeSet_BossMonster::GetLifetimeReplicatedProps(
