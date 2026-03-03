@@ -11,6 +11,25 @@ class UCameraComponent;
 class UAnimMontage;
 class UCameraShakeBase; // Fire 함수 파라미터에 사용되므로 추가
 
+USTRUCT(BlueprintType)
+struct FSMGReloadAnimSet
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, Category = "Reload")
+	UAnimMontage* StandingReload;      // 서서 일반
+
+	UPROPERTY(EditAnywhere, Category = "Reload")
+	UAnimMontage* StandingAimReload;   // 서서 조준 중
+
+	UPROPERTY(EditAnywhere, Category = "Reload")
+	UAnimMontage* CrouchReload;        // 앉아서 일반
+
+	UPROPERTY(EditAnywhere, Category = "Reload")
+	UAnimMontage* CrouchAimReload;     // 앉아서 조준 중
+};
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class WARD_ZERO_API UPlayerCombatComponent : public UActorComponent
 {
@@ -46,6 +65,13 @@ public:
 	// 재장전
 	void Reload();
 
+public:
+	UPROPERTY(EditAnywhere, Category = "Combat|Animations")
+	UAnimMontage* Pistol_FireMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Animations")
+	UAnimMontage* SMG_FireMontage;
+
 private:
 	FTimerHandle FireTimer;
 	void AutoFireLogic();
@@ -60,6 +86,38 @@ private:
 #pragma endregion
 
 public:
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
+	UAnimMontage* Pistol_EquipMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
+	UAnimMontage* Pistol_UnEquipMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
+	UAnimMontage* SMG_EquipMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
+	UAnimMontage* SMG_UnEquipMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
+	UAnimMontage* Melee_EquipMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
+	UAnimMontage* Melee_UnEquipMontage;
+
+	UAnimMontage* GetCurrentEquipMontage(bool bEquip);
+
+public:
+#pragma region 재장전 애니메이션 
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation|Pistol")
+	UAnimMontage* Pistol_ReloadMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation|SMG")
+	FSMGReloadAnimSet SMG_ReloadSet;
+
+	UAnimMontage* GetSelectedReloadMontage();
+
+public:
+	void HandleWeaponAttachment(bool bToHand);
+#pragma endregion
+
+public:
 #pragma region 상태 확인 (Getters & State Checks)
 	// 무기 장착 여부
 	bool IsPistolEquipped() const { return bIsWeaponDrawn && CurrentWeaponIndex == 1; }
@@ -69,6 +127,7 @@ public:
 	bool IsFiring() const { return bIsFiring; }
 
 	bool IsWeaponDrawn() const { return bIsWeaponDrawn; }
+	void SetIsWeaponDrawn(bool bDrawn) { bIsWeaponDrawn = bDrawn; }
 
 	// 현재 장착된 무기 가져오기
 	AWeapon* GetEquippedWeapon() const { return EquippedWeapon; }
@@ -78,6 +137,7 @@ public:
 	float GetAimYaw() const { return AimYaw; }
 	float GetAimPitch() const { return AimPitch; }
 	bool GetIsReloading() const;
+	int32 GetCurrentWeaponIndex() const { return CurrentWeaponIndex; }
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|State")
 	bool bIsFiring = false;
@@ -143,10 +203,6 @@ protected:
 #pragma endregion
 
 #pragma region 애니메이션 및 반동 설정 (Animation & Recoil Config)
-	// 몽타주
-	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
-	UAnimMontage* ReloadMontage;
-
 	// 반동 설정
 	UPROPERTY(EditDefaultsOnly, Category = "Combat|Recoil")
 	float MinRecoilPitch = 5.0f;

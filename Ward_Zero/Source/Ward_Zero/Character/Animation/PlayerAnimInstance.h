@@ -192,6 +192,10 @@ public:
 	float FlashlightIKAlpha = 0.0f;
 
 public:
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
+	FTransform PistolHandIKTransform;
+
+public:
 	UPROPERTY(BlueprintReadOnly, Category = "IK")
 	float SMGHandIKAlpha;
 	
@@ -200,10 +204,14 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "IK")
 	FRotator SMGHandIKRotation;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
+	FTransform SMGHandIKTransform;
 private:
 	// Thread Safe
 	void UpdateMovementCalculations(float DeltaSeconds);
 	void UpdatePivotLogic();
 	void UpdateOrientationWarping(float DeltaSeconds);
 	void UpdateMovementDirection();
+	void UpdateSMGHandIK(float DeltaSeconds);
 };

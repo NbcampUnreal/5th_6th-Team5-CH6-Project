@@ -88,11 +88,14 @@ public:
     UPROPERTY()
     AActor* CurrHandMag; //현재 손에 들고있는 탄창 
 
-   UPROPERTY(VisibleAnywhere)
-   TObjectPtr<UStaticMeshComponent> GunMagMesh;//총에 붙어있는 탄창 
+    UPROPERTY(VisibleAnywhere)
+    TObjectPtr<UStaticMeshComponent> GunMagMesh;//총에 붙어있는 탄창
 
     UPROPERTY(EditDefaultsOnly, Category = "Weapon|Reload")
-    FName HandSocketName = TEXT("MagSocket");
+    FName HandSocketName = TEXT("MagSocket"); //손 탄창 부착한 소켓 
+
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Sockets") //총 탄창 소켓
+    FName MagSocketName = TEXT("MagSocket");
 
     UPROPERTY(EditAnywhere, Category = "Weapon | Effects")
     class UNiagaraSystem* ShellEjectEffect;
@@ -135,6 +138,10 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|State")
     bool bIsReloading = false;
 #pragma endregion
+
+public:
+    UFUNCTION(BlueprintCallable)
+    void SetIsReloading(bool reload);
 
 #pragma region 시각/청각 이펙트 (VFX & SFX)
     UPROPERTY(EditAnywhere, Category = "Weapon|Effects")

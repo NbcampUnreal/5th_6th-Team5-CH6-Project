@@ -49,8 +49,8 @@ void UPlayerCombatComponent::SpawnDefaultWeapon()
 		SMGWeapon = GetWorld()->SpawnActor<AWeapon>(SMGClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 		if (SMGWeapon)
 		{
-			SMGWeapon->Equip(Character->GetMesh(), TEXT("SMG_Socket"), Character, Character);
-			SMGWeapon->SetActorHiddenInGame(true);
+			SMGWeapon->Equip(Character->GetMesh(), TEXT("BackWeaponSocket"), Character, Character);
+			SMGWeapon->SetActorHiddenInGame(false);
 		}
 	}
 
@@ -69,15 +69,7 @@ void UPlayerCombatComponent::ToggleEquip(UAnimMontage* Montage, UAnimInstance* A
 	{
 		EquippedWeapon->SetActorHiddenInGame(false);
 	}
-	
-	UPlayerAnimInstance* MyAnimInst = Cast<UPlayerAnimInstance>(AnimInst);
-	if (MyAnimInst)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Weapon Mesh Success"));
-		MyAnimInst->WeaponMesh = EquippedWeapon->WeaponMesh;
-	}
 
-	// 2. 애니메이션 재생
 	if (AnimInst && Montage)
 	{
 		AnimInst->Montage_Play(Montage);
@@ -86,22 +78,23 @@ void UPlayerCombatComponent::ToggleEquip(UAnimMontage* Montage, UAnimInstance* A
 
 void UPlayerCombatComponent::Reload()
 {
+	// 이미 재장전 중이거나 무기가 없으면 리턴
 	if (!EquippedWeapon || EquippedWeapon->IsReloading()) return;
-
 	if (EquippedWeapon->IsFullAmmo()) return;
 
-	UE_LOG(LogTemp, Warning, TEXT("Reload System Active"));
+	// 상황에 맞는 몽타주 선택
+	UAnimMontage* SelectedMontage = GetSelectedReloadMontage();
+
+	if (!SelectedMontage) return;
 
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
 	if (OwnerCharacter)
 	{
 		UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance();
-
-		if (AnimInst && ReloadMontage)
+		if (AnimInst)
 		{
-			AnimInst->Montage_Play(ReloadMontage);
-
-			EquippedWeapon->StartReload();
+			AnimInst->Montage_Play(SelectedMontage);
+			EquippedWeapon->StartReload(); 
 		}
 	}
 }
@@ -136,12 +129,13 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 		return;
 	}
 
-	// 애니메이션 재생 (플레이어의 행동)
-	if (AnimInst && FireMontage)
-	{
-		AnimInst->Montage_Play(FireMontage);
-	}
+	UAnimMontage* MontageToPlay = (CurrentWeaponIndex == 1) ? Pistol_FireMontage : SMG_FireMontage;
 
+	// 애니메이션 재생
+	if (AnimInst && MontageToPlay)
+	{
+		AnimInst->Montage_Play(MontageToPlay);
+	}
 	// 카메라 쉐이크 (플레이어가 느끼는 반동)
 	if (CamShake && GetWorld())
 	{
@@ -265,15 +259,95 @@ void UPlayerCombatComponent::HandleRecoil(float DeltaTime)
 	}
 }
 
+UAnimMontage* UPlayerCombatComponent::GetCurrentEquipMontage(bool bEquip)
+{
+	// 현재 인덱스에 따라 다른 몽타주 반환
+	switch (CurrentWeaponIndex)
+	{
+	case 1: return bEquip ? Pistol_EquipMontage : Pistol_UnEquipMontage;
+	case 2: return bEquip ? SMG_EquipMontage : SMG_UnEquipMontage;
+	case 3: return bEquip ? Melee_EquipMontage : Melee_UnEquipMontage;
+	default: return nullptr;
+	}
+}
+
+UAnimMontage* UPlayerCombatComponent::GetSelectedReloadMontage()
+{
+	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
+	if (!OwnerChar) return nullptr;
+
+	// Pistol
+	if (CurrentWeaponIndex == 1)
+	{
+		return Pistol_ReloadMontage;
+	}
+
+	// SMG
+	if (CurrentWeaponIndex == 2)
+	{
+		bool bIsCrouched = OwnerChar->bIsCrouched; 
+		bool bIsAimingNow = bIsAiming;
+
+		if (bIsCrouched)
+		{
+			return bIsAimingNow ? SMG_ReloadSet.CrouchAimReload : SMG_ReloadSet.CrouchReload;
+		}
+		else
+		{
+			return bIsAimingNow ? SMG_ReloadSet.StandingAimReload : SMG_ReloadSet.StandingReload;
+		}
+	}
+
+	return nullptr;
+}
+
+void UPlayerCombatComponent::HandleWeaponAttachment(bool bToHand)
+{
+	if (!EquippedWeapon) return;
+	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
+	if (!OwnerChar) return;
+
+	if (bToHand) // 장착할 때 (Equip)
+	{
+		FName HandSocket = (CurrentWeaponIndex == 1) ? TEXT("WeaponSocket") : TEXT("SMG_Socket");
+		EquippedWeapon->AttachToComponent(OwnerChar->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, HandSocket);
+		EquippedWeapon->SetActorHiddenInGame(false);
+	}
+	else // 해제할 때 (UnEquip)
+	{
+		if (CurrentWeaponIndex == 2) // SMG
+		{
+			EquippedWeapon->AttachToComponent(OwnerChar->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("BackWeaponSocket"));
+			EquippedWeapon->SetActorHiddenInGame(false); // 등에서는 보이게 
+		}
+		else // 권총
+		{
+			EquippedWeapon->AttachToComponent(OwnerChar->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("HolsterSocket"));
+			EquippedWeapon->SetActorHiddenInGame(true);
+		}
+	}
+}
+
 bool UPlayerCombatComponent::GetIsReloading() const
 {
+	if (EquippedWeapon && EquippedWeapon->IsReloading())
+	{
+		return true;
+	}
+
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
-	if (OwnerCharacter && ReloadMontage)
+	if (OwnerCharacter)
 	{
 		UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance();
 		if (AnimInst)
 		{
-			return AnimInst->Montage_IsPlaying(ReloadMontage);
+			bool bIsSMGReloading =
+				AnimInst->Montage_IsPlaying(SMG_ReloadSet.StandingReload) ||
+				AnimInst->Montage_IsPlaying(SMG_ReloadSet.StandingAimReload) ||
+				AnimInst->Montage_IsPlaying(SMG_ReloadSet.CrouchReload) ||
+				AnimInst->Montage_IsPlaying(SMG_ReloadSet.CrouchAimReload);
+
+			return AnimInst->Montage_IsPlaying(Pistol_ReloadMontage) || bIsSMGReloading;
 		}
 	}
 	return false;
@@ -283,22 +357,39 @@ void UPlayerCombatComponent::ChangeWeapon(int32 NewWeaponIndex, UAnimInstance* A
 {
 	if (bIsAiming || CurrentWeaponIndex == NewWeaponIndex) return;
 
-	if (bIsWeaponDrawn && EquippedWeapon)
+	// 현재 들고 있던 무기를 집어넣는 처리
+	if (EquippedWeapon)
 	{
-		EquippedWeapon->SetActorHiddenInGame(true);
+		EquippedWeapon->SetIsReloading(false);
+		if (AnimInst) AnimInst->Montage_Stop(0.2f);
+
+		// 기존 무기가 MP5 = 등으로, 권총 = 숨기기 
+		if (CurrentWeaponIndex == 2)
+		{
+			HandleWeaponAttachment(false); // 등으로 보냄
+		}
+		else
+		{
+			EquippedWeapon->SetActorHiddenInGame(true); // 권총은 숨김
+		}
 	}
 
+	// 새 무기로 변경
 	CurrentWeaponIndex = NewWeaponIndex;
 	if (CurrentWeaponIndex == 1) EquippedWeapon = PistolWeapon;
 	else if (CurrentWeaponIndex == 2) EquippedWeapon = SMGWeapon;
 
-	// 무기를 꺼낸 상태(Q)였다면, 새로 바꾼 무기를 즉시 보여줌
-	if (bIsWeaponDrawn && EquippedWeapon)
+	// 새 무기가 SMG라면 무조건 보이도록. 
+	if (CurrentWeaponIndex == 2 && EquippedWeapon)
 	{
 		EquippedWeapon->SetActorHiddenInGame(false);
+	}
 
+	// ABP 동기화 
+	if (AnimInst)
+	{
 		UPlayerAnimInstance* MyAnimInst = Cast<UPlayerAnimInstance>(AnimInst);
-		if (MyAnimInst) MyAnimInst->WeaponMesh = EquippedWeapon->WeaponMesh;
+		if (MyAnimInst && EquippedWeapon) MyAnimInst->WeaponMesh = EquippedWeapon->WeaponMesh;
 	}
 }
 

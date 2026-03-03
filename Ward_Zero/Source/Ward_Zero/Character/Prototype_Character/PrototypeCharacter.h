@@ -71,6 +71,7 @@ public:
     virtual class AWeapon* GetEquippedWeapon() override;
     virtual bool GetIsReloading() const override;
     virtual bool GetIsSMGEquipped() const override; 
+    virtual int32 GetCurrentWeaponIndex() const override;
 #pragma endregion
 
 protected:

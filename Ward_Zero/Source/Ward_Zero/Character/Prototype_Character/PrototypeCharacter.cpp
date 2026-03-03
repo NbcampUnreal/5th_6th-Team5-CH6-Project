@@ -339,27 +339,7 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	MainCamera->FieldOfView = FMath::FInterpTo(MainCamera->FieldOfView, TargetFOVDest, DeltaTime, InterpSpeed);
 	CameraBoom->SocketOffset = FMath::VInterpTo(CameraBoom->SocketOffset, TargetSocketOffsetDest, DeltaTime, InterpSpeed);
 	CameraBoom->TargetOffset = FMath::VInterpTo(CameraBoom->TargetOffset, TargetTargetOffsetDest, DeltaTime, InterpSpeed);
-
 #pragma endregion
-
-	// 등반 처리
-	if (bIsClimbing && CurrentLadder)
-	{
-		float MyHeight = GetActorLocation().Z;
-		float TopHeight = CurrentLadder->TopExitPoint->GetComponentLocation().Z;
-		float BottomHeight = CurrentLadder->BottomStartPoint->GetComponentLocation().Z;
-
-		if (MyHeight >= TopHeight)
-		{
-			StopClimbing();
-			SetActorLocation(CurrentLadder->TopExitPoint->GetComponentLocation());
-		}
-		else if (MyHeight <= BottomHeight)
-		{
-			StopClimbing();
-		}
-		return;
-	}
 }
 
 void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -703,54 +683,7 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 	//	}
 	//}
 
-	//InteractionComp = CreateDefaultSubobject<UInteractionComponent>(TEXT("InteractionComp"));
-	/*if (InteractionComp)
-	{
-		InteractionComp->TryInteract();
-	}*/
-
-	FVector Start = GetActorLocation();
-	FVector End = Start; // 블루프린트와 동일하게 위치 고정
-
-	float Radius = 100.f;
-
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
-
-	TArray<FHitResult> OutHits;
-
-	bool bHit = UKismetSystemLibrary::SphereTraceMultiForObjects(
-		GetWorld(),
-		Start,
-		End,
-		Radius,
-		ObjectTypes,
-		false,
-		{ this },
-		EDrawDebugTrace::None,
-		OutHits,
-		true
-	);
-
-	if (!bHit) return;
-
-	for (const FHitResult& Hit : OutHits)
-	{
-		AActor* HitActor = Hit.GetActor();
-
-		if (!HitActor) continue;
-
-		if (HitActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
-		{
-			if (IInteractionBase* InteractbalesInterface = Cast<IInteractionBase>(HitActor))
-			{
-				InteractbalesInterface->OnIneracted(this);
-				break;
-			}
-		}
-	}
-
-	/*TArray<AActor*> OverlappedActors;
+	TArray<AActor*> OverlappedActors;
 	GetCapsuleComponent()->GetOverlappingActors(OverlappedActors);
 
 	for (AActor* OverlappedActor : OverlappedActors)
@@ -763,7 +696,7 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 				break;
 			}
 		}
-	}*/
+	}
 }
 
 void APrototypeCharacter::StartClimbing(ALadder* Ladder)
@@ -849,26 +782,20 @@ bool APrototypeCharacter::GetIsUseFlashLight() const
 void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 {
 	if (!CombatComponent) return;
+	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
+	if (!AnimInst) return;
 
-	UAnimMontage* MontageToPlay = CombatComponent->IsWeaponDrawn() ? UnEquipMontage : EquipMontage;
+	bool bWillDraw = !CombatComponent->IsWeaponDrawn();
+	UAnimMontage* SelectedMontage = CombatComponent->GetCurrentEquipMontage(bWillDraw);
 
-	UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
-	if (AnimInst && MontageToPlay)
-	{
-		CombatComponent->ToggleEquip(MontageToPlay, AnimInst);
-	}
+	CombatComponent->ToggleEquip(SelectedMontage, AnimInst);
 
-	TSubclassOf<UAnimInstance> LayerToLink;
-	if (CombatComponent->IsWeaponDrawn())
-	{
-		LayerToLink = (CombatComponent->CurrentWeaponIndex == 1) ? PistolLayerClass : SMGLayerClass;
-	}
-	else
-	{
-		LayerToLink = UnarmedLayerClass;
-	}
+	// 레이어 변경
+	TSubclassOf<UAnimInstance> LayerToLink = bWillDraw ?
+		((CombatComponent->GetCurrentWeaponIndex() == 1) ? PistolLayerClass : SMGLayerClass) :
+		UnarmedLayerClass;
 
-	if (AnimInst && LayerToLink) AnimInst->LinkAnimClassLayers(LayerToLink);
+	AnimInst->LinkAnimClassLayers(LayerToLink);
 }
 
 void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
@@ -1062,6 +989,11 @@ bool APrototypeCharacter::GetIsSMGEquipped() const
 	return false;
 }
 
+int32 APrototypeCharacter::GetCurrentWeaponIndex() const
+{
+	return CombatComponent ? CombatComponent->GetCurrentWeaponIndex() : 0;
+}
+
 void APrototypeCharacter::PlayFootstepSound(FName FootBoneName)
 {
 	FVector FootLocation = GetMesh()->GetSocketLocation(FootBoneName);
@@ -1097,26 +1029,51 @@ void APrototypeCharacter::PlayFootstepSound(FName FootBoneName)
 
 void APrototypeCharacter::SelectWeapon1(const FInputActionValue& Value)
 {
-	if (CombatComponent)
+	if (!CombatComponent) return;
+	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
+	if (!AnimInst) return;
+
+	if (CombatComponent->GetCurrentWeaponIndex() == 1 && CombatComponent->IsWeaponDrawn())
 	{
-		CombatComponent->ChangeWeapon(1, GetMesh() ? GetMesh()->GetAnimInstance() : nullptr);
-		if (CombatComponent->IsWeaponDrawn())
-		{
-			if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance()) AnimInst->LinkAnimClassLayers(PistolLayerClass);
-		}
+		ToggleEquip(Value);
+		return;
 	}
+
+	CombatComponent->ChangeWeapon(1, AnimInst);
+
+	UAnimMontage* EquipAnim = CombatComponent->GetCurrentEquipMontage(true);
+	if (EquipAnim)
+	{
+		AnimInst->Montage_Play(EquipAnim);
+		CombatComponent->SetIsWeaponDrawn(true);
+	}
+
+	AnimInst->LinkAnimClassLayers(PistolLayerClass);
 }
 
 void APrototypeCharacter::SelectWeapon2(const FInputActionValue& Value)
 {
-	if (CombatComponent)
-	{
-		UAnimMontage* MontageToPlay = CombatComponent->IsWeaponDrawn() ? SMG_LowerMontage : SMG_EquipMontage;
+	if (!CombatComponent) return;
+	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
+	if (!AnimInst) return;
 
-		CombatComponent->ChangeWeapon(2, GetMesh() ? GetMesh()->GetAnimInstance() : nullptr);
-		if (CombatComponent->IsWeaponDrawn())
-		{
-			if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance()) AnimInst->LinkAnimClassLayers(SMGLayerClass);
-		}
+	if (CombatComponent->GetCurrentWeaponIndex() == 2 && CombatComponent->IsWeaponDrawn())
+	{
+		ToggleEquip(Value);
+		return;
 	}
+
+	// 무기 변경 (이제 내부에서 SMG를 보이게 놔둡니다)
+	CombatComponent->ChangeWeapon(2, AnimInst);
+
+	// SMG를 꺼내는 몽타주 재생
+	UAnimMontage* EquipAnim = CombatComponent->GetCurrentEquipMontage(true);
+	if (EquipAnim)
+	{
+		AnimInst->Montage_Play(EquipAnim);
+		// 상태 동기화
+		CombatComponent->SetIsWeaponDrawn(true);
+	}
+
+	AnimInst->LinkAnimClassLayers(SMGLayerClass);
 }
