@@ -85,7 +85,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetAlpha, DeltaSeconds, 5.0f);
 
 	//Pistol FlashLight 
-	float TargetIKAlpha = (bIsUseFlashLight && bIsPistolEquipped && !bIsEquipping && !bIsReloading) ? 1.0f : 0.0f;
+	float TargetIKAlpha = (bIsUseFlashLight && bIsPistolEquipped && !bIsEquipping && !bIsRunning) ? 1.0f : 0.0f;
 	FlashlightIKAlpha = FMath::FInterpTo(FlashlightIKAlpha, TargetIKAlpha, DeltaSeconds, 10.0f);
 
 	//SMG IK Alpha 
@@ -117,11 +117,13 @@ void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 void UPlayerAnimInstance::UpdateMovementCalculations(float DeltaSeconds)
 {
 	GroundSpeed = Velocity.Size2D();
-	bHasVelocity = GroundSpeed > 5.0f;
+
+	float VelocityThreshold = bIsCrouching ? 12.0f : 5.0f;
+	bHasVelocity = GroundSpeed > VelocityThreshold;
 
 	// 가속도 계산 (Z축 제외)
 	const FVector Accel2D = Acceleration * FVector(1.f, 1.f, 0.f);
-	bIsAcceleration = !Accel2D.IsNearlyZero();
+	bIsAcceleration = Accel2D.Size() > 10.0f;
 
 	// Displacement 및 Start Distance
 	DisplacementSinceLastUpdate = GroundSpeed * DeltaSeconds;
@@ -132,7 +134,7 @@ void UPlayerAnimInstance::UpdateMovementCalculations(float DeltaSeconds)
 	LocalVelocity2D = Character->GetActorRotation().UnrotateVector(Velocity);
 
 	// 입력 방향 벡터 결정
-	const FVector DirectionVector = (GroundSpeed < 10.0f && bIsAcceleration) ? Acceleration : Velocity;
+	const FVector DirectionVector = (GroundSpeed < 15.0f && bIsAcceleration) ? Acceleration : Velocity;
 
 	// 방향 각도 계산
 	const FRotator ControlRotationYaw = FRotator(0.f, Character->GetControlRotation().Yaw, 0.f);

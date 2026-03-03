@@ -28,7 +28,6 @@ APrototypeCharacter::APrototypeCharacter()
 	// 컴포넌트 생성
 	StatusComponent = CreateDefaultSubobject<UPlayerStatusComponent>(TEXT("StatusComp"));
 	CombatComponent = CreateDefaultSubobject<UPlayerCombatComponent>(TEXT("CombatComp"));
-	InteractionComp = CreateDefaultSubobject<UInteractionComponent>(TEXT("InteractionComp"));
 
 	// 캐릭터 회전 설정
 	bUseControllerRotationPitch = false;
@@ -670,10 +669,6 @@ void APrototypeCharacter::ToggleFlashLight(const FInputActionValue& Value)
 
 void APrototypeCharacter::Interact(const FInputActionValue& Value)
 {
-	if (InteractionComp)
-	{
-		InteractionComp->TryInteract();
-	}
 	//if (bIsClimbing)
 	//{
 	//	StopClimbing();

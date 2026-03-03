@@ -6,7 +6,6 @@
 #include "Character/Components/PlayerStatusComponent.h" 
 #include "Character/Components/PlayerCombatComponent.h" 
 #include "Character/Animation/Interface/PlayerAnimInterface.h"
-#include "Character/Components/InteractionComponent.h"
 #include "PrototypeCharacter.generated.h"
 
 // 전방 선언 (Forward Declarations)
@@ -82,9 +81,6 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Combat")
     UPlayerCombatComponent* CombatComponent;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Interaction")
-    UInteractionComponent* InteractionComp;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Camera")
     USpringArmComponent* CameraBoom;
