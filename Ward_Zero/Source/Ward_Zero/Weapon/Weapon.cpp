@@ -8,6 +8,7 @@
 #include "GameFramework/Character.h"
 #include "Magazine/MagazineBase.h"
 #include "Curves/CurveVector.h"
+#include "Character/Components/PlayerCombatComponent.h"
 
 //#include "DrawDebugHelpers.h"
 
@@ -238,23 +239,34 @@ void AWeapon::PlayReloadSound()
 	UE_LOG(LogTemp, Warning, TEXT("장전 소리"));
 }
 
+void AWeapon::SetIsReloading(bool reload)
+{
+    bIsReloading = reload; 
+    return;
+}
+
 //기존 탄창이 사라질 때 노티파이 이벤트 
 void AWeapon::HideMagazine()
 {
-    //총에 붙어있는 탄창 숨기기 
-    if (GunMagMesh)
-    {
-        GunMagMesh->SetVisibility(false);
-    }
+    if (GunMagMesh) GunMagMesh->SetVisibility(false);
 
-    if (MagazineClass)
+    if (MagazineClass && WeaponMesh)
     {
-        AMagazineBase* DropMag = GetWorld()->SpawnActor<AMagazineBase>
-            (
-                MagazineClass,
-                GunMagMesh->GetComponentLocation(),
-                GunMagMesh->GetComponentRotation()
-            );
+        // [수정] 직접 쓴 문자열 대신 변수를 사용하여 소켓 위치를 가져옵니다.
+        FVector SpawnLoc = WeaponMesh->GetSocketLocation(MagSocketName);
+        FRotator SpawnRot = WeaponMesh->GetSocketRotation(MagSocketName);
+
+        FActorSpawnParameters SpawnParams;
+        SpawnParams.Owner = GetOwner();
+        SpawnParams.Instigator = Cast<APawn>(GetOwner());
+        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+        AMagazineBase* DropMag = GetWorld()->SpawnActor<AMagazineBase>(
+            MagazineClass,
+            SpawnLoc,
+            SpawnRot,
+            SpawnParams
+        );
 
         if (DropMag)
         {
@@ -262,17 +274,20 @@ void AWeapon::HideMagazine()
         }
     }
 
-    //캐릭터 손에 있는 탄창을 권총 탄창에 스폰해서 붙이기.
+    // 캐릭터 왼손에 새 탄창 생성
     ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
     if (OwnerChar && MagazineClass)
     {
         CurrHandMag = GetWorld()->SpawnActor<AMagazineBase>(MagazineClass);
         if (CurrHandMag)
         {
+            FName ReloadSocket = (GetOwner()->FindComponentByClass<UPlayerCombatComponent>()->GetCurrentWeaponIndex() == 1)
+                ? TEXT("MagSocket") : TEXT("MagSocket_L");
+
             CurrHandMag->AttachToComponent(
                 OwnerChar->GetMesh(),
                 FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-                TEXT("MagSocket")
+                ReloadSocket
             );
         }
     }

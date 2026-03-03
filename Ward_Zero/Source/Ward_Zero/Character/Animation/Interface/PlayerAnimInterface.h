@@ -32,4 +32,5 @@ public:
 	virtual bool GetIsReloading() const = 0;
 	virtual bool GetIsUseFlashLight() const = 0;
 	virtual bool GetIsSMGEquipped() const = 0;
+	virtual int32 GetCurrentWeaponIndex() const = 0;
 };

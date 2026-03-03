@@ -47,6 +47,25 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsSMGEquipped = AnimInterface->GetIsSMGEquipped();
 	}
 
+	float CurveValue = GetCurveValue(TEXT("HandIKLeftAlpha"));
+	bool bCanUseSMGIK = bIsSMGEquipped && !bIsQuickTurning;
+
+	if (bCanUseSMGIK)
+	{
+		float TargetAlpha = CurveValue;
+
+		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, TargetAlpha, DeltaSeconds, 15.0f);
+	}
+	else
+	{
+		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, 0.0f, DeltaSeconds, 20.0f);
+	}
+
+	if (bIsPistolEquipped)
+	{
+		FlashlightIKAlpha = FMath::FInterpTo(FlashlightIKAlpha, CurveValue, DeltaSeconds, 15.0f);
+	}
+
 	UpdateMovementCalculations(DeltaSeconds);
 
 	// 엔진 물리 데이터 동기화 
@@ -79,7 +98,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	}
 	else
 	{
-		float InterpSpeed = bIKCondition ? 5.0f : 20.0f;
+		float InterpSpeed = bIKCondition ? 5.0f : 20.0f; 
 		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, TargetSMGAlpha, DeltaSeconds, InterpSpeed);
 	}
 }
@@ -205,4 +224,27 @@ void UPlayerAnimInstance::AnimNotify_StopQuickTurn()
 void UPlayerAnimInstance::UpdateLocomotionState(ELocomotionState StateName)
 {
 	bIsRunning = (StateName == ELocomotionState::Running);
+}
+
+void UPlayerAnimInstance::UpdateSMGHandIK(float DeltaSeconds)
+{
+	if (WeaponMesh && Character && Character->GetMesh())
+	{
+		// Transform Space는 RTS_World 기준
+		FTransform SocketTransform = WeaponMesh->GetSocketTransform(TEXT("SMG_LeftHand"), RTS_World);
+
+		// World Space 위치를 hand_r 뼈대 공간으로 변환 
+		FVector OutPosition;
+		FRotator OutRotation;
+
+		Character->GetMesh()->TransformToBoneSpace(
+			TEXT("hand_r"),
+			SocketTransform.GetLocation(),
+			SocketTransform.Rotator(),
+			OutPosition,
+			OutRotation
+		);
+
+		SMGHandIKTransform = FTransform(OutRotation, OutPosition, FVector(1.0f, 1.0f, 1.0f));
+	}
 }
