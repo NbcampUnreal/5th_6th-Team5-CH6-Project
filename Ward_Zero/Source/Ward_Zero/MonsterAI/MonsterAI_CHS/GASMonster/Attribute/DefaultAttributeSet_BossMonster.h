@@ -24,21 +24,21 @@ public:
 	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
-	UPROPERTY(BlueprintReadOnly,Category="Attributes")
+	UPROPERTY(BlueprintReadOnly,ReplicatedUsing=OnRep_Health,Category="Attributes")
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSORS(UDefaultAttributeSet_BossMonster,Health);
 	
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
 	
-	UPROPERTY(BlueprintReadOnly,Category="Attributes")
+	UPROPERTY(BlueprintReadOnly,ReplicatedUsing=OnRep_MaxHealth,Category="Attributes")
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UDefaultAttributeSet_BossMonster,MaxHealth);
 	
 	UFUNCTION()
 	virtual void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth);
 	
-	UPROPERTY(BlueprintReadOnly,Category="Attributes")
+	UPROPERTY(BlueprintReadOnly,ReplicatedUsing=OnRep_BaseSpeed,Category="Attributes")
 	FGameplayAttributeData BaseSpeed;
 	ATTRIBUTE_ACCESSORS(UDefaultAttributeSet_BossMonster,BaseSpeed);
 	
