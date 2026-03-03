@@ -76,6 +76,12 @@ public:
 
     // IK용 타겟 위치 반환 (레이저 끝점 등)
     FVector GetLaserTargetLocation() const { return LaserHitLocation; }
+
+    UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+    int32 GetReserveAmmo() const { return ReserveAmmo; }
+
+    UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo")
+    void AddAmmo(int32 Amount);
 #pragma endregion
 
 #pragma region 컴포넌트 (Components)
@@ -137,6 +143,9 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|State")
     bool bIsReloading = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|State")
+    int32 ReserveAmmo = 30;
 #pragma endregion
 
 public:

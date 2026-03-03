@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
@@ -8,7 +8,8 @@ UENUM(BlueprintType)
 enum class EInteractionType : uint8
 {
 	None,
-	Door
+	Door,
+	Ammo
 };
 
 UINTERFACE(MinimalAPI)

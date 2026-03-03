@@ -82,6 +82,8 @@ void UPlayerCombatComponent::Reload()
 	if (!EquippedWeapon || EquippedWeapon->IsReloading()) return;
 	if (EquippedWeapon->IsFullAmmo()) return;
 
+	if (EquippedWeapon->GetReserveAmmo() <= 0) return;
+
 	// 상황에 맞는 몽타주 선택
 	UAnimMontage* SelectedMontage = GetSelectedReloadMontage();
 

@@ -86,24 +86,6 @@ private:
 #pragma endregion
 
 public:
-	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
-	UAnimMontage* Pistol_EquipMontage;
-	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
-	UAnimMontage* Pistol_UnEquipMontage;
-
-	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
-	UAnimMontage* SMG_EquipMontage;
-	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
-	UAnimMontage* SMG_UnEquipMontage;
-
-	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
-	UAnimMontage* Melee_EquipMontage;
-	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
-	UAnimMontage* Melee_UnEquipMontage;
-
-	UAnimMontage* GetCurrentEquipMontage(bool bEquip);
-
-public:
 #pragma region 재장전 애니메이션 
 	UPROPERTY(EditAnywhere, Category = "Combat|Animation|Pistol")
 	UAnimMontage* Pistol_ReloadMontage;
@@ -221,6 +203,24 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Combat|Recoil")
 	float RecoilRecoverySpeed = 5.0f;
+
+public:
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
+	UAnimMontage* Pistol_EquipMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
+	UAnimMontage* Pistol_UnEquipMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
+	UAnimMontage* SMG_EquipMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
+	UAnimMontage* SMG_UnEquipMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
+	UAnimMontage* Melee_EquipMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation")
+	UAnimMontage* Melee_UnEquipMontage;
+
+	UAnimMontage* GetCurrentEquipMontage(bool bEquip);
 #pragma endregion
 
 private:

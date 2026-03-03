@@ -228,7 +228,7 @@ void APrototypeCharacter::Tick(float DeltaTime)
 		{
 			FString AmmoMsg = FString::Printf(TEXT("Ammo: %d / %d"),
 				CombatComponent->EquippedWeapon->GetCurrentAmmo(),
-				CombatComponent->EquippedWeapon->GetMaxCapacity());
+				CombatComponent->EquippedWeapon->GetReserveAmmo());
 
 			GEngine->AddOnScreenDebugMessage(2, 0.0f, FColor::Yellow, AmmoMsg);
 		}
@@ -247,7 +247,14 @@ void APrototypeCharacter::Tick(float DeltaTime)
 		TargetFOVDest = AimFOV;
 		TargetTargetOffsetDest = FVector::ZeroVector;
 
-		TargetSocketOffsetDest = AimSocketOffset;
+		if (CombatComponent->GetCurrentWeaponIndex() == 2)
+		{
+			TargetSocketOffsetDest = SMGAimSocketOffset; // SMG 들고 있을 때
+		}
+		else
+		{
+			TargetSocketOffsetDest = PistolAimSocketOffset; // 권총 들고 있을 때
+		}
 
 		float CurrentTime = GetWorld()->GetTimeSeconds();
 

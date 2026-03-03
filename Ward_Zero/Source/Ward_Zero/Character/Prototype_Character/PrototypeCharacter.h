@@ -153,7 +153,12 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim") float AimLookSensitivity = 0.5f;
     UPROPERTY(EditAnywhere, Category = "Camera|Aim") float AimArmLength = 40.0f;
     UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim") float AimFOV = 50.0f;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Aim") FVector AimSocketOffset = FVector(-20.0f, 30.0f, 20.0f);
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Aim")
+    FVector PistolAimSocketOffset = FVector(-20.0f, 30.0f, 20.0f); // 권총 조준 위치
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Aim")
+    FVector SMGAimSocketOffset = FVector(-60.0f, 50.0f, 20.0f);    // SMG 조준 위치 
     UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim") float AimInterpSpeed = 20.0f;
 #pragma endregion 
 

@@ -204,7 +204,7 @@ void AWeapon::SpendRound()
 
 void AWeapon::StartReload()
 {
-    if (bIsReloading || CurrentAmmo >= MaxCapacity) return;
+    if (bIsReloading || CurrentAmmo >= MaxCapacity || ReserveAmmo <= 0) return;
 
     bIsReloading = true;
     PlayReloadSound();
@@ -214,11 +214,19 @@ void AWeapon::StartReload()
 void AWeapon::FinishReload()
 {
     bIsReloading = false;
-    CurrentAmmo = MaxCapacity;
+
+    int32 AmmoNeeded = MaxCapacity - CurrentAmmo;
+
+    if (AmmoNeeded > 0 && ReserveAmmo > 0)
+    {
+        int32 AmmoToReload = FMath::Min(AmmoNeeded, ReserveAmmo);
+
+        CurrentAmmo += AmmoToReload;
+        ReserveAmmo -= AmmoToReload;
+    }
 
     ShowMagazine();
-
-    UE_LOG(LogTemp, Warning, TEXT("Reload Finished! Ammo Full."));
+    UE_LOG(LogTemp, Warning, TEXT("Reload Finished! Ammo: %d, Reserve: %d"), CurrentAmmo, ReserveAmmo);
 }
 
 void AWeapon::PlayDryFireSound()
@@ -305,4 +313,11 @@ void AWeapon::ShowMagazine()
     {
         GunMagMesh->SetVisibility(true); 
     }
+}
+
+// 탄약상자 먹을 때 총알 추가
+void AWeapon::AddAmmo(int32 Amount)
+{
+    ReserveAmmo += Amount;
+    UE_LOG(LogTemp, Warning, TEXT("Ammo Added! Current Reserve: %d"), ReserveAmmo);
 }
