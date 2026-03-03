@@ -53,6 +53,7 @@ void UDefaultAttributeSet_BossMonster::GetLifetimeReplicatedProps(
 	
 	DOREPLIFETIME_CONDITION_NOTIFY(UDefaultAttributeSet_BossMonster,Health,COND_None,REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UDefaultAttributeSet_BossMonster,MaxHealth,COND_None,REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UDefaultAttributeSet_BossMonster,BaseSpeed,COND_None,REPNOTIFY_Always);
 
 }
 
