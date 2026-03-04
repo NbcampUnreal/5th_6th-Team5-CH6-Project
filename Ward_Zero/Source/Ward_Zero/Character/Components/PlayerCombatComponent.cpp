@@ -267,7 +267,10 @@ void UPlayerCombatComponent::HandleRecoil(float DeltaTime)
 	}
 	else
 	{
-		TargetRecoilRot = FMath::RInterpTo(TargetRecoilRot, FRotator::ZeroRotator, DeltaTime, RecoilRecoverySpeed);
+		if (CurrentWeaponIndex == 1)
+		{
+			TargetRecoilRot = FMath::RInterpTo(TargetRecoilRot, FRotator::ZeroRotator, DeltaTime, RecoilRecoverySpeed);
+		}
 	}
 }
 
@@ -436,6 +439,13 @@ void UPlayerCombatComponent::StopFire()
 
 	bIsFiring = false;
 	CurrentShotsFired = 0;
+
+	if (CurrentWeaponIndex == 2)
+	{
+		TargetRecoilRot = FRotator::ZeroRotator;
+		CurrentRecoilRot = FRotator::ZeroRotator;
+		LastRecoilRot = FRotator::ZeroRotator;
+	}
 }
 
 void UPlayerCombatComponent::AutoFireLogic()
