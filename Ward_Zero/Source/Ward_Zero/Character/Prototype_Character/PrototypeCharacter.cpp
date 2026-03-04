@@ -662,6 +662,8 @@ void APrototypeCharacter::Reload(const FInputActionValue& Value)
 
 void APrototypeCharacter::ToggleFlashLight(const FInputActionValue& Value)
 {
+	if (GetIsSMGEquipped()) return;
+
 	bIsUseFlashLight = !bIsUseFlashLight;
 	
 	ToggleLight(bIsUseFlashLight);
@@ -708,22 +710,7 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 
 void APrototypeCharacter::StartClimbing(ALadder* Ladder)
 {
-	if (!Ladder) return;
-
-	bIsClimbing = true;
-	CurrentLadder = Ladder;
-	bIsRunning = false;
-	UnCrouch();
-
-	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
-	GetCharacterMovement()->StopMovementImmediately();
-	GetCharacterMovement()->MaxWalkSpeed = ClimbSpeed;
-
-	FVector StartLoc = Ladder->BottomStartPoint->GetComponentLocation();
-	FRotator StartRot = Ladder->GetActorForwardVector().Rotation();
-	StartRot.Yaw += 180.0f;
-
-	SetActorLocationAndRotation(StartLoc, StartRot);
+	
 }
 
 void APrototypeCharacter::StopClimbing()
@@ -1001,6 +988,21 @@ int32 APrototypeCharacter::GetCurrentWeaponIndex() const
 	return CombatComponent ? CombatComponent->GetCurrentWeaponIndex() : 0;
 }
 
+float APrototypeCharacter::GetAimPitch() const
+{
+	return CombatComponent ? CombatComponent->GetAimPitch() : 0.0f;
+}
+
+float APrototypeCharacter::GetAimYaw() const
+{
+	return CombatComponent ? CombatComponent->GetAimYaw() : 0.0f;
+}
+
+bool APrototypeCharacter::IsFiring() const
+{
+	return CombatComponent ? CombatComponent->IsFiring() : false;
+}
+
 void APrototypeCharacter::PlayFootstepSound(FName FootBoneName)
 {
 	FVector FootLocation = GetMesh()->GetSocketLocation(FootBoneName);
@@ -1063,6 +1065,12 @@ void APrototypeCharacter::SelectWeapon2(const FInputActionValue& Value)
 	if (!CombatComponent) return;
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
 	if (!AnimInst) return;
+
+	if (bIsUseFlashLight)
+	{
+		bIsUseFlashLight = false;
+		ToggleLight(false);
+	}
 
 	if (CombatComponent->GetCurrentWeaponIndex() == 2 && CombatComponent->IsWeaponDrawn())
 	{

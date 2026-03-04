@@ -33,4 +33,8 @@ public:
 	virtual bool GetIsUseFlashLight() const = 0;
 	virtual bool GetIsSMGEquipped() const = 0;
 	virtual int32 GetCurrentWeaponIndex() const = 0;
+	virtual float GetAimPitch() const = 0;
+	virtual float GetAimYaw() const = 0;
+	virtual bool IsFiring() const = 0;
+
 };

@@ -41,6 +41,11 @@ void UPlayerCombatComponent::SpawnDefaultWeapon()
 		{
 			PistolWeapon->Equip(Character->GetMesh(), TEXT("WeaponSocket"), Character, Character);
 			PistolWeapon->SetActorHiddenInGame(true);
+			PistolWeapon->SetActorEnableCollision(false);
+			if (PistolWeapon->WeaponMesh)
+			{
+				PistolWeapon->WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			}
 		}
 	}
 
@@ -51,6 +56,11 @@ void UPlayerCombatComponent::SpawnDefaultWeapon()
 		{
 			SMGWeapon->Equip(Character->GetMesh(), TEXT("BackWeaponSocket"), Character, Character);
 			SMGWeapon->SetActorHiddenInGame(false);
+			SMGWeapon->SetActorEnableCollision(false);
+			if (SMGWeapon->WeaponMesh)
+			{
+				SMGWeapon->WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			}
 		}
 	}
 
@@ -357,8 +367,12 @@ bool UPlayerCombatComponent::GetIsReloading() const
 
 void UPlayerCombatComponent::ChangeWeapon(int32 NewWeaponIndex, UAnimInstance* AnimInst)
 {
-	if (bIsAiming || CurrentWeaponIndex == NewWeaponIndex) return;
+	if (CurrentWeaponIndex == NewWeaponIndex) return;
 
+	if (bIsAiming)
+	{
+		StopAiming(); // 조준 강제 종료
+	}
 	// 현재 들고 있던 무기를 집어넣는 처리
 	if (EquippedWeapon)
 	{
