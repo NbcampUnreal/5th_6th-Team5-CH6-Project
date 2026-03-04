@@ -73,6 +73,9 @@ public:
     virtual bool GetIsReloading() const override;
     virtual bool GetIsSMGEquipped() const override; 
     virtual int32 GetCurrentWeaponIndex() const override;
+    virtual float GetAimPitch() const override;
+    virtual float GetAimYaw() const override;
+    virtual bool IsFiring() const override;
 #pragma endregion
 
 protected:

@@ -110,6 +110,18 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	bool bIsSMGEquipped;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	float AimPitch;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	float AimYaw;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
+	float PistolIKAlpha = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	bool bIsFiring;
+
 	// 물리 및 이동 데이터 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	FVector Velocity;

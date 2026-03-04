@@ -37,9 +37,10 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsClimbing = AnimInterface->GetIsClimbing();
 		bIsReloading = AnimInterface->GetIsReloading();
 		bIsUseFlashLight = AnimInterface->GetIsUseFlashLight();
+		bIsFiring = AnimInterface->IsFiring();
 
 		USkeletalMeshComponent* TempMesh = AnimInterface->GetEquippedWeaponMesh();
-		WeaponMesh = IsValid(TempMesh) ? TempMesh : nullptr; 
+		WeaponMesh = IsValid(TempMesh) ? TempMesh : nullptr;
 
 		AWeapon* TempWeapon = AnimInterface->GetEquippedWeapon();
 		EquippedWeapon = IsValid(TempWeapon) ? TempWeapon : nullptr;
@@ -61,10 +62,18 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, 0.0f, DeltaSeconds, 20.0f);
 	}
 
-	if (bIsPistolEquipped)
-	{
-		FlashlightIKAlpha = FMath::FInterpTo(FlashlightIKAlpha, CurveValue, DeltaSeconds, 15.0f);
-	}
+	bool bPistolIKCondition =
+		bIsPistolEquipped &&
+		!bIsRunning &&
+		!bIsEquipping &&
+		!(GroundSpeed > 200.0f) &&
+		!bIsReloading &&
+		!bIsUseFlashLight &&
+		!bIsSMGEquipped &&
+		!bIsFiring;
+
+	float TargetHandIKAlpha = bPistolIKCondition ? 1.0f : 0.0f;
+	PistolIKAlpha = FMath::FInterpTo(PistolIKAlpha, TargetHandIKAlpha, DeltaSeconds, 10.0f);
 
 	UpdateMovementCalculations(DeltaSeconds);
 
@@ -81,11 +90,12 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	CachedBrakingDecelerationWalking = MovementComp->BrakingDecelerationWalking;
 
 	//Unarmed FlashLight 
-	float TargetAlpha = bIsUseFlashLight ? 1.0f : 0.0f;
+	float TargetAlpha = (bIsUseFlashLight && !bIsSMGEquipped) ? 1.0f : 0.0f;
 	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetAlpha, DeltaSeconds, 5.0f);
 
 	//Pistol FlashLight 
-	float TargetIKAlpha = (bIsUseFlashLight && bIsPistolEquipped && !bIsEquipping && !bIsRunning) ? 1.0f : 0.0f;
+	float TargetIKAlpha = (bIsUseFlashLight && bIsPistolEquipped && !bIsEquipping
+		&& !bIsRunning && !bIsSMGEquipped) ? 1.0f : 0.0f;
 	FlashlightIKAlpha = FMath::FInterpTo(FlashlightIKAlpha, TargetIKAlpha, DeltaSeconds, 10.0f);
 
 	//SMG IK Alpha 
@@ -98,7 +108,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	}
 	else
 	{
-		float InterpSpeed = bIKCondition ? 5.0f : 20.0f; 
+		float InterpSpeed = bIKCondition ? 5.0f : 20.0f;
 		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, TargetSMGAlpha, DeltaSeconds, InterpSpeed);
 	}
 }
@@ -205,7 +215,7 @@ void UPlayerAnimInstance::UpdateOrientationWarping(float DeltaSeconds)
 	OrientationWarpingAngle = FRotator::NormalizeAxis(LocomotionAngle - TargetAngle);
 
 	const float TargetAlpha = bHasVelocity ? 1.0f : 0.0f;
-	OrientationWarpingAlpha = FMath::FInterpTo(OrientationWarpingAlpha, TargetAlpha, DeltaSeconds, 10.0f);
+	OrientationWarpingAlpha = FMath::FInterpTo(OrientationWarpingAlpha, TargetAlpha, DeltaSeconds, 6.0f);
 }
 
 bool UPlayerAnimInstance::ShouldDistanceMatchStop() const
