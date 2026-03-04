@@ -22,6 +22,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	Super::NativeUpdateAnimation(DeltaSeconds);
 	if (!Character || !MovementComp) return;
 
+	// 인터페이스를 거쳐 데이터를 가져오기 
 	if (IPlayerAnimInterface* AnimInterface = Cast<IPlayerAnimInterface>(TryGetPawnOwner()))
 	{
 		bIsRunning = AnimInterface->GetIsRunning();
@@ -29,37 +30,87 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsGround = AnimInterface->GetIsGround();
 		bIsPistolEquipped = AnimInterface->GetIsPistolEquipped();
 		bIsQuickTurning = AnimInterface->GetIsQuickTurning();
+		TurnIndex = AnimInterface->GetTurnIndex();
 		bIsEquipping = AnimInterface->IsEquipping();
+		HandIKTargetLocation = AnimInterface->GetHandIKTargetLoc();
 		bIsAiming = AnimInterface->GetIsAiming();
+		bIsClimbing = AnimInterface->GetIsClimbing();
 		bIsReloading = AnimInterface->GetIsReloading();
 		bIsUseFlashLight = AnimInterface->GetIsUseFlashLight();
-		AimPitch = AnimInterface->GetAimPitch();
-		AimYaw = AnimInterface->GetAimYaw();
 		bIsFiring = AnimInterface->IsFiring();
 
-		WeaponMesh = AnimInterface->GetEquippedWeaponMesh();
+		USkeletalMeshComponent* TempMesh = AnimInterface->GetEquippedWeaponMesh();
+		WeaponMesh = IsValid(TempMesh) ? TempMesh : nullptr;
+
+		AWeapon* TempWeapon = AnimInterface->GetEquippedWeapon();
+		EquippedWeapon = IsValid(TempWeapon) ? TempWeapon : nullptr;
+
 		bIsSMGEquipped = AnimInterface->GetIsSMGEquipped();
 	}
 
 	float CurveValue = GetCurveValue(TEXT("HandIKLeftAlpha"));
+	bool bCanUseSMGIK = bIsSMGEquipped && !bIsQuickTurning;
 
-	bool bShouldGripPistol = bIsPistolEquipped && (bIsAiming || bIsUseFlashLight) &&
-		!bIsRunning && !bIsReloading && !bIsEquipping;
+	if (bCanUseSMGIK)
+	{
+		float TargetAlpha = CurveValue;
 
-	float TargetGripPoseAlpha = bShouldGripPistol ? 1.0f : 0.0f;
-	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetGripPoseAlpha, DeltaSeconds, 10.0f);
+		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, TargetAlpha, DeltaSeconds, 15.0f);
+	}
+	else
+	{
+		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, 0.0f, DeltaSeconds, 20.0f);
+	}
 
-	float TargetGripIKAlpha = bShouldGripPistol ? 1.0f : 0.0f;
-	FlashlightIKAlpha = FMath::FInterpTo(FlashlightIKAlpha, TargetGripIKAlpha, DeltaSeconds, 15.0f);
+	bool bPistolIKCondition =
+		bIsPistolEquipped &&
+		!bIsRunning &&
+		!bIsEquipping &&
+		!(GroundSpeed > 200.0f) &&
+		!bIsReloading &&
+		!bIsUseFlashLight &&
+		!bIsSMGEquipped &&
+		!bIsFiring;
 
-	bool bCanUseSMGIK = bIsSMGEquipped && !bShouldGripPistol && !bIsReloading && !bIsEquipping && !bIsQuickTurning;
-	float TargetSMGAlpha = bCanUseSMGIK ? 1.0f : 0.0f;
-	SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, TargetSMGAlpha, DeltaSeconds, 15.0f);
-
+	float TargetHandIKAlpha = bPistolIKCondition ? 1.0f : 0.0f;
+	PistolIKAlpha = FMath::FInterpTo(PistolIKAlpha, TargetHandIKAlpha, DeltaSeconds, 10.0f);
 
 	UpdateMovementCalculations(DeltaSeconds);
+
+	// 엔진 물리 데이터 동기화 
 	Velocity = Character->GetVelocity();
 	Acceleration = MovementComp->GetCurrentAcceleration();
+
+	// Distance Matching 노드를 위한 무브먼트 데이터 캐싱
+	CachedLastUpdateVelocity = MovementComp->GetLastUpdateVelocity();
+	bCachedUseSeparateBrakingFriction = MovementComp->bUseSeparateBrakingFriction;
+	CachedBrakingFriction = MovementComp->BrakingFriction;
+	CachedGroundFriction = MovementComp->GroundFriction;
+	CachedBrakingFrictionFactor = MovementComp->BrakingFrictionFactor;
+	CachedBrakingDecelerationWalking = MovementComp->BrakingDecelerationWalking;
+
+	//Unarmed FlashLight 
+	float TargetAlpha = (bIsUseFlashLight && !bIsSMGEquipped) ? 1.0f : 0.0f;
+	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetAlpha, DeltaSeconds, 5.0f);
+
+	//Pistol FlashLight 
+	float TargetIKAlpha = (bIsUseFlashLight && bIsPistolEquipped && !bIsEquipping
+		&& !bIsRunning && !bIsSMGEquipped) ? 1.0f : 0.0f;
+	FlashlightIKAlpha = FMath::FInterpTo(FlashlightIKAlpha, TargetIKAlpha, DeltaSeconds, 10.0f);
+
+	//SMG IK Alpha 
+	bool bIKCondition = bIsSMGEquipped && !bIsReloading && !bIsEquipping && !bIsQuickTurning;
+	float TargetSMGAlpha = bIKCondition ? 1.0f : 0.0f;
+
+	if (bIsEquipping || !bIsSMGEquipped)
+	{
+		SMGHandIKAlpha = 0.0f;
+	}
+	else
+	{
+		float InterpSpeed = bIKCondition ? 5.0f : 20.0f;
+		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, TargetSMGAlpha, DeltaSeconds, InterpSpeed);
+	}
 }
 
 void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
@@ -164,7 +215,7 @@ void UPlayerAnimInstance::UpdateOrientationWarping(float DeltaSeconds)
 	OrientationWarpingAngle = FRotator::NormalizeAxis(LocomotionAngle - TargetAngle);
 
 	const float TargetAlpha = bHasVelocity ? 1.0f : 0.0f;
-	OrientationWarpingAlpha = FMath::FInterpTo(OrientationWarpingAlpha, TargetAlpha, DeltaSeconds, 10.0f);
+	OrientationWarpingAlpha = FMath::FInterpTo(OrientationWarpingAlpha, TargetAlpha, DeltaSeconds, 6.0f);
 }
 
 bool UPlayerAnimInstance::ShouldDistanceMatchStop() const
