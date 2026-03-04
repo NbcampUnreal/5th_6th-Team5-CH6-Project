@@ -6,8 +6,8 @@
 #include "Gimmic_CY/InteractionBase.h"
 #include "UI_KWJ/Save/SavePointComponent.h"
 #include "UI_KWJ/Save/SaveSubsystem.h"
-#include "UI_KWJ/GameClear/GameClearComponent.h"
-#include "UI_KWJ/GameClear/GameClearSubsystem.h"
+//#include "UI_KWJ/GameClear/GameClearComponent.h"
+//#include "UI_KWJ/GameClear/GameClearSubsystem.h"
 #include "Components/WidgetComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "Camera/CameraComponent.h"
@@ -127,12 +127,12 @@ bool UInteractionComponent::IsInteractable(AActor* Actor) const
 		return true;
 	}
 
-	// GameClear 태그 또는 GameClearComponent
-	if (Actor->ActorHasTag(TEXT("GameClear")) ||
-		Actor->FindComponentByClass<UGameClearComponent>())
-	{
-		return true;
-	}
+	//// GameClear 태그 또는 GameClearComponent
+	//if (Actor->ActorHasTag(TEXT("GameClear")) ||
+	//	Actor->FindComponentByClass<UGameClearComponent>())
+	//{
+	//	return true;
+	//}
 
 	// IInteract (BaseObject 계열: 서류 등)
 	if (Actor->GetClass()->ImplementsInterface(UInteract::StaticClass()))
@@ -183,7 +183,7 @@ void UInteractionComponent::ExecuteInteraction(AActor* Actor)
 	}
 
 	// GameClear (태그 또는 컴포넌트)
-	UGameClearComponent* ClearComp = Actor->FindComponentByClass<UGameClearComponent>();
+	/*UGameClearComponent* ClearComp = Actor->FindComponentByClass<UGameClearComponent>();
 	if (ClearComp)
 	{
 		ClearComp->ActivateGameClear(Player);
@@ -202,7 +202,7 @@ void UInteractionComponent::ExecuteInteraction(AActor* Actor)
 			}
 		}
 		return;
-	}
+	}*/
 
 	// IInteract (서류 등)
 	if (Actor->GetClass()->ImplementsInterface(UInteract::StaticClass()))
