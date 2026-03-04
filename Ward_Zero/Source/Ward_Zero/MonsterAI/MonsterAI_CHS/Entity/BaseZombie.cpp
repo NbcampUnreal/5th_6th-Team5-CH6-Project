@@ -122,7 +122,7 @@ void ABaseZombie::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	
 #if WITH_EDITOR
-	if (MonsterData && StatusComponent)
+	/*if (MonsterData && StatusComponent)
 	{
 		//FlushPersistentDebugLines(GetWorld());
 
@@ -159,7 +159,7 @@ void ABaseZombie::Tick(float DeltaTime)
 
 		DrawDebugLine(GetWorld(), Center, Center + LeftDir * View_Range, FColor::Green, false, 0.1f, 0, 2.0f);
 		DrawDebugLine(GetWorld(), Center, Center + RightDir * View_Range, FColor::Green, false, 0.1f, 0, 2.0f);
-	}
+	}*/
 #endif
 	
 
