@@ -1,6 +1,7 @@
 ﻿#include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Character/Components/PlayerStatusComponent.h"
 #include "Character/Components/PlayerCombatComponent.h"
+#include "Character/Components/InteractionComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -28,6 +29,7 @@ APrototypeCharacter::APrototypeCharacter()
 	// 컴포넌트 생성
 	StatusComponent = CreateDefaultSubobject<UPlayerStatusComponent>(TEXT("StatusComp"));
 	CombatComponent = CreateDefaultSubobject<UPlayerCombatComponent>(TEXT("CombatComp"));
+	InteractionComp = CreateDefaultSubobject<UInteractionComponent>(TEXT("InteractionComp"));
 
 	// 캐릭터 회전 설정
 	bUseControllerRotationPitch = false;
@@ -669,26 +671,10 @@ void APrototypeCharacter::ToggleFlashLight(const FInputActionValue& Value)
 
 void APrototypeCharacter::Interact(const FInputActionValue& Value)
 {
-	//if (bIsClimbing)
-	//{
-	//	StopClimbing();
-	//	return;
-	//}
-
-	//FVector Start = MainCamera->GetComponentLocation();
-	//FVector End = Start + (MainCamera->GetForwardVector() * 250.0f);
-	//FHitResult Hit;
-	//FCollisionQueryParams Params;
-	//Params.AddIgnoredActor(this);
-
-	//if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
-	//{
-	//	AActor* HitActor = Hit.GetActor();
-	//	if (HitActor && HitActor->GetClass()->ImplementsInterface(UInteract::StaticClass()))
-	//	{
-	//		IInteract::Execute_OnInteract(HitActor, this);
-	//	}
-	//}
+	if (InteractionComp)
+	{
+		InteractionComp->TryInteract();
+	}
 
 	TArray<AActor*> OverlappedActors;
 	GetCapsuleComponent()->GetOverlappingActors(OverlappedActors);

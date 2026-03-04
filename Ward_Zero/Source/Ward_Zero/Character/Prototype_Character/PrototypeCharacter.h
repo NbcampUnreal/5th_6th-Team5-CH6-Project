@@ -5,6 +5,7 @@
 #include "InputActionValue.h"
 #include "Character/Components/PlayerStatusComponent.h" 
 #include "Character/Components/PlayerCombatComponent.h" 
+#include "Character/Components/InteractionComponent.h"
 #include "Character/Animation/Interface/PlayerAnimInterface.h"
 #include "PrototypeCharacter.generated.h"
 
@@ -81,6 +82,9 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Combat")
     UPlayerCombatComponent* CombatComponent;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Interaction")
+    UInteractionComponent* InteractionComp;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Camera")
     USpringArmComponent* CameraBoom;
