@@ -21,6 +21,12 @@
 #include "Kismet/GameplayStatics.h"
 #include "FlashLight/FlashLight.h"
 #include "Gimmic_CY/InteractionBase.h"
+#include "Character/Data/CharacterMovementData.h"
+#include "Character/Data/CharacterStatusData.h"
+#include "Weapon/Data/WeaponData.h"
+#include "Character/Data/CharacterAnimData.h"
+#include "UI_KWJ/Health/HealthVignetteWidget.h"
+#include "UI_KWJ/GameOver/GameOverSubsystem.h"
 
 APrototypeCharacter::APrototypeCharacter()
 {
@@ -77,6 +83,8 @@ void APrototypeCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (!MovementData || !StatusData) return; 
+
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -93,32 +101,63 @@ void APrototypeCharacter::BeginPlay()
 			PlayerController->PlayerCameraManager->ViewPitchMax = 50.0f;
 		}
 	}
-
-	if (CameraBoom)
+	// MovementData 적용(속도 및 카메라 초기화)
+	if (MovementData && GetCharacterMovement())
 	{
-		StandingArmLength = CameraBoom->TargetArmLength;
+		GetCharacterMovement()->MaxWalkSpeed = MovementData->WalkSpeed;
+		GetCharacterMovement()->MaxWalkSpeedCrouched = MovementData->CrouchMovementSpeed;
+
+		if (CameraBoom)
+		{
+			CameraBoom->TargetArmLength = MovementData->DefaultArmLength;
+			StandingArmLength = MovementData->DefaultArmLength;
+			AimArmLength = MovementData->AimArmLength;
+			PistolAimSocketOffset = MovementData->PistolAimSocketOffset;
+		}
+	}
+	// 카메라 기본값 백업
+	if (CameraBoom && MainCamera)
+	{
 		OriginalTargetOffset = CameraBoom->TargetOffset;
 		OriginalSocketOffset = CameraBoom->SocketOffset;
 		OriginalFOV = MainCamera->FieldOfView;
 	}
+	// StatusData 적용 (체력 및 스테미나 초기화)
+	if (StatusData && StatusComponent)
+	{
+		StatusComponent->MaxHealth = StatusData->MaxHealth;
+		StatusComponent->CurrHealth = StatusData->MaxHealth; 
+		StatusComponent->MaxStamina = StatusData->MaxStamina;
+		StatusComponent->CurrStamina = StatusData->MaxStamina;
+		StatusComponent->StaminaDrainRate = StatusData->StaminaDrainRate;
+
+		StatusComponent->OnPlayerDied.AddDynamic(this, &APrototypeCharacter::OnDeath);
+	}
+
+	if (HealthVignetteClass)
+	{
+		APlayerController* VignettePC = Cast<APlayerController>(Controller);
+		if (VignettePC)
+		{
+			HealthVignetteWidget = CreateWidget<UHealthVignetteWidget>(VignettePC, HealthVignetteClass);
+			if (HealthVignetteWidget)
+			{
+				HealthVignetteWidget->AddToViewport(0);
+				StatusComponent->OnHealthChanged.AddDynamic(
+					HealthVignetteWidget, &UHealthVignetteWidget::OnHealthChanged);
+			}
+		}
+	}
 
 	if (CombatComponent)
 	{
-		CombatComponent->SetupCombat(MainCamera); // 여기서 카메라를 넘겨줘야 함!
+		CombatComponent->SetupCombat(MainCamera);
 	}
 
-	if (StatusComponent)
-	{
-		StatusComponent->OnPlayerDied.AddDynamic(this, &APrototypeCharacter::OnDeath);
-	}
 	UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
 	if (IsValid(AnimInst) && UnarmedLayerClass)
 	{
 		AnimInst->LinkAnimClassLayers(UnarmedLayerClass);
-	}
-	else if (!AnimInst)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("BeginPlay: AnimInstance Not Ready"));
 	}
 }
 
@@ -337,6 +376,19 @@ void APrototypeCharacter::Tick(float DeltaTime)
 		}
 
 		TargetSocketOffsetDest = OriginalSocketOffset;
+
+		if (bIsCrouched)
+		{
+			if (Speed > 10.0f && GetCharacterMovement()->IsMovingOnGround())
+			{
+				TargetSocketOffsetDest.Z = CrouchedWalkCameraHeight;
+			}
+			else
+			{
+				TargetSocketOffsetDest.Z = CrouchedCameraHeight;
+			}
+		}
+
 		TargetSocketOffsetDest.Y += YOffsetBob;
 		TargetSocketOffsetDest.Z += ZOffsetBob;
 		
@@ -399,19 +451,19 @@ float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 
 	// 피격 방향 계산
 	FVector ToAttackerDir = FVector::ZeroVector;
-	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
+	if (DamageCauser)
 	{
-		const FPointDamageEvent* PointEvent = static_cast<const FPointDamageEvent*>(&DamageEvent);
-		ToAttackerDir = -PointEvent->ShotDirection;
-	}
-	else if (DamageCauser)
-	{
-		ToAttackerDir = (DamageCauser->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+		// 공격자 위치에서 내 위치를 빼서 방향을 구함 (평면상 방향을 위해 Z는 무시)
+		ToAttackerDir = (DamageCauser->GetActorLocation() - GetActorLocation());
+		ToAttackerDir.Z = 0.0f;
+		ToAttackerDir.Normalize();
 	}
 
-	// 살아있으면 피격 모션, 죽었으면 OnDeath 델리게이트가 처리
 	if (!StatusComponent->IsDead())
 	{
+		// 몽타주 재생 전 조준/퀵턴 강제 종료 (애니메이션 꼬임 방지)
+		if (bIsQuickTurning) StopQuickTurn();
+
 		PlayHitReaction(ToAttackerDir);
 	}
 
@@ -430,6 +482,22 @@ void APrototypeCharacter::OnDeath()
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
 	GetMesh()->SetSimulatePhysics(true);
+
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle, [this]()
+		{
+			APlayerController* PC = Cast<APlayerController>(Controller);
+			if (!PC) return;
+
+			ULocalPlayer* LP = PC->GetLocalPlayer();
+			if (!LP) return;
+
+			UGameOverSubsystem* GameOverSys = LP->GetSubsystem<UGameOverSubsystem>();
+			if (GameOverSys)
+			{
+				GameOverSys->ShowGameOver();
+			}
+		}, 2.0f, false);
 }
 
 EPlayerHitDirection APrototypeCharacter::GetHitDirection(const FVector& ToAttackerDir)
@@ -512,46 +580,51 @@ void APrototypeCharacter::ProcessMovementTurn(FVector2D MovementVector)
 
 void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
 {
-	if (bIsQuickTurning) StopQuickTurn();
-	if (CombatComponent && CombatComponent->IsAiming()) CombatComponent->StopAiming();
-
 	EPlayerHitDirection HitDir = GetHitDirection(ToAttackerDir);
+
+	if (!AnimData) return;
+
 	UAnimMontage* MontageToPlay = nullptr;
 
-	switch (HitDir)
+	// 해당 방향 몽타주가 있는지 확인
+	if (AnimData->HitMontages.Contains(HitDir))
 	{
-	case EPlayerHitDirection::Front: MontageToPlay = HitMontage_Front; break;
-	case EPlayerHitDirection::Back:  MontageToPlay = HitMontage_Back; break;
-	case EPlayerHitDirection::Right: MontageToPlay = HitMontage_Right ? HitMontage_Right : HitMontage_Front; break;
-	case EPlayerHitDirection::Left:  MontageToPlay = HitMontage_Left ? HitMontage_Left : HitMontage_Front; break;
+		MontageToPlay = AnimData->HitMontages[HitDir];
 	}
 
-	UAnimInstance* AnimInst = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
-	if (AnimInst && MontageToPlay)
+	// 만약 Right/Left가 없으면 Front를 대신 사용
+	if (!MontageToPlay && AnimData->HitMontages.Contains(EPlayerHitDirection::Front))
 	{
-		AnimInst->Montage_Play(MontageToPlay);
-	}
-}
-
-void APrototypeCharacter::PlayDeathReaction(const FVector& ToAttackerDir)
-{
-	EPlayerHitDirection HitDir = GetHitDirection(ToAttackerDir);
-	UAnimMontage* MontageToPlay = nullptr;
-
-	switch (HitDir)
-	{
-	case EPlayerHitDirection::Front: MontageToPlay = DeathMontage_Front; break;
-	case EPlayerHitDirection::Back: MontageToPlay = DeathMontage_Back; break;
-	case EPlayerHitDirection::Right: MontageToPlay = DeathMontage_Right; break;
-	case EPlayerHitDirection::Left: MontageToPlay = DeathMontage_Left; break;
+		MontageToPlay = AnimData->HitMontages[EPlayerHitDirection::Front];
 	}
 
 	if (MontageToPlay)
 	{
 		PlayAnimMontage(MontageToPlay);
 	}
+}
+
+void APrototypeCharacter::PlayDeathReaction(const FVector& ToAttackerDir)
+{
+	// 방향 계산
+	EPlayerHitDirection HitDir = GetHitDirection(ToAttackerDir);
+
+	UAnimMontage* MontageToPlay = nullptr;
+
+	// AnimData 에셋에서 해당 방향의 사망 몽타주 찾기
+	if (AnimData && AnimData->DeathMontages.Contains(HitDir))
+	{
+		MontageToPlay = AnimData->DeathMontages[HitDir];
+	}
+
+	if (MontageToPlay)
+	{
+		// 몽타주 재생 
+		PlayAnimMontage(MontageToPlay);
+	}
 	else
 	{
+		// 몽타주가 설정 안 되어 있다면 물리 엔진(래그돌) 
 		GetMesh()->SetSimulatePhysics(true);
 	}
 }
@@ -677,7 +750,6 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 	{
 		InteractionComp->TryInteract();
 	}
-
 	TArray<AActor*> OverlappedActors;
 	GetCapsuleComponent()->GetOverlappingActors(OverlappedActors);
 
@@ -761,14 +833,28 @@ bool APrototypeCharacter::GetIsUseFlashLight() const
 
 void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 {
-	if (!CombatComponent) return;
+	if (!CombatComponent || !CombatComponent->GetEquippedWeapon()) return;
+
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
 	if (!AnimInst) return;
 
-	bool bWillDraw = !CombatComponent->IsWeaponDrawn();
-	UAnimMontage* SelectedMontage = CombatComponent->GetCurrentEquipMontage(bWillDraw);
+	if (GetIsAiming())
+	{
+		StopAiming(Value);
+	}
 
-	CombatComponent->ToggleEquip(SelectedMontage, AnimInst);
+	bool bWillDraw = !CombatComponent->IsWeaponDrawn();
+	// 캐릭터 헤더에 선언된 EquipMontage / UnEquipMontage를 사용
+	UAnimMontage* MontageToPlay = bWillDraw ? EquipMontage : UnEquipMontage;
+
+	// 무기의 데이터 에셋에서 몽타주 가져오기
+	UWeaponData* CurrentWeaponData = CombatComponent->GetEquippedWeapon()->WeaponData;
+	if (!CurrentWeaponData) return;
+
+	if (MontageToPlay)
+	{
+		CombatComponent->ToggleEquip(MontageToPlay, AnimInst);
+	}
 
 	// 레이어 변경
 	TSubclassOf<UAnimInstance> LayerToLink = bWillDraw ?
@@ -1028,6 +1114,11 @@ void APrototypeCharacter::SelectWeapon1(const FInputActionValue& Value)
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
 	if (!AnimInst) return;
 
+	if (GetIsAiming())
+	{
+		StopAiming(Value);
+	}
+
 	if (CombatComponent->GetCurrentWeaponIndex() == 1 && CombatComponent->IsWeaponDrawn())
 	{
 		ToggleEquip(Value);
@@ -1051,6 +1142,11 @@ void APrototypeCharacter::SelectWeapon2(const FInputActionValue& Value)
 	if (!CombatComponent) return;
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
 	if (!AnimInst) return;
+
+	if (GetIsAiming())
+	{
+		StopAiming(Value);
+	}
 
 	if (bIsUseFlashLight)
 	{

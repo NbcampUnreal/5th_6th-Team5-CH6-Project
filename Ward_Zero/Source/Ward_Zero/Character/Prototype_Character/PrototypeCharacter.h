@@ -17,6 +17,11 @@ class UInputAction;
 class ALadder;
 class UCameraShakeBase;
 class AFlashLight;
+class UCharacterMovementData;
+class UCharacterStatusData;
+class UCharacterAnimData;
+class UCharacterCombatData;
+class UHealthVignetteWidget;
 
 UENUM(BlueprintType)
 enum class EPlayerHitDirection : uint8
@@ -97,6 +102,21 @@ protected:
 
 #pragma endregion 
 
+#pragma region 데이터 에셋 
+protected:
+    UPROPERTY(EditDefaultsOnly, Category = "DataAsset")
+    UCharacterMovementData* MovementData;
+
+    UPROPERTY(EditDefaultsOnly, Category = "DataAsset")
+    UCharacterStatusData* StatusData;
+
+    UPROPERTY(EditDefaultsOnly, Category = "DataAsset")
+    UCharacterAnimData* AnimData;
+
+    UPROPERTY(EditDefaultsOnly, Category = "DataAsset")
+    UCharacterCombatData* CombatData;
+#pragma endregion
+
 #pragma region 입력 시스템 (Input System)
     // 입력 매핑 & 액션
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -113,9 +133,7 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* QuickTurnAction;
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* ReloadAction;
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* FlashLightAction;
-
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* EquipSlot1Action;
-
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* EquipSlot2Action;
 
     // 입력 처리 바인딩 함수
@@ -146,8 +164,9 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Movement|Turn") float WalkTurnRate = 2.5f;
 
     // 카메라 위치 & 밥(Bob) 설정
-    UPROPERTY(EditDefaultsOnly, Category = "Camera|Base") float CrouchedArmLength = 130.0f;
-    UPROPERTY(EditDefaultsOnly, Category = "Camera|Base") float CrouchedCameraHeight = 40.0f;
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Base") float CrouchedArmLength = 100.0f;
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Base") float CrouchedCameraHeight = 0.0f;
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Base") float CrouchedWalkCameraHeight = 10.0f;
     UPROPERTY(EditAnywhere, Category = "Camera|Bob") float BobFrequency = 12.0f;
     UPROPERTY(EditAnywhere, Category = "Camera|Bob") float BobAmplitude = 2.0f;
     UPROPERTY(EditAnywhere, Category = "Camera|Bob") float BobHorizontalAmplitude = 1.0f;
@@ -260,18 +279,6 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Animations|Action") UAnimMontage* SMG_EquipMontage;
     UPROPERTY(EditAnywhere, Category = "Animations|Action") UAnimMontage* SMG_LowerMontage;
 
-    // 피격 몽타주
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Hit") UAnimMontage* HitMontage_Front;
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Hit") UAnimMontage* HitMontage_Back;
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Hit") UAnimMontage* HitMontage_Right;
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Hit") UAnimMontage* HitMontage_Left;
-
-    // 사망 몽타주
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Death") UAnimMontage* DeathMontage_Front;
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Death") UAnimMontage* DeathMontage_Back;
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Death") UAnimMontage* DeathMontage_Left;
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Death") UAnimMontage* DeathMontage_Right;
-
     // 손전등 몽타주 
     UPROPERTY(EditDefaultsOnly, Category = "Animations|FlashLight") UAnimMontage* RaiseLight;
     UPROPERTY(EditDefaultsOnly, Category = "Animations|FlashLight") UAnimMontage* LowerLight;
@@ -313,5 +320,14 @@ private:
     FVector OriginalSocketOffset;
     FVector OriginalTargetOffset;
     float OriginalFOV = 60.0f;
+#pragma endregion 
+
+#pragma region Interaction - WJ
+public:
+    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    TSubclassOf<UHealthVignetteWidget> HealthVignetteClass;
+
+    UPROPERTY()
+    UHealthVignetteWidget* HealthVignetteWidget;
 #pragma endregion 
 };

@@ -10,6 +10,7 @@ class AWeapon;
 class UCameraComponent;
 class UAnimMontage;
 class UCameraShakeBase; // Fire 함수 파라미터에 사용되므로 추가
+class UCharacterCombatData;
 
 USTRUCT(BlueprintType)
 struct FSMGReloadAnimSet
@@ -43,6 +44,12 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 #pragma endregion
+
+#pragma region 데이터 에셋 
+protected:
+	UPROPERTY()
+	class UCharacterCombatData* CombatData;
+#pragma endregion 
 
 public:
 #pragma region 초기화 및 전투 액션 (Initialization & Combat Actions)
