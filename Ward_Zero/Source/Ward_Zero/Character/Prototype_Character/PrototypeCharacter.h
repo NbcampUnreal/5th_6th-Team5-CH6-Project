@@ -21,6 +21,7 @@ class UCharacterMovementData;
 class UCharacterStatusData;
 class UCharacterAnimData;
 class UCharacterCombatData;
+class UHealthVignetteWidget;
 
 UENUM(BlueprintType)
 enum class EPlayerHitDirection : uint8
@@ -319,5 +320,14 @@ private:
     FVector OriginalSocketOffset;
     FVector OriginalTargetOffset;
     float OriginalFOV = 60.0f;
+#pragma endregion 
+
+#pragma region Interaction - WJ
+public:
+    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    TSubclassOf<UHealthVignetteWidget> HealthVignetteClass;
+
+    UPROPERTY()
+    UHealthVignetteWidget* HealthVignetteWidget;
 #pragma endregion 
 };

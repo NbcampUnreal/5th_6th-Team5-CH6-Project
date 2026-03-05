@@ -25,6 +25,8 @@
 #include "Character/Data/CharacterStatusData.h"
 #include "Weapon/Data/WeaponData.h"
 #include "Character/Data/CharacterAnimData.h"
+#include "UI_KWJ/Health/HealthVignetteWidget.h"
+#include "UI_KWJ/GameOver/GameOverSubsystem.h"
 
 APrototypeCharacter::APrototypeCharacter()
 {
@@ -130,6 +132,21 @@ void APrototypeCharacter::BeginPlay()
 		StatusComponent->StaminaDrainRate = StatusData->StaminaDrainRate;
 
 		StatusComponent->OnPlayerDied.AddDynamic(this, &APrototypeCharacter::OnDeath);
+	}
+
+	if (HealthVignetteClass)
+	{
+		APlayerController* VignettePC = Cast<APlayerController>(Controller);
+		if (VignettePC)
+		{
+			HealthVignetteWidget = CreateWidget<UHealthVignetteWidget>(VignettePC, HealthVignetteClass);
+			if (HealthVignetteWidget)
+			{
+				HealthVignetteWidget->AddToViewport(0);
+				StatusComponent->OnHealthChanged.AddDynamic(
+					HealthVignetteWidget, &UHealthVignetteWidget::OnHealthChanged);
+			}
+		}
 	}
 
 	if (CombatComponent)
@@ -465,6 +482,22 @@ void APrototypeCharacter::OnDeath()
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
 	GetMesh()->SetSimulatePhysics(true);
+
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle, [this]()
+		{
+			APlayerController* PC = Cast<APlayerController>(Controller);
+			if (!PC) return;
+
+			ULocalPlayer* LP = PC->GetLocalPlayer();
+			if (!LP) return;
+
+			UGameOverSubsystem* GameOverSys = LP->GetSubsystem<UGameOverSubsystem>();
+			if (GameOverSys)
+			{
+				GameOverSys->ShowGameOver();
+			}
+		}, 2.0f, false);
 }
 
 EPlayerHitDirection APrototypeCharacter::GetHitDirection(const FVector& ToAttackerDir)

@@ -4,6 +4,8 @@
 #include "PlayerStatusComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerDiedDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChangedDelegate, float, CurrentHP, float, MaxHP);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerDiedDelegate);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class WARD_ZERO_API UPlayerStatusComponent : public UActorComponent
@@ -60,4 +62,8 @@ public:
 	bool IsDead() const { return bIsDead; }
 #pragma endregion
 
+#pragma region Interaction - WJ
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnHealthChangedDelegate OnHealthChanged;
+#pragma endregion 
 };
