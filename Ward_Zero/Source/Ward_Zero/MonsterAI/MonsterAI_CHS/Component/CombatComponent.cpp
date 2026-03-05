@@ -11,6 +11,7 @@
 #include "MonsterAI/MonsterAI_CHS/Entity/BaseZombie.h"
 #include "MonsterAI/MonsterAI_CHS/Physics/TagPhysicalMaterial.h"
 #include "MonsterAI/MonsterAI_CHS/Weapon/WZDamageType.h"
+#include "Kismet/GameplayStatics.h"
 
 
 // Sets default values for this component's properties
@@ -263,8 +264,7 @@ void UCombatComponent::HandleAllDamage(float Damage, FDamageEvent const& DamageE
                                        AActor* DamageCauser)
 {
 	const UWZDamageType* WZDamageType = Cast<UWZDamageType>(DamageEvent.DamageTypeClass.GetDefaultObject());
-    
-	//FName HitBone = NAME_None;
+	
 	FVector HitDir = FVector::ZeroVector;
 	EHitPart HitPart = EHitPart::Body;
 	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
@@ -272,7 +272,19 @@ void UCombatComponent::HandleAllDamage(float Damage, FDamageEvent const& DamageE
 		StatusComp->SetMainState(EMonsterMainState::Combat);
 		
 		const FPointDamageEvent* PointDamageEvent = static_cast<const FPointDamageEvent*>(&DamageEvent);
-		
+		FHitResult HitInfo = PointDamageEvent->HitInfo;
+		//TO Do: 나이아가라 이펙트 구현
+		if (MonsterData && MonsterData->BloodEffectSystem)
+		{
+			FRotator BloodRotation = HitInfo.ImpactNormal.Rotation();
+
+			UGameplayStatics::SpawnEmitterAtLocation(
+				GetWorld(),
+				MonsterData->BloodEffectSystem,
+				HitInfo.ImpactPoint, 
+				BloodRotation        
+			);
+		}
 		if (UTagPhysicalMaterial* PM = Cast<UTagPhysicalMaterial>(PointDamageEvent->HitInfo.PhysMaterial.Get()))
 		{
 			FGameplayTag HitTag = PM->HitPartTag;

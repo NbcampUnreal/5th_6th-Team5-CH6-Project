@@ -116,6 +116,9 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	UPROPERTY(EditDefaultsOnly, Category = "Animation|Combat")
 	FGetUpMontage GetUpMontages;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat|Effects")
+	class UParticleSystem* BloodEffectSystem;
+	
 	UPROPERTY(EditAnywhere, Category = "Interaction")
 	TMap<FGameplayTag,FInteractionInfo> InteractionInfoMap;
 	

@@ -22,27 +22,33 @@ void UDefaultAttributeSet_BossMonster::PostGameplayEffectExecute(const struct FG
 		
 		if (LocalInComingDamage > 0.0f)
 		{
+			
 			const float NewHealth = GetHealth() - LocalInComingDamage;
+			SetInComingDamage(0.0f);
 			SetHealth(FMath::Clamp(NewHealth, 0.0f, GetMaxHealth()));
 			if (GetHealth() <= 0.0f)
 			{
 				if (AGASBaseMonster* Enemy = Cast<AGASBaseMonster>(Data.Target.GetAvatarActor()))
 				{
-					//todo: enemy->die
+						
+					Enemy->Die();
 				}
 			}
+			
+			
 		}
 	}
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
 		SetHealth(FMath::Clamp(GetHealth(),0.0f,GetMaxHealth()));
-		if (GetHealth() <= 0.0f)
+		if (AGASBaseMonster* Enemy = Cast<AGASBaseMonster>(Data.Target.GetAvatarActor()))
 		{
-			if (AGASBaseMonster* Enemy = Cast<AGASBaseMonster>(Data.Target.GetAvatarActor()))
+			if (GetHealth() <= 0.0f)
 			{
-				//todo: Enemy->Die();
+				Enemy->Die();
 			}
 		}
+		
 	}
 	
 	if (Data.EvaluatedData.Attribute == GetBaseSpeedAttribute())
