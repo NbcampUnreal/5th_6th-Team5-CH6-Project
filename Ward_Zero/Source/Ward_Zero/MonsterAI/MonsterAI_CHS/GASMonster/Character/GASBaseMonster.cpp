@@ -3,7 +3,9 @@
 
 #include "GASBaseMonster.h"
 #include "Components/CapsuleComponent.h"
+#include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 
 AGASBaseMonster::AGASBaseMonster()
@@ -25,11 +27,77 @@ class UAbilitySystemComponent* AGASBaseMonster::GetAbilitySystemComponent() cons
 	return AbilitySystemComponent;
 }
 
+void AGASBaseMonster::Die()
+{
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+	GetMesh()->SetSimulatePhysics(true);
+	
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->CancelAbilities();
+	}
+	FTimerHandle TimerHandle;
+    
+	TWeakObjectPtr<AGASBaseMonster> WeakThis(this);
+    
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateLambda([WeakThis]()
+	{
+		if (WeakThis.IsValid() && WeakThis->GetMesh())
+		{
+			WeakThis->GetMesh()->SetSimulatePhysics(false);
+		}
+	}), 3.0f, false);
+	
+}
+
 void AGASBaseMonster::BeginPlay()
 {
 	Super::BeginPlay();
 	
 	
+}
+
+float AGASBaseMonster::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+	class AController* EventInstigator, AActor* DamageCauser)
+{
+	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
+	{
+		const FPointDamageEvent* PointDamageEvent = static_cast<const FPointDamageEvent*>(&DamageEvent);
+		FHitResult HitInfo = PointDamageEvent->HitInfo;
+		if (BloodEffectSystem)
+		{
+			FRotator BloodRotation = HitInfo.ImpactNormal.Rotation();
+
+			UGameplayStatics::SpawnEmitterAtLocation(
+				GetWorld(),
+				BloodEffectSystem,
+				HitInfo.ImpactPoint, 
+				BloodRotation        
+			);
+		}
+	}
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+		
+	if (ActualDamage > 0.f && AbilitySystemComponent && ReceiveDamageEffect)
+	{
+		FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+		Context.AddInstigator(EventInstigator, DamageCauser);
+
+		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(ReceiveDamageEffect, 1.0f, Context);
+
+		if (SpecHandle.IsValid())
+		{
+			SpecHandle.Data.Get()->SetSetByCallerMagnitude(DamageTag, ActualDamage);
+            
+			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		}
+	}
+
+		
+	
+	return ActualDamage;
 }
 
 void AGASBaseMonster::InitializeAttributes()
@@ -80,6 +148,7 @@ void AGASBaseMonster::PossessedBy(AController* NewController)
 
 void AGASBaseMonster::OnHealthChangedCallback(const FOnAttributeChangeData& Data) const
 {
+	OnHealthChanged.Broadcast(Data.NewValue,DefaultAttributeSet_BossMonster->GetMaxHealth());
 }
 
 void AGASBaseMonster::OnStaminaChangedCallback(const FOnAttributeChangeData& Data) const
