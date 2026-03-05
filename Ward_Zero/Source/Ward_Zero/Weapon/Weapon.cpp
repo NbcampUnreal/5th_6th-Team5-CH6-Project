@@ -9,7 +9,9 @@
 #include "Magazine/MagazineBase.h"
 #include "Curves/CurveVector.h"
 #include "Character/Components/PlayerCombatComponent.h"
-
+#include "Weapon/Data/WeaponData.h"
+#include "Weapon/Data/ProjectileData.h"
+#include "Weapon/Projectile/Projectile.h"
 //#include "DrawDebugHelpers.h"
 
 AWeapon::AWeapon()
@@ -63,7 +65,13 @@ void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();	
 
-    CurrentAmmo = MaxCapacity;
+    if (WeaponData)
+    {
+        MaxCapacity = WeaponData->MaxCapacity;
+        CurrentAmmo = MaxCapacity;
+        Damage = WeaponData->Damage;   
+        FireRate = WeaponData->FireRate;
+    }
 }
 
 void AWeapon::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
@@ -77,121 +85,57 @@ void AWeapon::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOw
 
 void AWeapon::Fire(const FVector& HitTarget)
 {
-    if (!WeaponMesh) return;
+    if (!WeaponData || !ProjectileClass) return;
 
-    if (CurrentAmmo <= 0)
+    if (CurrentAmmo <= 0 || bIsReloading)
     {
         PlayDryFireSound();
         return;
     }
 
-    if (bIsReloading) return;
+    // 발사 위치 및 회전값 계산
+    // 총구 소켓 위치 < 시작 위치 
+    FVector MuzzleLocation = WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
 
-    FVector MuzzleSocketLocation = WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
-    FVector OutBeamEnd = HitTarget;
+    // 총구 위치에서 조준점(화면 중앙)을 바라보는 회전값을 계산해서 총알을 생성
+    FRotator MuzzleRotation = (HitTarget - MuzzleLocation).Rotation();
 
-    FHitResult FireHit;
-    FVector Start = MuzzleSocketLocation;
-    FVector End = HitTarget + (HitTarget - Start).GetSafeNormal() * 50.0f; // 조금 더 길게
-
-    FCollisionQueryParams Params;
-    Params.bTraceComplex = false;
-    Params.bReturnPhysicalMaterial = true;
-
-    Params.AddIgnoredActor(this);
-    if (GetOwner())
+    // 월드에 총알 액터 스폰 
+    UWorld* World = GetWorld();
+    if (World)
     {
-        Params.AddIgnoredActor(GetOwner());
-    }
+        FActorSpawnParameters SpawnParams;
+        SpawnParams.Owner = GetOwner();
+        SpawnParams.Instigator = Cast<APawn>(GetOwner());
+        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-    bool bBeamHit = GetWorld()->LineTraceSingleByChannel(
-        FireHit, Start, End, ECC_Visibility, Params
-    );
+        AProjectile* SpawnedProjectile = World->SpawnActor<AProjectile>(ProjectileClass, MuzzleLocation, MuzzleRotation, SpawnParams);
 
-    if (bBeamHit)
-    {
-        OutBeamEnd = FireHit.ImpactPoint;
-
-        // 만약 크로스헤어와 쏘는 곳이 맞는지 확인할때 필요하면 쓰세요 :)
-        /*
-        DrawDebugSphere(
-            GetWorld(),
-            FireHit.ImpactPoint,
-            10.0f,               
-            12,                  
-            FColor::Red,        
-            false,               
-            5.0f
-        );*/
-
-        if (ImpactEffect)
+        if (SpawnedProjectile && WeaponData->ProjectileData)
         {
-            UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-                GetWorld(), ImpactEffect, FireHit.ImpactPoint, FireHit.ImpactNormal.Rotation()
-            );
-        }
-
-        if (FireHit.GetActor())
-        {
-			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *FireHit.GetActor()->GetName());
-            UGameplayStatics::ApplyPointDamage(
-                FireHit.GetActor(),
-                Damage,
-                (OutBeamEnd - Start).GetSafeNormal(),
-                FireHit,
-                WeaponOwnerController,
-                this,             // DamageCauser는 무기 자신
-                DamageTypeClass   // 여기에 WZDamageType_Gun이 들어감
-            );
+            SpawnedProjectile->InitializeProjectile(WeaponData->ProjectileData);
         }
     }
-
-    if (!bBeamHit)
+    // 데이터 에셋에서 총기 사운드 가져오기 
+    if (WeaponData->FireSound)
     {
-        OutBeamEnd = MuzzleSocketLocation + (HitTarget - MuzzleSocketLocation).GetSafeNormal() * FireRange;
+        UGameplayStatics::PlaySoundAtLocation(this, WeaponData->FireSound, GetActorLocation());
     }
 
-    UMeshComponent* Mesh = FindComponentByClass<UMeshComponent>();
-
-    if (Mesh && TracerEffect)
-    {
-        FTransform SocketTransform = Mesh->GetSocketTransform(MuzzleSocketName);
-        FVector MuzzleLocation = SocketTransform.GetLocation();
-
-        UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAttached(
-            TracerEffect,
-            Mesh,
-            MuzzleSocketName,
-            FVector::ZeroVector,
-            FRotator::ZeroRotator,
-            EAttachLocation::SnapToTarget,
-            true
-        );
-
-        if (NiagaraComp)
-        { 
-            NiagaraComp->SetVectorParameter(FName("TracerEnd"), HitTarget);
-        }
-    }
-
-    if (FireSound)
-    {
-        UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
-    }
-
-    if (Mesh && MuzzleFlash)
+    // 머즐 플래시
+    if (WeaponData->MuzzleFlash)
     {
         UNiagaraFunctionLibrary::SpawnSystemAttached(
-            MuzzleFlash,
-            Mesh,
-            MuzzleSocketName, // "MuzzleFlash" 소켓 이름
-            FVector::ZeroVector,
-            FRotator::ZeroRotator,
-            EAttachLocation::SnapToTarget, // 소켓 위치와 회전에 딱 맞춤
-            true // Auto Destroy (끝나면 자동 삭제)
+            WeaponData->MuzzleFlash, // WeaponData 내부의 시스템 에셋
+            WeaponMesh,
+            MuzzleSocketName,
+            FVector::ZeroVector, 
+            FRotator::ZeroRotator, 
+            EAttachLocation::SnapToTarget, true
         );
     }
 
+    // 탄약 소모
     SpendRound();
 }
 
@@ -231,18 +175,18 @@ void AWeapon::FinishReload()
 
 void AWeapon::PlayDryFireSound()
 {
-    if (DryFireSound)
+    if (WeaponData && WeaponData->DryFireSound)
     {
-        UGameplayStatics::PlaySoundAtLocation(this, DryFireSound, GetActorLocation());
+        UGameplayStatics::PlaySoundAtLocation(this, WeaponData->DryFireSound, GetActorLocation());
     }
     UE_LOG(LogTemp, Warning, TEXT("(총알 없음)"));
 }
 
 void AWeapon::PlayReloadSound()
 {
-    if (ReloadSound)
+    if (WeaponData && WeaponData->ReloadSound)
     {
-        UGameplayStatics::PlaySoundAtLocation(this, ReloadSound, GetActorLocation());
+        UGameplayStatics::PlaySoundAtLocation(this, WeaponData->ReloadSound, GetActorLocation());
     }
 	UE_LOG(LogTemp, Warning, TEXT("장전 소리"));
 }
@@ -258,23 +202,16 @@ void AWeapon::HideMagazine()
 {
     if (GunMagMesh) GunMagMesh->SetVisibility(false);
 
-    if (MagazineClass && WeaponMesh)
+    if (WeaponData && WeaponData->MagazineClass && WeaponMesh)
     {
-        // [수정] 직접 쓴 문자열 대신 변수를 사용하여 소켓 위치를 가져옵니다.
         FVector SpawnLoc = WeaponMesh->GetSocketLocation(MagSocketName);
         FRotator SpawnRot = WeaponMesh->GetSocketRotation(MagSocketName);
 
         FActorSpawnParameters SpawnParams;
         SpawnParams.Owner = GetOwner();
-        SpawnParams.Instigator = Cast<APawn>(GetOwner());
         SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-        AMagazineBase* DropMag = GetWorld()->SpawnActor<AMagazineBase>(
-            MagazineClass,
-            SpawnLoc,
-            SpawnRot,
-            SpawnParams
-        );
+        AMagazineBase* DropMag = GetWorld()->SpawnActor<AMagazineBase>(WeaponData->MagazineClass, SpawnLoc, SpawnRot, SpawnParams);
 
         if (DropMag)
         {

@@ -6,6 +6,7 @@
 #include "Weapon/Weapon.h"
 #include "Character/Animation/PlayerAnimInstance.h"
 #include "Curves/CurveVector.h"
+#include "Character/Data/CharacterCombatData.h"
 
 UPlayerCombatComponent::UPlayerCombatComponent()
 {
@@ -16,6 +17,21 @@ void UPlayerCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (APrototypeCharacter* OwnerChar = Cast<APrototypeCharacter>(GetOwner()))
+	{
+		// 캐릭터의 헤더에 선언된 CombatData에 접근 (public이나 Getter 필요)
+		// 여기서는 임시로 직접 접근한다고 가정합니다.
+		// CombatData = OwnerChar->CombatData; 
+
+		// 만약 CombatData가 유효하다면 수치 덮어씌우기
+		if (CombatData)
+		{
+			RecoilInterpSpeed = CombatData->RecoilInterpSpeed;
+			RecoilRecoverySpeed = CombatData->RecoilRecoverySpeed;
+			MaxSpread = CombatData->MaxSpread;
+			FireSpreadPenalty = CombatData->FireSpreadPenalty;
+		}
+	}
 	// 게임 시작 시 무기 생성
 	SpawnDefaultWeapon();
 }
@@ -71,7 +87,7 @@ void UPlayerCombatComponent::SpawnDefaultWeapon()
 
 void UPlayerCombatComponent::ToggleEquip(UAnimMontage* Montage, UAnimInstance* AnimInst)
 {
-	if (!EquippedWeapon || bIsAiming) return;
+	if (!EquippedWeapon) return;
 
 	bIsWeaponDrawn = !bIsWeaponDrawn;
 
@@ -141,7 +157,11 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 		return;
 	}
 
-	UAnimMontage* MontageToPlay = (CurrentWeaponIndex == 1) ? Pistol_FireMontage : SMG_FireMontage;
+	UAnimMontage* MontageToPlay = FireMontage;
+	if (!MontageToPlay)
+	{
+		MontageToPlay = (CurrentWeaponIndex == 1) ? Pistol_FireMontage : SMG_FireMontage;
+	}
 
 	// 애니메이션 재생
 	if (AnimInst && MontageToPlay)
@@ -202,11 +222,10 @@ void UPlayerCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	CalculateAimOffset();
 	if (bIsAiming)
 	{
 		UpdateHandIK();
-		CalculateAimOffset();
-
 		UpdateSpread(DeltaTime);
 	}
 	else
@@ -228,7 +247,7 @@ void UPlayerCombatComponent::UpdateHandIK()
 
 void UPlayerCombatComponent::CalculateAimOffset()
 {
-	if (!bIsAiming || !PlayerCamera) return;
+	if (!PlayerCamera) return;
 
 	FVector CameraForward = PlayerCamera->GetForwardVector();
 	FRotator CharacterRotation = GetOwner()->GetActorRotation();
@@ -303,14 +322,17 @@ UAnimMontage* UPlayerCombatComponent::GetSelectedReloadMontage()
 		bool bIsCrouched = OwnerChar->bIsCrouched; 
 		bool bIsAimingNow = bIsAiming;
 
+		UAnimMontage* Selected = nullptr;
 		if (bIsCrouched)
 		{
-			return bIsAimingNow ? SMG_ReloadSet.CrouchAimReload : SMG_ReloadSet.CrouchReload;
+			Selected = bIsAimingNow ? SMG_ReloadSet.CrouchAimReload : SMG_ReloadSet.CrouchReload;
 		}
 		else
 		{
-			return bIsAimingNow ? SMG_ReloadSet.StandingAimReload : SMG_ReloadSet.StandingReload;
+			Selected = bIsAimingNow ? SMG_ReloadSet.StandingAimReload : SMG_ReloadSet.StandingReload;
 		}
+
+		return Selected ? Selected : SMG_ReloadSet.StandingReload;
 	}
 
 	return nullptr;
@@ -372,10 +394,9 @@ void UPlayerCombatComponent::ChangeWeapon(int32 NewWeaponIndex, UAnimInstance* A
 {
 	if (CurrentWeaponIndex == NewWeaponIndex) return;
 
-	if (bIsAiming)
-	{
-		StopAiming(); // 조준 강제 종료
-	}
+	StopAiming();
+	StopFire();
+
 	// 현재 들고 있던 무기를 집어넣는 처리
 	if (EquippedWeapon)
 	{

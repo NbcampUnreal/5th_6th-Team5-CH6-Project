@@ -17,6 +17,10 @@ class UInputAction;
 class ALadder;
 class UCameraShakeBase;
 class AFlashLight;
+class UCharacterMovementData;
+class UCharacterStatusData;
+class UCharacterAnimData;
+class UCharacterCombatData;
 
 UENUM(BlueprintType)
 enum class EPlayerHitDirection : uint8
@@ -97,6 +101,21 @@ protected:
 
 #pragma endregion 
 
+#pragma region 데이터 에셋 
+protected:
+    UPROPERTY(EditDefaultsOnly, Category = "DataAsset")
+    UCharacterMovementData* MovementData;
+
+    UPROPERTY(EditDefaultsOnly, Category = "DataAsset")
+    UCharacterStatusData* StatusData;
+
+    UPROPERTY(EditDefaultsOnly, Category = "DataAsset")
+    UCharacterAnimData* AnimData;
+
+    UPROPERTY(EditDefaultsOnly, Category = "DataAsset")
+    UCharacterCombatData* CombatData;
+#pragma endregion
+
 #pragma region 입력 시스템 (Input System)
     // 입력 매핑 & 액션
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -113,9 +132,7 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* QuickTurnAction;
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* ReloadAction;
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* FlashLightAction;
-
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* EquipSlot1Action;
-
     UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* EquipSlot2Action;
 
     // 입력 처리 바인딩 함수
@@ -259,18 +276,6 @@ protected:
     //SMG
     UPROPERTY(EditAnywhere, Category = "Animations|Action") UAnimMontage* SMG_EquipMontage;
     UPROPERTY(EditAnywhere, Category = "Animations|Action") UAnimMontage* SMG_LowerMontage;
-
-    // 피격 몽타주
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Hit") UAnimMontage* HitMontage_Front;
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Hit") UAnimMontage* HitMontage_Back;
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Hit") UAnimMontage* HitMontage_Right;
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Hit") UAnimMontage* HitMontage_Left;
-
-    // 사망 몽타주
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Death") UAnimMontage* DeathMontage_Front;
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Death") UAnimMontage* DeathMontage_Back;
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Death") UAnimMontage* DeathMontage_Left;
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|Death") UAnimMontage* DeathMontage_Right;
 
     // 손전등 몽타주 
     UPROPERTY(EditDefaultsOnly, Category = "Animations|FlashLight") UAnimMontage* RaiseLight;

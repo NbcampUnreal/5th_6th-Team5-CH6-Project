@@ -11,6 +11,7 @@ class UNiagaraComponent;
 class USoundBase;
 class AMagazineBase;
 class UCurveVector;
+class AProjectile;
 
 UCLASS()
 class WARD_ZERO_API AWeapon : public AActor
@@ -25,6 +26,12 @@ protected:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
 #pragma endregion
+
+#pragma region 데이터 에셋 
+public:
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Config")
+    TObjectPtr<class UWeaponData> WeaponData;
+#pragma endregion 
 
 public:
 #pragma region 전투 및 무기 조작 (Combat & Weapon Operations)
@@ -177,6 +184,10 @@ public:
     UPROPERTY(EditDefaultsOnly, Category = "Weapon|Effects|SFX")
     USoundBase* ReloadSound;
 #pragma endregion
+
+public:
+    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Projectile")
+    TSubclassOf<AProjectile> ProjectileClass;
 
 private:
 #pragma region 내부 처리용 변수 (Internal Data)
