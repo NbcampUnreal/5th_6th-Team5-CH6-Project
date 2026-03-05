@@ -359,6 +359,19 @@ void APrototypeCharacter::Tick(float DeltaTime)
 		}
 
 		TargetSocketOffsetDest = OriginalSocketOffset;
+
+		if (bIsCrouched)
+		{
+			if (Speed > 10.0f && GetCharacterMovement()->IsMovingOnGround())
+			{
+				TargetSocketOffsetDest.Z = CrouchedWalkCameraHeight;
+			}
+			else
+			{
+				TargetSocketOffsetDest.Z = CrouchedCameraHeight;
+			}
+		}
+
 		TargetSocketOffsetDest.Y += YOffsetBob;
 		TargetSocketOffsetDest.Z += ZOffsetBob;
 		

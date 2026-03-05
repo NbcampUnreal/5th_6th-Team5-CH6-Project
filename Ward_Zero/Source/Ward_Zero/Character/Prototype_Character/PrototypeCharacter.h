@@ -163,8 +163,9 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Movement|Turn") float WalkTurnRate = 2.5f;
 
     // 카메라 위치 & 밥(Bob) 설정
-    UPROPERTY(EditDefaultsOnly, Category = "Camera|Base") float CrouchedArmLength = 130.0f;
-    UPROPERTY(EditDefaultsOnly, Category = "Camera|Base") float CrouchedCameraHeight = 40.0f;
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Base") float CrouchedArmLength = 100.0f;
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Base") float CrouchedCameraHeight = 0.0f;
+    UPROPERTY(EditDefaultsOnly, Category = "Camera|Base") float CrouchedWalkCameraHeight = 10.0f;
     UPROPERTY(EditAnywhere, Category = "Camera|Bob") float BobFrequency = 12.0f;
     UPROPERTY(EditAnywhere, Category = "Camera|Bob") float BobAmplitude = 2.0f;
     UPROPERTY(EditAnywhere, Category = "Camera|Bob") float BobHorizontalAmplitude = 1.0f;
