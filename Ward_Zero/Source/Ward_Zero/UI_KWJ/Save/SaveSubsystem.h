@@ -68,7 +68,7 @@ public:
 	// ══════════════════════════════════════════
 
 	UFUNCTION(BlueprintCallable, Category = "Save")
-	void ShowSaveUI();
+	void ShowSaveUI(bool bFromGameOver = false);
 
 	UFUNCTION(BlueprintCallable, Category = "Save")
 	void HideSaveUI();
@@ -80,6 +80,16 @@ private:
 
 	UWardSaveGame* CollectCurrentGameState();
 	void ApplyGameState(UWardSaveGame* SaveData);
+
+	// 레벨 전환 후 적용 대기 중인 세이브 데이터
+	UPROPERTY()
+	UWardSaveGame* PendingSaveData = nullptr;
+
+	FDelegateHandle OnLevelLoadedHandle;
+	void OnLevelLoaded();
+
+	// 게임 오버 UI에서 세이브 창을 열었는지 여부
+	bool bOpenedFromGameOver = false;
 	void CaptureScreenshot(TArray<uint8>& OutPNGData, int32& OutWidth, int32& OutHeight);
 	UTexture2D* CreateThumbnailFromPNG(const TArray<uint8>& PNGData, int32 Width, int32 Height);
 	FString GenerateSlotName() const;

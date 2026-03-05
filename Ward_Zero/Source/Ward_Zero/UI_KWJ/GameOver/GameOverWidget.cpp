@@ -6,12 +6,16 @@
 #include "Components/Image.h"
 #include "Components/CanvasPanel.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI_KWJ/Save/SaveSubsystem.h"
+#include "UI_KWJ/GameOver/GameOverSubsystem.h"
 #include "Ward_Zero.h"
 
-void UGameOverWidget::NativeConstruct()
+void UGameOverWidget::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
+	// Show/Hide 반복 시 NativeConstruct가 재호출되어 중복 바인딩 발생
+	// → 한 번만 호출되는 NativeOnInitialized에서 바인딩
 	if (BTN_LoadLastSave)
 	{
 		BTN_LoadLastSave->OnClicked.AddDynamic(this, &UGameOverWidget::OnLoadLastSaveClicked);
@@ -26,6 +30,11 @@ void UGameOverWidget::NativeConstruct()
 	{
 		BTN_ReturnToTitle->OnClicked.AddDynamic(this, &UGameOverWidget::OnReturnToTitleClicked);
 	}
+}
+
+void UGameOverWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
 }
 
 void UGameOverWidget::PlayFadeIn()
@@ -50,32 +59,59 @@ void UGameOverWidget::PlayFadeIn()
 
 void UGameOverWidget::OnLoadLastSaveClicked()
 {
-	UE_LOG(LogWard_Zero, Log, TEXT("GameOver: 마지막 세이브 불러오기"));
+	// OnClicked 델리게이트 콜백 내부에서 바로 UI 상태 변경 시
+	// InvocationList 오염으로 Ensure 에러 발생 → 다음 틱으로 지연
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			if (!IsValid(this)) return;
 
-	// TODO: SaveSubsystem 연결 후 구현
-	// USaveSubsystem* SaveSys = ULocalPlayer::GetSubsystem<USaveSubsystem>(GetOwningLocalPlayer());
-	// if (SaveSys) SaveSys->LoadLastSave();
+			// GameOver UI 닫기
+			UGameOverSubsystem* GameOverSys = GetOwningLocalPlayer()->GetSubsystem<UGameOverSubsystem>();
+			if (GameOverSys)
+			{
+				GameOverSys->HideGameOver();
+			}
+
+			// 마지막 세이브 로드
+			USaveSubsystem* SaveSys = GetOwningLocalPlayer()->GetSubsystem<USaveSubsystem>();
+			if (SaveSys)
+			{
+				SaveSys->LoadLastSave();
+			}
+		});
+	}
 }
 
 void UGameOverWidget::OnLoadSaveClicked()
 {
-	UE_LOG(LogWard_Zero, Log, TEXT("GameOver: 세이브 슬롯 선택"));
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			if (!IsValid(this)) return;
 
-	// TODO: 세이브 슬롯 선택 UI 열기
-	// USaveSubsystem* SaveSys = ULocalPlayer::GetSubsystem<USaveSubsystem>(GetOwningLocalPlayer());
-	// if (SaveSys) SaveSys->ShowLoadScreen();
+			// GameOver UI 먼저 숨기기 (SaveUI zOrder 150 < GameOver 300)
+			SetVisibility(ESlateVisibility::Collapsed);
+
+			// Save UI 열기
+			USaveSubsystem* SaveSys = GetOwningLocalPlayer()->GetSubsystem<USaveSubsystem>();
+			if (SaveSys)
+			{
+				SaveSys->ShowSaveUI(true); // 게임 오버에서 열었음을 표시
+			}
+		});
+	}
 }
 
 void UGameOverWidget::OnReturnToTitleClicked()
 {
-	UE_LOG(LogWard_Zero, Log, TEXT("GameOver: 타이틀로 돌아가기"));
-
-	// 게임 오버 UI 숨기기
-	SetVisibility(ESlateVisibility::Collapsed);
-
-	// 메인 메뉴 레벨로 이동
-	UGameplayStatics::OpenLevel(
-		this,
-		FName(TEXT("/Game/UI/MainMenu/L_MainMenu.L_MainMenu"))
-	);
+	// ServerTravel: 같은 PIE 세션 내 월드 교체
+	// → LocalPlayer/Subsystem 유지되어 레벨 블루프린트 BeginPlay가 정상 실행됨
+	// OpenLevel은 새 PIE 세션을 만들어 BeginPlay 타이밍에 PC가 없어 메뉴가 안 뜸
+	if (UWorld* W = GetWorld())
+	{
+		W->ServerTravel("/Game/UI/Demo", true);
+	}
 }

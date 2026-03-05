@@ -88,8 +88,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Save")
 	void RefreshSaveList();
 
+	/** 저장 버튼 활성/비활성 (게임오버에서 열 때 비활성화) */
+	UFUNCTION(BlueprintCallable, Category = "Save")
+	void SetSaveButtonEnabled(bool bEnabled);
+
 protected:
 
+	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
 
 private:

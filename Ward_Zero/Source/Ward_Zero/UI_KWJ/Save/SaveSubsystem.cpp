@@ -3,6 +3,7 @@
 #include "UI_KWJ/Save/SaveSubsystem.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
 #include "UI_KWJ/Save/SaveWidget.h"
+#include "UI_KWJ/GameOver/GameOverSubsystem.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Character/Components/PlayerStatusComponent.h"
 #include "Character/Components/PlayerCombatComponent.h"
@@ -25,7 +26,30 @@ const FString USaveSubsystem::SavePrefix = TEXT("WardZero_");
 void USaveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+
+	// 레벨 로드 완료 시 PendingSaveData 적용 콜백 등록
+	OnLevelLoadedHandle = FCoreUObjectDelegates::PostLoadMapWithWorld.AddLambda(
+		[this](UWorld* LoadedWorld) { OnLevelLoaded(); });
+
 	UE_LOG(LogWard_Zero, Log, TEXT("SaveSubsystem 초기화 완료"));
+}
+
+void USaveSubsystem::OnLevelLoaded()
+{
+	if (!PendingSaveData) return;
+
+	UWardSaveGame* DataToApply = PendingSaveData;
+	PendingSaveData = nullptr;
+
+	// 한 틱 뒤에 적용 (레벨 액터들이 완전히 초기화된 후)
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimerForNextTick([this, DataToApply]()
+		{
+			ApplyGameState(DataToApply);
+			UE_LOG(LogWard_Zero, Log, TEXT("레벨 전환 후 세이브 데이터 적용 완료"));
+		});
+	}
 }
 
 // ════════════════════════════════════════════════════════
@@ -91,17 +115,36 @@ bool USaveSubsystem::LoadGame(const FString& SlotName)
 		return false;
 	}
 
-	FName CurrentLevel = FName(*UGameplayStatics::GetCurrentLevelName(GetWorld()));
-	if (SaveData->CurrentLevelName != CurrentLevel && SaveData->CurrentLevelName != NAME_None)
+	// GameOver UI가 열려 있으면 닫기
+	if (UGameOverSubsystem* GameOverSys = GetLocalPlayer()->GetSubsystem<UGameOverSubsystem>())
 	{
-		UE_LOG(LogWard_Zero, Log, TEXT("레벨 전환 필요: %s → %s"),
-			*CurrentLevel.ToString(), *SaveData->CurrentLevelName.ToString());
+		if (GameOverSys->IsGameOver())
+		{
+			GameOverSys->HideGameOver();
+		}
 	}
 
-	ApplyGameState(SaveData);
-	UE_LOG(LogWard_Zero, Log, TEXT("세이브 로드 완료: %s"), *SlotName);
-
 	HideSaveUI();
+
+	FName CurrentLevel = FName(*UGameplayStatics::GetCurrentLevelName(GetWorld()));
+	if (SaveData->CurrentLevelName != NAME_None && SaveData->CurrentLevelName != CurrentLevel)
+	{
+		// 다른 레벨이면 전환 후 OnLevelLoaded에서 ApplyGameState 호출
+		UE_LOG(LogWard_Zero, Log, TEXT("레벨 전환: %s → %s"),
+			*CurrentLevel.ToString(), *SaveData->CurrentLevelName.ToString());
+
+		PendingSaveData = SaveData;
+
+		FString TravelURL = SaveData->CurrentLevelName.ToString();
+		GetWorld()->ServerTravel(TravelURL, true);
+	}
+	else
+	{
+		// 같은 레벨이면 바로 적용
+		ApplyGameState(SaveData);
+		UE_LOG(LogWard_Zero, Log, TEXT("세이브 로드 완료: %s"), *SlotName);
+	}
+
 	return true;
 }
 
@@ -417,15 +460,18 @@ FString USaveSubsystem::GenerateSlotName() const
 //  세이브 UI
 // ════════════════════════════════════════════════════════
 
-void USaveSubsystem::ShowSaveUI()
+void USaveSubsystem::ShowSaveUI(bool bFromGameOver)
 {
 	// UI가 뜨기 전에 스크린샷 캐시
 	CaptureScreenshot(CachedScreenshotData, CachedScreenshotWidth, CachedScreenshotHeight);
+
+	bOpenedFromGameOver = bFromGameOver;
 
 	USaveWidget* Widget = GetOrCreateSaveUI();
 	if (Widget)
 	{
 		Widget->RefreshSaveList();
+		Widget->SetSaveButtonEnabled(!bFromGameOver); // 게임오버에서 열면 저장 버튼 비활성화
 		Widget->SetVisibility(ESlateVisibility::Visible);
 		Widget->SetKeyboardFocus();
 
@@ -448,12 +494,25 @@ void USaveSubsystem::HideSaveUI()
 		SaveWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
-	if (PC)
+	if (bOpenedFromGameOver)
 	{
-		FInputModeGameOnly InputMode;
-		PC->SetInputMode(InputMode);
-		PC->SetShowMouseCursor(false);
+		bOpenedFromGameOver = false;
+
+		// 게임 오버 UI 다시 표시
+		if (UGameOverSubsystem* GameOverSys = GetLocalPlayer()->GetSubsystem<UGameOverSubsystem>())
+		{
+			GameOverSys->ShowGameOver();
+		}
+	}
+	else
+	{
+		APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
+		if (PC)
+		{
+			FInputModeGameOnly InputMode;
+			PC->SetInputMode(InputMode);
+			PC->SetShowMouseCursor(false);
+		}
 	}
 }
 

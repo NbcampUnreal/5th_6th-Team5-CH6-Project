@@ -13,9 +13,9 @@
 #include "GameFramework/PlayerController.h"
 #include "Ward_Zero.h"
 
-void USaveWidget::NativeConstruct()
+void USaveWidget::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
 	if (BTN_SaveNew)
 	{
@@ -37,6 +37,11 @@ void USaveWidget::NativeConstruct()
 	{
 		BTN_Overwrite->OnClicked.AddDynamic(this, &USaveWidget::OnOverwriteClicked);
 	}
+}
+
+void USaveWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
 }
 
 // ════════════════════════════════════════════════════════
@@ -117,6 +122,18 @@ void USaveWidget::OnSaveNewClicked()
 		SaveSub->SaveGame(TEXT(""));
 		RefreshSaveList();
 		UE_LOG(LogWard_Zero, Log, TEXT("새 세이브 생성"));
+	}
+}
+
+void USaveWidget::SetSaveButtonEnabled(bool bEnabled)
+{
+	if (BTN_SaveNew)
+	{
+		BTN_SaveNew->SetIsEnabled(bEnabled);
+	}
+	if (BTN_Overwrite)
+	{
+		BTN_Overwrite->SetIsEnabled(bEnabled);
 	}
 }
 

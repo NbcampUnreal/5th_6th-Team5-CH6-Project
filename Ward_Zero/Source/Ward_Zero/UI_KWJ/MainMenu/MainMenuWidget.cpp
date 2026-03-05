@@ -9,9 +9,9 @@
 #include "GameFramework/PlayerController.h"
 #include "Ward_Zero.h"
 
-void UMainMenuWidget::NativeConstruct()
+void UMainMenuWidget::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
 	if (BTN_Start)
 	{
@@ -25,6 +25,11 @@ void UMainMenuWidget::NativeConstruct()
 	{
 		BTN_Quit->OnClicked.AddDynamic(this, &UMainMenuWidget::OnQuitClicked);
 	}
+}
+
+void UMainMenuWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
 
 	APlayerController* PC = GetOwningPlayer();
 	if (PC)
