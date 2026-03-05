@@ -94,11 +94,18 @@ void AWeapon::Fire(const FVector& HitTarget)
     }
 
     // 발사 위치 및 회전값 계산
-    // 총구 소켓 위치 < 시작 위치 
+    // 소켓의 위치와 회전값 가져오기 
     FVector MuzzleLocation = WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
+    FRotator MuzzleRotation = WeaponMesh->GetSocketRotation(TEXT("Muzzle"));
 
-    // 총구 위치에서 조준점(화면 중앙)을 바라보는 회전값을 계산해서 총알을 생성
-    FRotator MuzzleRotation = (HitTarget - MuzzleLocation).Rotation();
+    // 회전값에서 앞방향(Forward) 벡터를 계산 
+    FVector MuzzleForward = FRotationMatrix(MuzzleRotation).GetUnitAxis(EAxis::X);
+
+    // 총구 앞 15cm 지점에서 생성
+    FVector SpawnLocation = MuzzleLocation + (MuzzleForward * 15.0f);
+
+    // 생성 지점에서 조준점을 바라보는 회전값 재계산
+    FRotator ProjectileRotation = (HitTarget - SpawnLocation).Rotation();
 
     // 월드에 총알 액터 스폰 
     UWorld* World = GetWorld();
@@ -109,33 +116,33 @@ void AWeapon::Fire(const FVector& HitTarget)
         SpawnParams.Instigator = Cast<APawn>(GetOwner());
         SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-        AProjectile* SpawnedProjectile = World->SpawnActor<AProjectile>(ProjectileClass, MuzzleLocation, MuzzleRotation, SpawnParams);
+        // 보정된 위치와 조준 방향으로 총알 스폰
+        AProjectile* SpawnedProjectile = World->SpawnActor<AProjectile>(ProjectileClass, SpawnLocation, ProjectileRotation, SpawnParams);
 
         if (SpawnedProjectile && WeaponData->ProjectileData)
         {
             SpawnedProjectile->InitializeProjectile(WeaponData->ProjectileData);
         }
     }
-    // 데이터 에셋에서 총기 사운드 가져오기 
+
+    // 사운드 재생 
     if (WeaponData->FireSound)
     {
         UGameplayStatics::PlaySoundAtLocation(this, WeaponData->FireSound, GetActorLocation());
     }
 
-    // 머즐 플래시
     if (WeaponData->MuzzleFlash)
     {
         UNiagaraFunctionLibrary::SpawnSystemAttached(
-            WeaponData->MuzzleFlash, // WeaponData 내부의 시스템 에셋
+            WeaponData->MuzzleFlash,
             WeaponMesh,
-            MuzzleSocketName,
-            FVector::ZeroVector, 
-            FRotator::ZeroRotator, 
+            TEXT("Muzzle"), 
+            FVector::ZeroVector,
+            FRotator::ZeroRotator,
             EAttachLocation::SnapToTarget, true
         );
     }
 
-    // 탄약 소모
     SpendRound();
 }
 

@@ -434,19 +434,19 @@ float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 
 	// 피격 방향 계산
 	FVector ToAttackerDir = FVector::ZeroVector;
-	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
+	if (DamageCauser)
 	{
-		const FPointDamageEvent* PointEvent = static_cast<const FPointDamageEvent*>(&DamageEvent);
-		ToAttackerDir = -PointEvent->ShotDirection;
-	}
-	else if (DamageCauser)
-	{
-		ToAttackerDir = (DamageCauser->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+		// 공격자 위치에서 내 위치를 빼서 방향을 구함 (평면상 방향을 위해 Z는 무시)
+		ToAttackerDir = (DamageCauser->GetActorLocation() - GetActorLocation());
+		ToAttackerDir.Z = 0.0f;
+		ToAttackerDir.Normalize();
 	}
 
-	// 살아있으면 피격 모션, 죽었으면 OnDeath 델리게이트가 처리
 	if (!StatusComponent->IsDead())
 	{
+		// 몽타주 재생 전 조준/퀵턴 강제 종료 (애니메이션 꼬임 방지)
+		if (bIsQuickTurning) StopQuickTurn();
+
 		PlayHitReaction(ToAttackerDir);
 	}
 
@@ -547,22 +547,27 @@ void APrototypeCharacter::ProcessMovementTurn(FVector2D MovementVector)
 
 void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
 {
-	if (bIsQuickTurning) StopQuickTurn();
-	if (CombatComponent && CombatComponent->IsAiming()) CombatComponent->StopAiming();
-
-	// 방향 계산 (Front, Back, Left, Right 반환)
 	EPlayerHitDirection HitDir = GetHitDirection(ToAttackerDir);
 
-	// AnimData 에셋의 TMap에서 몽타주 찾기
-	if (AnimData && AnimData->HitMontages.Contains(HitDir))
-	{
-		UAnimMontage* MontageToPlay = AnimData->HitMontages[HitDir];
+	if (!AnimData) return;
 
-		UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
-		if (AnimInst && MontageToPlay)
-		{
-			AnimInst->Montage_Play(MontageToPlay);
-		}
+	UAnimMontage* MontageToPlay = nullptr;
+
+	// 해당 방향 몽타주가 있는지 확인
+	if (AnimData->HitMontages.Contains(HitDir))
+	{
+		MontageToPlay = AnimData->HitMontages[HitDir];
+	}
+
+	// 만약 Right/Left가 없으면 Front를 대신 사용
+	if (!MontageToPlay && AnimData->HitMontages.Contains(EPlayerHitDirection::Front))
+	{
+		MontageToPlay = AnimData->HitMontages[EPlayerHitDirection::Front];
+	}
+
+	if (MontageToPlay)
+	{
+		PlayAnimMontage(MontageToPlay);
 	}
 }
 
