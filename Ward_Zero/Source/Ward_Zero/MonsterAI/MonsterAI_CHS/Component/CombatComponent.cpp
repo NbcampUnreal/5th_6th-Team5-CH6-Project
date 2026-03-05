@@ -274,17 +274,26 @@ void UCombatComponent::HandleAllDamage(float Damage, FDamageEvent const& DamageE
 		const FPointDamageEvent* PointDamageEvent = static_cast<const FPointDamageEvent*>(&DamageEvent);
 		FHitResult HitInfo = PointDamageEvent->HitInfo;
 		//TO Do: 나이아가라 이펙트 구현
-		if (MonsterData && MonsterData->BloodEffectSystem)
+		if (MonsterData)
 		{
-			FRotator BloodRotation = HitInfo.ImpactNormal.Rotation();
+			if (MonsterData->BloodEffectSystem)
+			{
+				FRotator BloodRotation = HitInfo.ImpactNormal.Rotation();
 
-			UGameplayStatics::SpawnEmitterAtLocation(
-				GetWorld(),
-				MonsterData->BloodEffectSystem,
-				HitInfo.ImpactPoint, 
-				BloodRotation        
-			);
+				UGameplayStatics::SpawnEmitterAtLocation(
+					GetWorld(),
+					MonsterData->BloodEffectSystem,
+					HitInfo.ImpactPoint, 
+					BloodRotation        
+				);
+			}
+			if (MonsterData->BulletHitSound)
+			{
+				UGameplayStatics::PlaySoundAtLocation(this, MonsterData->BulletHitSound, HitInfo.ImpactPoint);
+			}
 		}
+		
+		
 		if (UTagPhysicalMaterial* PM = Cast<UTagPhysicalMaterial>(PointDamageEvent->HitInfo.PhysMaterial.Get()))
 		{
 			FGameplayTag HitTag = PM->HitPartTag;

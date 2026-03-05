@@ -117,7 +117,7 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	FGetUpMontage GetUpMontages;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat|Effects")
-	class UParticleSystem* BloodEffectSystem;
+	TObjectPtr<UParticleSystem> BloodEffectSystem;
 	
 	UPROPERTY(EditAnywhere, Category = "Interaction")
 	TMap<FGameplayTag,FInteractionInfo> InteractionInfoMap;
@@ -185,7 +185,8 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	UPROPERTY(EditAnywhere, Category = "Chase")
 	float MaxLostTargetTime = 5.f;
 	
-	
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	TObjectPtr<USoundBase> BulletHitSound;
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	TObjectPtr<USoundBase> WalkSound;
 	UPROPERTY(EditAnywhere, Category = "Sound")
