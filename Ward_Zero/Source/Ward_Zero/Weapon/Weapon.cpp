@@ -292,6 +292,7 @@ void AWeapon::ShowMagazine()
     {
         GunMagMesh->SetVisibility(true); 
     }
+    bIsReloading = false;
 }
 
 // 탄약상자 먹을 때 총알 추가
