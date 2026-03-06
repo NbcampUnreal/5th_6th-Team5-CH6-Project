@@ -60,8 +60,8 @@ float UPlayerStatusComponent::ApplyDamage(float DamageAmount)
 		CurrHealth = 0.0f;
 		bIsDead = true;
 		OnPlayerDied.Broadcast(); //캐릭터 Die 알림 
-		OnHealthChanged.Broadcast(CurrHealth, MaxHealth);
 	}
+	OnHealthChanged.Broadcast(CurrHealth, MaxHealth);
 
 	return ActualDamage;
 }
