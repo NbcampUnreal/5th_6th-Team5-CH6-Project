@@ -27,9 +27,9 @@ void UAN_LegFallEnd::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase*
 
 			if (AAIController* AIC = Cast<AAIController>(Zombie->GetController()))
 			{
-				AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsStunned,false);
 				if (UBehaviorTreeComponent* BT = Cast<UBehaviorTreeComponent>(AIC->GetBrainComponent()))
 				{
+					AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsStunned,false);
 					if (const UBTNode* ActiveNode = BT->GetActiveNode())
 					{
 						BT->OnTaskFinished(Cast<UBTTaskNode>(ActiveNode),EBTNodeResult::Succeeded);

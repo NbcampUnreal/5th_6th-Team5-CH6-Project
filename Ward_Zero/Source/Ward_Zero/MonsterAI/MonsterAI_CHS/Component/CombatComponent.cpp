@@ -75,8 +75,12 @@ void UCombatComponent::ApplyKnockdown(EHitDirection HitDir)
 	{
 		StatusComp->SetIsRecoveringCC(true);
 		AIC->StopMovement();
-		AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsKnockedDown,true);
-		AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsStunned,false);
+		if (AIC->GetBlackboardComponent())
+		{
+			AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsKnockedDown,true);
+			AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsStunned,false);
+		}
+		
 		Owner->PlayAnimM(MontageToPlay);
 	}
 	
@@ -160,7 +164,11 @@ void UCombatComponent::ApplyStun(EHitDirection HitDir, EHitPart HitPart)
 		}
 		StatusComp->SetIsRecoveringCC(true);
 		AIC->StopMovement();
-		AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsLegFalling,true);
+		if (AIC->GetBlackboardComponent())
+		{
+			AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsLegFalling,true);
+
+		}
 		if (HitPart == EHitPart::LegLeft)
 		{
 			MontageToPlay = MonsterData->LegHitReactionMontage.LeftLegHitReaction;
@@ -176,7 +184,11 @@ void UCombatComponent::ApplyStun(EHitDirection HitDir, EHitPart HitPart)
 
 	if (MontageToPlay)
 	{
-		AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsStunned,true);
+		if (AIC->GetBlackboardComponent())
+		{
+			AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsStunned,true);
+
+		}
 		Owner->PlayAnimM(MontageToPlay);
 	}
 	

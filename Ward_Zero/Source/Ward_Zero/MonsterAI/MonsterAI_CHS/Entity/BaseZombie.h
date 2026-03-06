@@ -12,6 +12,8 @@ class UCombatComponent;
 class UStatusComponent;
 class UMonsterDataAsset;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnActivateDelegate);
+
 UCLASS()
 class WARD_ZERO_API ABaseZombie : public ACharacter
 {
@@ -23,7 +25,7 @@ public:
 
 	virtual void OnDeath();
 	virtual void Tick(float DeltaSeconds) override;
-	
+	bool bIsActivated = false;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	const UMonsterDataAsset* MonsterData;
 	
@@ -51,6 +53,12 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Animation", meta=(DisplayName="Bang the Door"))
 	void BangDoor(AActor* TargetDoor);
+	
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnActivateDelegate OnActivate;
+	
+	UFUNCTION(BlueprintCallable, Category = "Activate", meta = (DisplayName="Activate Zombie"))
+	void Activate();
 	void StartRagdollKnockdown(EHitDirection HitDir);
 	void CheckRagdollVelocity();
 	void RecoverFromRagdoll();
@@ -81,5 +89,6 @@ protected:
 	FTimerHandle RagdollTimerHandle;
 	
 private:
+	
 	bool bIsExecutionActive = false;
 };

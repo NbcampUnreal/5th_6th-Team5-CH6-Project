@@ -67,6 +67,16 @@ void ABaseZombie::OnDeath()
 		GetCharacterMovement()->DisableMovement();
 		GetCharacterMovement()->SetComponentTickEnabled(false);
 	}
+	
+	if (AudioLoopComponent)
+	{
+		AudioLoopComponent->Stop();
+	}
+	if (MonsterData->DeathSound)
+	{
+		AudioLoopComponent->SetSound(MonsterData->DeathSound);
+		AudioLoopComponent->Play();
+	}
 	//SetLifeSpan(5.0f);
 }
 
@@ -107,10 +117,16 @@ float ABaseZombie::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 {
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	if (CombatComponent)
+	if (CombatComponent && bIsActivated)
 	{
 		
 		CombatComponent->HandleAllDamage(ActualDamage, DamageEvent, EventInstigator, DamageCauser);
+	}else
+	{
+		if (StatusComponent->ApplyDamage(ActualDamage,true) <= 0.f)
+		{
+			OnDeath();
+		}
 	}
 
 	return ActualDamage;
@@ -218,6 +234,37 @@ void ABaseZombie::PlayAnimM(UAnimMontage* MontageToPlay)
 
 void ABaseZombie::BangDoor(AActor* TargetDoor)
 {
+}
+
+void ABaseZombie::Activate()
+{
+	/*if (MonsterData->GetUpMontages.FromFaceUp != nullptr)
+	{
+		PlayAnimMontage(MonsterData->GetUpMontages.FromFaceUp);
+	}*/
+	if (OnActivate.IsBound())
+	{
+		OnActivate.Broadcast();
+	}
+	FTimerHandle TimerHandle;
+    
+	TWeakObjectPtr<ABaseZombie> WeakThis(this);
+    
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateLambda([WeakThis]()
+	{
+		if (WeakThis.IsValid() && WeakThis->GetMesh())
+		{
+			auto* AIC = Cast<ABaseZombie_AIController>(WeakThis->GetController());
+			if (AIC)
+			{
+				if (AIC->Activate())
+				{
+					WeakThis->bIsActivated = true;
+				}
+			}
+		}
+	}), 4.0f, false);
+	
 }
 
 void ABaseZombie::StartRagdollKnockdown(EHitDirection HitDir)
