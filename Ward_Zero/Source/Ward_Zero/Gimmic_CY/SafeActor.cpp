@@ -50,26 +50,26 @@ void ASafeActor::UpdateSafeRotation(float Alpha)
     Pivot->SetRelativeRotation(NewRot);
 }
 
-void ASafeActor::OnIneractionRangeEntered()
+void ASafeActor::OnIneractionRangeEntered_Implementation()
 {
 	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, "I am an ineractable");
 	// À§Á¬ Ç¥½Ã µî
 }
 
-void ASafeActor::OnIneractionRangeExited()
+void ASafeActor::OnIneractionRangeExited_Implementation()
 {
 	// À§Á¬ ¼û±è µî
 }
 
-void ASafeActor::OnIneracted(APrototypeCharacter* Character)
+void ASafeActor::OnIneracted_Implementation(APrototypeCharacter* Character)
 {
-	if (CanBeInteracted())
-	{
-		HandleInteraction(Character);
-	}
+    if (IInteractionBase::Execute_CanBeInteracted(this))
+    {
+        IInteractionBase::Execute_HandleInteraction(this, Character);
+    }
 }
 
-void ASafeActor::HandleInteraction(APrototypeCharacter* Character)
+void ASafeActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
     if (!SafeTimeline)
         return;
@@ -81,7 +81,7 @@ void ASafeActor::HandleInteraction(APrototypeCharacter* Character)
     }
     else
     {
-        SafeTimeline->PlayFromStart();
+        SafeTimeline->Play();
         bIsOpened = true;
     }
 }
@@ -89,13 +89,16 @@ void ASafeActor::HandleInteraction(APrototypeCharacter* Character)
 void ASafeActor::OnBeginOverlap(UPrimitiveComponent*, AActor* OtherActor,
     UPrimitiveComponent*, int32, bool, const FHitResult&)
 {
-    OnIneractionRangeEntered();
+    if (Cast<APrototypeCharacter>(OtherActor))
+    {
+        IInteractionBase::Execute_OnIneractionRangeEntered(this);
+    }
 }
 
 void ASafeActor::OnEndOverlap(UPrimitiveComponent*, AActor* OtherActor,
     UPrimitiveComponent*, int32)
 {
-    OnIneractionRangeExited();
+    IInteractionBase::Execute_OnIneractionRangeExited(this);
 }
 
 

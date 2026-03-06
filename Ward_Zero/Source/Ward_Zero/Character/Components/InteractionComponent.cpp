@@ -143,8 +143,12 @@ bool UInteractionComponent::IsInteractable(AActor* Actor) const
 	// IInteractionBase (Gimmic_CY 계열: 문 등)
 	if (Actor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
 	{
-		IInteractionBase* Interactable = Cast<IInteractionBase>(Actor);
-		if (Interactable && Interactable->CanBeInteracted())
+		//IInteractionBase* Interactable = Cast<IInteractionBase>(Actor);
+		//if (Interactable && Interactable->CanBeInteracted())
+		//{
+		//	return true;
+		//}
+		if (IInteractionBase::Execute_CanBeInteracted(Actor))
 		{
 			return true;
 		}

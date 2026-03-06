@@ -17,6 +17,7 @@ ADoorActor::ADoorActor()
 
 	InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
 	InteractionBox->SetupAttachment(DoorFrame);
+	InteractionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
 	DoorTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("DoorTimeline"));
 }
@@ -57,35 +58,38 @@ void ADoorActor::UpdateTimelineComp(float Output)
 void ADoorActor::OnBeginOverlap(UPrimitiveComponent*, AActor* OtherActor,
 	UPrimitiveComponent*, int32, bool, const FHitResult&)
 {
-	OnIneractionRangeEntered();
+	if (Cast<APrototypeCharacter>(OtherActor))
+	{
+		IInteractionBase::Execute_OnIneractionRangeEntered(this);
+	}
 }
 
 void ADoorActor::OnEndOverlap(UPrimitiveComponent*, AActor* OtherActor,
 	UPrimitiveComponent*, int32)
 {
-	OnIneractionRangeExited();
+	IInteractionBase::Execute_OnIneractionRangeExited(this);
 }
 
-void ADoorActor::OnIneractionRangeEntered()
+void ADoorActor::OnIneractionRangeEntered_Implementation()
 {
 	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, "I am an ineractable");
 	// À§Á¬ Ç¥½Ã µî
 }
 
-void ADoorActor::OnIneractionRangeExited()
+void ADoorActor::OnIneractionRangeExited_Implementation()
 {
 	// À§Á¬ ¼û±è µî
 }
 
-void ADoorActor::OnIneracted(APrototypeCharacter* Character)
+void ADoorActor::OnIneracted_Implementation(APrototypeCharacter* Character)
 {
-	if (CanBeInteracted())
+	if (IInteractionBase::Execute_CanBeInteracted(this))
 	{
-		HandleInteraction(Character);
+		IInteractionBase::Execute_HandleInteraction(this, Character);
 	}
 }
 
-void ADoorActor::HandleInteraction(APrototypeCharacter* Character)
+void ADoorActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
 	if (!DoorTimelineFloatCurve || !Character)
 		return;
@@ -106,7 +110,7 @@ void ADoorActor::HandleInteraction(APrototypeCharacter* Character)
 	if (!bIsOpen)
 	{
 		TargetYaw = (Dot >= 0.f) ? 90.f : -90.f;
-		DoorTimelineComp->PlayFromStart();
+		DoorTimelineComp->Play();
 	}
 	else
 	{

@@ -52,11 +52,11 @@ public:
 	void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 #pragma region IInteractionBase 인터페이스 구현
-	virtual void OnIneractionRangeEntered() override;
-	virtual void OnIneractionRangeExited() override;
+	virtual void OnIneractionRangeEntered_Implementation() override;
+	virtual void OnIneractionRangeExited_Implementation() override;
 
-	virtual void OnIneracted(APrototypeCharacter* Character) override;
-	virtual void HandleInteraction(APrototypeCharacter* Character) override {}
-	virtual bool CanBeInteracted() const override { return true; }
+	virtual void OnIneracted_Implementation(APrototypeCharacter* Character) override;
+	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override {}
+	virtual bool CanBeInteracted_Implementation() const override { return true; }
 #pragma endregion
 };
