@@ -466,6 +466,11 @@ float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 		// 몽타주 재생 전 조준/퀵턴 강제 종료 (애니메이션 꼬임 방지)
 		if (bIsQuickTurning) StopQuickTurn();
 
+		if (CombatComponent && CombatComponent->GetEquippedWeapon())
+		{
+			CombatComponent->GetEquippedWeapon()->SetIsReloading(false);
+		}
+
 		PlayHitReaction(ToAttackerDir);
 	}
 
@@ -1019,6 +1024,8 @@ bool APrototypeCharacter::GetIsUseFlashLight() const
 void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 {
 	if (!CombatComponent || !CombatComponent->GetEquippedWeapon()) return;
+
+	if (GetIsReloading()) return;
 
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
 	if (!AnimInst) return;
