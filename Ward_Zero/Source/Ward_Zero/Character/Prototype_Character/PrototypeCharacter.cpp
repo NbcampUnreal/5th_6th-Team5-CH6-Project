@@ -873,6 +873,11 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 	{
 		if (IInteractionBase::Execute_CanBeInteracted(HitActor))
 		{
+			PendingDoorActor = HitActor;
+			if (AnimData && AnimData->OpenDoorMontage)
+			{
+				PlayAnimMontage(AnimData->OpenDoorMontage);
+			}
 			IInteractionBase::Execute_OnIneracted(HitActor, this);
 		}
 	}
@@ -903,13 +908,11 @@ void APrototypeCharacter::StopReloading()
 		AnimInst->Montage_Stop(0.2f, CombatComponent->Pistol_ReloadMontage);
 
 		// 무기 내부의 장전 상태값도 반드시 초기화
-		if (CombatComponent->GetEquippedWeapon())
+		if (AWeapon* CurrentWeapon = CombatComponent->GetEquippedWeapon())
 		{
-			CombatComponent->GetEquippedWeapon()->SetIsReloading(false);
+			CurrentWeapon->SetIsReloading(false);
+			CurrentWeapon->ShowMagazine(); //손에 있는 탄창 엑터 제거 
 		}
-
-		// (선택 사항) 만약 손에 탄창 액터를 생성했다면 여기서 Destroy 처리
-		// CombatComponent->GetEquippedWeapon()->ShowMagazine(); // 탄창 복구 노티파이 강제 실행 효과
 	}
 }
 
@@ -999,16 +1002,26 @@ void APrototypeCharacter::ToggleLight(bool IsLight)
 			if (FlashLight == nullptr)
 			{
 				EquipFlashLight();
-				if (FlashLight && TargetData)
+
+				if (RaiseLight)
 				{
-					FlashLight->InitializeLight(TargetData);
+					PlayAnimMontage(RaiseLight);
 				}
 			}
-			if (!CombatComponent->IsWeaponDrawn()) PlayAnimMontage(RaiseLight);
+			if (FlashLight && TargetData)
+			{
+				FlashLight->InitializeLight(TargetData);
+			}
 		}
-		else if (FlashLight)
+		else
 		{
-			if (!CombatComponent->IsWeaponDrawn()) PlayAnimMontage(LowerLight);
+			if (FlashLight)
+			{
+				if (LowerLight)
+				{
+					PlayAnimMontage(LowerLight);
+				}
+			}
 			FlashLight->Destroy();
 			FlashLight = nullptr;
 		}
