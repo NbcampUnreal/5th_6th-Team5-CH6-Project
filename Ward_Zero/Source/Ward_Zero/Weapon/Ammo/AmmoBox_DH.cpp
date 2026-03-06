@@ -94,7 +94,11 @@ void AAmmoBox_DH::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 	if (OtherActor && OtherActor->IsA(APrototypeCharacter::StaticClass()))
 	{
 		// 맞다면 동그라미를 켜는 함수를 실행!
-		OnIneractionRangeEntered();
+		//OnIneractionRangeEntered();
+		if (Cast<APrototypeCharacter>(OtherActor))
+		{
+			IInteractionBase::Execute_OnIneractionRangeEntered(this);
+		}
 	}
 }
 
@@ -103,6 +107,7 @@ void AAmmoBox_DH::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor*
 	if (OtherActor && OtherActor->IsA(APrototypeCharacter::StaticClass()))
 	{
 		// 맞다면 동그라미를 끄는 함수를 실행!
-		OnIneractionRangeExited();
+		//OnIneractionRangeExited();
+		IInteractionBase::Execute_OnIneractionRangeExited(this);
 	}
 }
