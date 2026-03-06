@@ -104,11 +104,13 @@ void UPlayerCombatComponent::ToggleEquip(UAnimMontage* Montage, UAnimInstance* A
 
 void UPlayerCombatComponent::Reload()
 {
-	// 이미 재장전 중이거나 무기가 없으면 리턴
-	if (!EquippedWeapon || EquippedWeapon->IsReloading()) return;
-	if (EquippedWeapon->IsFullAmmo()) return;
-
-	if (EquippedWeapon->GetReserveAmmo() <= 0) return;
+	if (!bIsWeaponDrawn || !EquippedWeapon) return;
+	if (EquippedWeapon->IsReloading() || EquippedWeapon->IsFullAmmo()) return;
+	if (EquippedWeapon->GetReserveAmmo() <= 0)
+	{
+		EquippedWeapon->PlayDryFireSound();
+		return;
+	}
 
 	// 상황에 맞는 몽타주 선택
 	UAnimMontage* SelectedMontage = GetSelectedReloadMontage();

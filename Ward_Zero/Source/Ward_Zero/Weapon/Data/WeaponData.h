@@ -42,4 +42,10 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Sound")
     TObjectPtr<USoundBase> DryFireSound;
+
+    UPROPERTY(EditAnywhere, Category = "Visual")
+    TObjectPtr<UNiagaraSystem> ShellEjectEffect;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Effects|Light")
+    TObjectPtr<class UFlashLightData> FlashlightSettings;
 };

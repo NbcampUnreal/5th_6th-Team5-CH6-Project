@@ -22,6 +22,7 @@ class UCharacterStatusData;
 class UCharacterAnimData;
 class UCharacterCombatData;
 class UHealthVignetteWidget;
+class UFlashLightData;
 
 UENUM(BlueprintType)
 enum class EPlayerHitDirection : uint8
@@ -81,6 +82,8 @@ public:
     virtual float GetAimPitch() const override;
     virtual float GetAimYaw() const override;
     virtual bool IsFiring() const override;
+    virtual void OnDoorTriggered() override;
+    virtual bool IsInteracting() const override;
 #pragma endregion
 
 protected:
@@ -226,6 +229,11 @@ public:
     void StopClimbing();
 #pragma endregion
 
+#pragma region 장전 
+public:
+    void StopReloading();
+#pragma endregion 
+
 public:
 #pragma region 손전등 시스템 FlashLight
     UPROPERTY(EditAnywhere, Category = "FlashLight")
@@ -245,6 +253,9 @@ public:
 
     UPROPERTY(BlueprintReadOnly, Category = "FlashLight")
     bool bIsUseFlashLight = false; 
+
+    UPROPERTY(EditDefaultsOnly, Category = "Flashlight")
+    TObjectPtr<UFlashLightData> DefaultFlashlightData;
 #pragma endregion 
 
 public:
@@ -330,4 +341,14 @@ public:
     UPROPERTY()
     UHealthVignetteWidget* HealthVignetteWidget;
 #pragma endregion 
+
+private:
+    // 현재 상호작용 중인 문 (노티파이에서 접근용)
+    UPROPERTY()
+    AActor* PendingDoorActor;
+
+public:
+    // 애니메이션 몽타주에서 호출할 함수 (BlueprintCallable로 설정하여 노티파이에서 호출 가능하게 함)
+    UFUNCTION(BlueprintCallable, Category = "Interaction")
+    void TriggerDoorOpen();
 };

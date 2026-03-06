@@ -62,30 +62,19 @@ void AProjectile::InitializeProjectile(UProjectileData* Data)
 FGameplayTag AProjectile::GetTagFromSurfaceType(EPhysicalSurface SurfaceType)
 {
     //Ex = SurfaceType1이 Metal이라면 "Surface.Metal" 태그를 반환
-    /*FName TagName = NAME_None;
+    FName TagName = TEXT("Surface.Default");
 
-    switch (SurfaceType)
-    {
-    case SurfaceType1: 
-        TagName = FName("Surface.Concrete"); 
-        break;
-    case SurfaceType2: 
-        TagName = FName("Surface.Metal"); 
-        break;
-    case SurfaceType3: 
-        TagName = FName("Surface.Wood"); 
-        break;
-    default:           
-        TagName = FName("Surface.Default"); 
-        break;
-    }
-    if (UGameplayTagsManager::Get().RequestGameplayTag(TagName, false).IsValid())
-    {
-        return FGameplayTag::RequestGameplayTag(TagName);
-    }
-    */
+    //Test용 
+    //switch (SurfaceType)
+    //{
+    //case SurfaceType1: TagName = TEXT("Surface.Concrete"); break; // 1층 바닥
+    //case SurfaceType2: TagName = TEXT("Surface.Metal"); break;    // 환풍구
+    //case SurfaceType3: TagName = TEXT("Surface.Marble"); break;   // 2층 바닥
+    //}
+
+    // Tag Manager 에서 이름을 찾아 반환
+   /* return UGameplayTagsManager::Get().RequestGameplayTag(TagName);*/
     return FGameplayTag::EmptyTag;
-
 }
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -94,30 +83,21 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 
     if (OtherActor && (OtherActor != GetOwner()))
     {
+        // Material 기반 태그 추출
+        EPhysicalSurface SurfaceType = UGameplayStatics::GetSurfaceType(Hit);
+        FGameplayTag SurfaceTag = GetTagFromSurfaceType(SurfaceType);
+
         // 기본 이펙트 설정 
         UNiagaraSystem* EffectToSpawn = ProjectileData->DefaultImpactEffect;
 
-        // 이펙트 결정
+        // Material 종류에 따른 이펙트 결정
+       /* if (SurfaceTag.IsValid() && ProjectileData->ImpactEffectTagMap.Contains(SurfaceTag))
+        {
+            EffectToSpawn = ProjectileData->ImpactEffectTagMap[SurfaceTag];
+        }*/
         if (OtherActor->ActorHasTag(TEXT("Zombie")))
         {
-            // 데이터 에셋의 ImpactEffect 사용
             EffectToSpawn = ProjectileData->ImpactEffect;
-        }
-        else
-        {
-            // 환경 -> 재질(Physics Material) 기반 이펙트 결정
-            //EPhysicalSurface SurfaceType = UGameplayStatics::GetSurfaceType(Hit);
-            //FGameplayTag SurfaceTag = GetTagFromSurfaceType(SurfaceType);
-
-            //if (SurfaceTag.IsValid() && ProjectileData->ImpactEffectTagMap.Contains(SurfaceTag))
-            //{
-            //    EffectToSpawn = ProjectileData->ImpactEffectTagMap[SurfaceTag];
-            //}
-            //else
-            //{
-            //    // 설정된 재질이 없으면 기본 이펙트 사용
-            //    EffectToSpawn = ProjectileData->DefaultImpactEffect;
-            //}
         }
 
         // 이펙트 생성
@@ -129,6 +109,18 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
                 Hit.ImpactPoint,
                 Hit.ImpactNormal.Rotation()
             );
+        }
+
+        // 사운드 결정 및 재생
+        USoundBase* SoundToPlay = ProjectileData->DefaultImpactSound;
+        if (SurfaceTag.IsValid() && ProjectileData->ImpactSoundTagMap.Contains(SurfaceTag))
+        {
+            SoundToPlay = ProjectileData->ImpactSoundTagMap[SurfaceTag];
+        }
+
+        if (SoundToPlay)
+        {
+            UGameplayStatics::PlaySoundAtLocation(this, SoundToPlay, Hit.ImpactPoint);
         }
 
         // 데미지 및 물리 정보 전달

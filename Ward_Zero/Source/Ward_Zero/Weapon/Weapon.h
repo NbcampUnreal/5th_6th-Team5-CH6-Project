@@ -12,6 +12,7 @@ class USoundBase;
 class AMagazineBase;
 class UCurveVector;
 class AProjectile;
+class USpotLightComponent;
 
 UCLASS()
 class WARD_ZERO_API AWeapon : public AActor
@@ -93,7 +94,13 @@ public:
 
 #pragma region 컴포넌트 (Components)
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Components")
-    TObjectPtr<USkeletalMeshComponent> WeaponMesh; //탄창 엑터 클래스 
+    TObjectPtr<USkeletalMeshComponent> WeaponMesh; //SMG 매시 
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Components")
+    TObjectPtr<UStaticMeshComponent> SMGLight;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Components")
+    TObjectPtr<USpotLightComponent> SMGSpotLight;
 
     UPROPERTY(EditDefaultsOnly, Category = "Weapon|Reload")
     TSubclassOf<AMagazineBase> MagazineClass; //실제 탄창 

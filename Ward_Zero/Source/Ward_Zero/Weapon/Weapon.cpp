@@ -12,6 +12,7 @@
 #include "Weapon/Data/WeaponData.h"
 #include "Weapon/Data/ProjectileData.h"
 #include "Weapon/Projectile/Projectile.h"
+#include "Components/SpotLightComponent.h"
 //#include "DrawDebugHelpers.h"
 
 AWeapon::AWeapon()
@@ -25,6 +26,23 @@ AWeapon::AWeapon()
 
     GunMagMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GunMagMesh"));
     GunMagMesh->SetupAttachment(WeaponMesh, TEXT("MagSocket"));
+
+    SMGLight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SMGLight"));
+    SMGLight->SetupAttachment(RootComponent);
+    SMGLight->SetRelativeLocation(FVector(-31.2f, 0.95f, 2.8f));
+    SMGLight->SetRelativeRotation(FRotator(0.0f, 0.0f, 180.0f));
+    SMGLight->SetRelativeScale3D(FVector(0.02f, 0.005f, 0.005f));
+
+    SMGSpotLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("SMGSpotLight"));
+    SMGSpotLight->SetupAttachment(SMGLight);
+
+    SMGSpotLight->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
+    SMGSpotLight->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f)); // 실린더 방향에 맞춰 정렬
+
+    // 빛 설정
+    SMGSpotLight->Intensity = 5000.f;      // 밝기
+    SMGSpotLight->OuterConeAngle = 30.f;  // 퍼지는 각도
+    SMGSpotLight->SetVisibility(false);   
 }
 
 void AWeapon::Tick(float DeltaTime)
@@ -71,6 +89,11 @@ void AWeapon::BeginPlay()
         CurrentAmmo = MaxCapacity;
         Damage = WeaponData->Damage;   
         FireRate = WeaponData->FireRate;
+    }
+
+    if (SMGLight)
+    {
+        UMaterialInstanceDynamic* DynMat = SMGLight->CreateAndSetMaterialInstanceDynamic(0);
     }
 }
 
@@ -137,6 +160,18 @@ void AWeapon::Fire(const FVector& HitTarget)
             WeaponData->MuzzleFlash,
             WeaponMesh,
             TEXT("Muzzle"), 
+            FVector::ZeroVector,
+            FRotator::ZeroRotator,
+            EAttachLocation::SnapToTarget, true
+        );
+    }
+
+    if (WeaponData->ShellEjectEffect)
+    {
+        UNiagaraFunctionLibrary::SpawnSystemAttached(
+            WeaponData->ShellEjectEffect,
+            WeaponMesh,
+            TEXT("ShellEject"), // 무기 메시에 미리 만들어둔 소켓 이름
             FVector::ZeroVector,
             FRotator::ZeroRotator,
             EAttachLocation::SnapToTarget, true

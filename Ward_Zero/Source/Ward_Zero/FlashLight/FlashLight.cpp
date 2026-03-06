@@ -1,5 +1,6 @@
 ﻿#include "FlashLight/FlashLight.h"
 #include "Components/SpotLightComponent.h"
+#include "FlashLight/Data/FlashLightData.h"
 
 AFlashLight::AFlashLight()
 {
@@ -12,10 +13,18 @@ AFlashLight::AFlashLight()
 
 	SpotLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("SpotLight"));
 	SpotLight->SetupAttachment(RootComponent);
+
 	SpotLight->SetRelativeLocation(FVector(0.0f, 10.0f, 0.0f));
 	SpotLight->SetRelativeRotation(FRotator(0.0f, 0.0f, 90.0f));
-	SpotLight->Intensity = LightIntensity;// 밝기 
-	SpotLight->OuterConeAngle = LightOuterConeAngle; // 각도
-	SpotLight->AttenuationRadius = LightAttenuationRadius;
+}
+
+void AFlashLight::InitializeLight(UFlashLightData* Data)
+{
+	if (Data && SpotLight)
+	{
+		SpotLight->Intensity = Data->Intensity;
+		SpotLight->OuterConeAngle = Data->OuterConeAngle;
+		SpotLight->AttenuationRadius = Data->AttenuationRadius;
+	}
 }
 

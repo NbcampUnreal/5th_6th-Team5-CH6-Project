@@ -47,4 +47,10 @@ public:
     // 매핑되지 않은 재질을 맞췄을 때 나올 기본 이펙트
     UPROPERTY(EditAnywhere, Category = "Visual|Impact")
     TObjectPtr<UNiagaraSystem> DefaultImpactEffect;
+
+    UPROPERTY(EditAnywhere, Category = "Sound|Impact")
+    TMap<FGameplayTag, TObjectPtr<USoundBase>> ImpactSoundTagMap;
+
+    UPROPERTY(EditAnywhere, Category = "Sound|Impact")
+    TObjectPtr<USoundBase> DefaultImpactSound;
 };
