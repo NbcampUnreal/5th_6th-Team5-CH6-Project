@@ -48,7 +48,7 @@ void AAmmoBox_DH::BeginPlay()
 	}
 }
 
-void AAmmoBox_DH::OnIneracted(APrototypeCharacter* Character)
+void AAmmoBox_DH::OnIneracted_Implementation(APrototypeCharacter* Character)
 {
 	if (!Character) return;
 
@@ -71,7 +71,7 @@ void AAmmoBox_DH::OnIneracted(APrototypeCharacter* Character)
 	}
 }
 
-void AAmmoBox_DH::OnIneractionRangeEntered()
+void AAmmoBox_DH::OnIneractionRangeEntered_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Entered Ammo Range"));
 	if (InteractWidget)
@@ -80,7 +80,7 @@ void AAmmoBox_DH::OnIneractionRangeEntered()
 	}
 }
 
-void AAmmoBox_DH::OnIneractionRangeExited()
+void AAmmoBox_DH::OnIneractionRangeExited_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Exited Ammo Range"));
 	if (InteractWidget)

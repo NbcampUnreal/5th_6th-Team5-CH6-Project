@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
@@ -26,9 +26,18 @@ class WARD_ZERO_API IInteractionBase
 
 public:
 
-	virtual void OnIneractionRangeEntered() = 0;
-	virtual void OnIneractionRangeExited() = 0;
-	virtual void OnIneracted(APrototypeCharacter* Character) = 0;
-	virtual void HandleInteraction(APrototypeCharacter* Character) = 0;
-	virtual bool CanBeInteracted() const = 0;
+	UFUNCTION(BlueprintNativeEvent)
+	void OnIneractionRangeEntered();
+
+	UFUNCTION(BlueprintNativeEvent)
+	void OnIneractionRangeExited();
+
+	UFUNCTION(BlueprintNativeEvent)
+	void OnIneracted(APrototypeCharacter* Character);
+
+	UFUNCTION(BlueprintNativeEvent)
+	void HandleInteraction(APrototypeCharacter* Character);
+
+	UFUNCTION(BlueprintNativeEvent)
+	bool CanBeInteracted() const;
 };
