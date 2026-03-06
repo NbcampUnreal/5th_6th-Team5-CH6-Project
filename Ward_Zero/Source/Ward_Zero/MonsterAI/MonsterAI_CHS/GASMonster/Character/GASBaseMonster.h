@@ -10,6 +10,7 @@
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAttributeChangedDelegate,float,CurrentValue,float,MaxValue);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeathDelegate);
 
 UCLASS()
 class WARD_ZERO_API AGASBaseMonster : public ACharacter, public IAbilitySystemInterface
@@ -49,6 +50,9 @@ protected:
 public:
 	UPROPERTY(BlueprintAssignable)
 	FOnAttributeChangedDelegate OnHealthChanged;
+	
+	UPROPERTY(BlueprintAssignable)
+	FOnDeathDelegate OnDeathDelegate;
 	
 	UPROPERTY(EditDefaultsOnly,Category= "GAS|Effect")
 	TSubclassOf<class UGameplayEffect> ReceiveDamageEffect;

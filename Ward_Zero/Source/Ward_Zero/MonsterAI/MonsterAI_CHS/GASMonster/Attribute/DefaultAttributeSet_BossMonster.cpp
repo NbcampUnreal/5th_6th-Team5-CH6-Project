@@ -30,7 +30,6 @@ void UDefaultAttributeSet_BossMonster::PostGameplayEffectExecute(const struct FG
 			{
 				if (AGASBaseMonster* Enemy = Cast<AGASBaseMonster>(Data.Target.GetAvatarActor()))
 				{
-						
 					Enemy->Die();
 				}
 			}
