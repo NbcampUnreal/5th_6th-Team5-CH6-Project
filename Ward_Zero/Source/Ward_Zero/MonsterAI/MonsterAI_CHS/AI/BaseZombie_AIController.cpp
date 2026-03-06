@@ -70,7 +70,10 @@ void ABaseZombie_AIController::HandleMainStateChange(EMonsterMainState NewState)
 
 void ABaseZombie_AIController::HandleSubStateChange(EMonsterSubState NewState)
 {
-	GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::SubState,static_cast<uint8>(NewState));
+	if (GetBlackboardComponent())
+	{
+		GetBlackboardComponent()->SetValueAsEnum(WZAIKeys::SubState,static_cast<uint8>(NewState));
+	}
 }
 
 void ABaseZombie_AIController::OnPossess(APawn* InPawn)
@@ -80,17 +83,17 @@ void ABaseZombie_AIController::OnPossess(APawn* InPawn)
 	{
 		if (BT_BaseZombie != nullptr)
 		{
-			RunBehaviorTree(BT_BaseZombie);
+			//RunBehaviorTree(BT_BaseZombie);
 		}
 		StatusComp = Zombie->FindComponentByClass<UStatusComponent>();
 		
 		if (StatusComp)
 		{
-			UpdatePerceptionConfig();
+			//UpdatePerceptionConfig();
 			StatusComp->OnMainStateChanged.AddDynamic(this, &ABaseZombie_AIController::HandleMainStateChange);
 			StatusComp->OnSubStateChanged.AddDynamic(this, &ABaseZombie_AIController::HandleSubStateChange);
 			UE_LOG(LogTemp,Warning,TEXT("call SetMainState"));
-			StatusComp->SetMainState(StatusComp->GetStartState());
+			//StatusComp->SetMainState(StatusComp->GetStartState());
 			
 		}
 	}
@@ -219,6 +222,24 @@ void ABaseZombie_AIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimu
 		}
 	}
 	
+}
+
+bool ABaseZombie_AIController::Activate()
+{
+	if (BT_BaseZombie != nullptr)
+	{
+		RunBehaviorTree(BT_BaseZombie);
+		if (StatusComp)
+		{
+			UpdatePerceptionConfig();
+			StatusComp->SetMainState(StatusComp->GetStartState());
+			return true;
+		}else
+		{
+			return false;
+		}
+	}
+	return false;
 }
 
 void ABaseZombie_AIController::Tick(float DeltaTime)

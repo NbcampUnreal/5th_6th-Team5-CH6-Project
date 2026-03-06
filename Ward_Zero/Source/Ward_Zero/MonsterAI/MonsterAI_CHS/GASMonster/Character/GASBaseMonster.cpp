@@ -29,26 +29,22 @@ class UAbilitySystemComponent* AGASBaseMonster::GetAbilitySystemComponent() cons
 
 void AGASBaseMonster::Die()
 {
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	
-	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
-	GetMesh()->SetSimulatePhysics(true);
-	
-	if (AbilitySystemComponent)
-	{
-		AbilitySystemComponent->CancelAbilities();
-	}
 	FTimerHandle TimerHandle;
     
 	TWeakObjectPtr<AGASBaseMonster> WeakThis(this);
     
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateLambda([WeakThis]()
 	{
-		if (WeakThis.IsValid() && WeakThis->GetMesh())
+		if (WeakThis.IsValid() && WeakThis->GetMesh() && WeakThis->AbilitySystemComponent)
 		{
-			WeakThis->GetMesh()->SetSimulatePhysics(false);
+			WeakThis->AbilitySystemComponent->CancelAbilities();
+			WeakThis->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			WeakThis->GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+			WeakThis->GetMesh()->SetSimulatePhysics(true);
 		}
-	}), 3.0f, false);
+	}), 2.0f, false);
+	
+	OnDeathDelegate.Broadcast();
 	
 }
 

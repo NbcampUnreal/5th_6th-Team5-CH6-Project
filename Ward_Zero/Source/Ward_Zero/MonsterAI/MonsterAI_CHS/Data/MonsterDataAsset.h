@@ -187,6 +187,10 @@ class WARD_ZERO_API UMonsterDataAsset : public UPrimaryDataAsset
 	
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	TObjectPtr<USoundBase> BulletHitSound;
+	
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	TObjectPtr<USoundBase> DeathSound;
+	
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	TObjectPtr<USoundBase> WalkSound;
 	UPROPERTY(EditAnywhere, Category = "Sound")

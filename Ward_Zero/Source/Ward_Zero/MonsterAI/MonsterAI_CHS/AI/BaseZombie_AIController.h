@@ -24,7 +24,7 @@ public:
 	UFUNCTION()
 	void HandleInteractionRequest(FGameplayTag InteractingTag,const FVector& Destination, AActor* Interactor);
 	
-	
+	bool Activate();
 protected:
 	ABaseZombie_AIController();
 	
@@ -48,6 +48,8 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Perception")
 	class UAIPerceptionComponent* AIPerceptionComp;
+	
+	
 	
 	
 	virtual void Tick(float DeltaTime) override;
