@@ -5,6 +5,7 @@
 #include "FlashLight.generated.h"
 
 class USpotLightComponent;
+class UFlashLightData;
 
 UCLASS()
 class WARD_ZERO_API AFlashLight : public AActor
@@ -32,4 +33,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flashlight|LightSettings", meta = (ClampMin = "0.0"))
 	float LightAttenuationRadius = 200.0f; // 빛이 도달하는 거리 
+
+public:
+	void InitializeLight(UFlashLightData* Data);
 };

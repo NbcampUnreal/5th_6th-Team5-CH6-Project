@@ -110,6 +110,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	bool bIsSMGEquipped;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Animation")
+	bool bIsInteracting;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	float AimPitch;
 
@@ -167,25 +170,6 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement|Pivot")
 	FVector LocalVelocity2D;
 
-	// Distance Matching 노드용 캐시 데이터
-	UPROPERTY(BlueprintReadOnly, Category = "Movement|Cached")
-	FVector CachedLastUpdateVelocity;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Movement|Cached")
-	bool bCachedUseSeparateBrakingFriction;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Movement|Cached")
-	float CachedBrakingFriction;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Movement|Cached")
-	float CachedGroundFriction;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Movement|Cached")
-	float CachedBrakingFrictionFactor;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Movement|Cached")
-	float CachedBrakingDecelerationWalking;
-
 public:
 	UPROPERTY(BlueprintReadOnly, Category = "Weapon | Mesh")
 	USkeletalMeshComponent* WeaponMesh;
@@ -226,4 +210,12 @@ private:
 	void UpdateOrientationWarping(float DeltaSeconds);
 	void UpdateMovementDirection();
 	void UpdateSMGHandIK(float DeltaSeconds);
+
+public:
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	float FallingTime;
+
+public:
+	UFUNCTION()
+	void AnimNotify_DoorTrigger();
 };

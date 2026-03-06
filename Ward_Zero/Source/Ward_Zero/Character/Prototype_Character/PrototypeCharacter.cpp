@@ -27,6 +27,8 @@
 #include "Character/Data/CharacterAnimData.h"
 #include "UI_KWJ/Health/HealthVignetteWidget.h"
 #include "UI_KWJ/GameOver/GameOverSubsystem.h"
+#include "Components/SpotLightComponent.h"
+#include "FlashLight/Data/FlashLightData.h"
 
 APrototypeCharacter::APrototypeCharacter()
 {
@@ -464,6 +466,11 @@ float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 		// 몽타주 재생 전 조준/퀵턴 강제 종료 (애니메이션 꼬임 방지)
 		if (bIsQuickTurning) StopQuickTurn();
 
+		if (CombatComponent && CombatComponent->GetEquippedWeapon())
+		{
+			CombatComponent->GetEquippedWeapon()->SetIsReloading(false);
+		}
+
 		PlayHitReaction(ToAttackerDir);
 	}
 
@@ -473,12 +480,27 @@ float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 // StatusComponent에서 사망 신호가 오면 실행됨
 void APrototypeCharacter::OnDeath()
 {
-	// 래그돌 처리 및 입력 차단
+	// 상태 변수 초기화
+	bIsRunning = false;
+	bIsQuickTurning = false;
+	if (CombatComponent)
+	{
+		CombatComponent->StopFire();
+		CombatComponent->StopAiming();
+	}
+
+	// 입력 컴포넌트 비활성화
 	if (APlayerController* PC = Cast<APlayerController>(Controller))
 	{
 		DisableInput(PC);
+
+		// 마우스 커서 표시 (사망 화면 클릭용)
+		PC->SetShowMouseCursor(true);
+		FInputModeUIOnly InputMode;
+		PC->SetInputMode(InputMode);
 	}
 
+	// 물리 및 충돌 설정
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
 	GetMesh()->SetSimulatePhysics(true);
@@ -580,27 +602,52 @@ void APrototypeCharacter::ProcessMovementTurn(FVector2D MovementVector)
 
 void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
 {
+	if (!AnimData || !CombatComponent) return;
+
 	EPlayerHitDirection HitDir = GetHitDirection(ToAttackerDir);
+	int32 WeaponIdx = CombatComponent->GetCurrentWeaponIndex();
+	bool bIsDrawn = CombatComponent->IsWeaponDrawn();
 
-	if (!AnimData) return;
+	TMap<EPlayerHitDirection, TObjectPtr<UAnimMontage>>* TargetMap = nullptr;
 
-	UAnimMontage* MontageToPlay = nullptr;
-
-	// 해당 방향 몽타주가 있는지 확인
-	if (AnimData->HitMontages.Contains(HitDir))
-	{
-		MontageToPlay = AnimData->HitMontages[HitDir];
+	// 무기 타입에 따른 맵 선택 (이전 답변 드린 로직)
+	if (!bIsDrawn) {
+		TargetMap = &AnimData->UnarmedHitMontages;
+	}
+	else {
+		switch (WeaponIdx) {
+		case 1: TargetMap = &AnimData->PistolHitMontages; break;
+		case 2: TargetMap = &AnimData->SMGHitMontages; break;
+		default: TargetMap = &AnimData->UnarmedHitMontages; break;
+		}
 	}
 
-	// 만약 Right/Left가 없으면 Front를 대신 사용
-	if (!MontageToPlay && AnimData->HitMontages.Contains(EPlayerHitDirection::Front))
+	if (TargetMap)
 	{
-		MontageToPlay = AnimData->HitMontages[EPlayerHitDirection::Front];
-	}
+		UAnimMontage* MontageToPlay = nullptr;
 
-	if (MontageToPlay)
-	{
-		PlayAnimMontage(MontageToPlay);
+		// 해당 방향 히트 리액션 데이터가 있는지 확인
+		if (TargetMap->Contains(HitDir))
+		{
+			MontageToPlay = (*TargetMap)[HitDir];
+		}
+
+		// 비어있으면 Front Montage로 대체 
+		if (!MontageToPlay && TargetMap->Contains(EPlayerHitDirection::Front))
+		{
+			MontageToPlay = (*TargetMap)[EPlayerHitDirection::Front];
+		}
+
+		if (MontageToPlay)
+		{
+			UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
+			if (AnimInst)
+			{
+				// 이미 피격 애니메이션 중이라면 끊고 새로 재생 
+				// 현재 재생 중인 몽타주가 피격 몽타주라면 즉시 중단
+				AnimInst->Montage_Play(MontageToPlay);
+			}
+		}
 	}
 }
 
@@ -634,10 +681,9 @@ void APrototypeCharacter::Move(const FInputActionValue& Value)
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	if (Controller == nullptr || bIsQuickTurning) return;
 
-	if (bIsClimbing)
+	if (GetIsReloading())
 	{
-		AddMovementInput(FVector::UpVector, MovementVector.Y);
-		return;
+		MovementVector *= 0.5f;
 	}
 
 	const FRotator Rotation = Controller->GetControlRotation();
@@ -664,16 +710,28 @@ void APrototypeCharacter::Look(const FInputActionValue& Value)
 
 void APrototypeCharacter::ToggleCrouch(const FInputActionValue& Value)
 {
-	if (bIsRunning || bIsClimbing) return;
-	if (bIsCrouched) UnCrouch();
-	else Crouch();
+	if (bIsRunning) return;
+
+	if (bIsCrouched && GetIsReloading())
+	{
+		return;
+	}
+
+	if (bIsCrouched)
+	{
+		UnCrouch();
+	}
+	else
+	{
+		Crouch();
+	}
 }
 
 void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 {
 	if (CombatComponent && CombatComponent->IsAiming()) return;
 
-	if (bIsCrouched || bIsClimbing) return;
+	if (bIsCrouched && GetIsReloading()) return;
 
 	if (StatusComponent && !StatusComponent->CanSprint()) return;
 
@@ -727,6 +785,18 @@ void APrototypeCharacter::CheckRunState()
 	}
 }
 
+void APrototypeCharacter::TriggerDoorOpen()
+{
+	if (PendingDoorActor)
+	{
+		if (IInteractionBase* InteractInterface = Cast<IInteractionBase>(PendingDoorActor))
+		{
+			InteractInterface->OnIneracted(this);
+		}
+		PendingDoorActor = nullptr;
+	}
+}
+
 void APrototypeCharacter::Reload(const FInputActionValue& Value)
 {
 	if (CombatComponent)
@@ -737,8 +807,6 @@ void APrototypeCharacter::Reload(const FInputActionValue& Value)
 
 void APrototypeCharacter::ToggleFlashLight(const FInputActionValue& Value)
 {
-	if (GetIsSMGEquipped()) return;
-
 	bIsUseFlashLight = !bIsUseFlashLight;
 	
 	ToggleLight(bIsUseFlashLight);
@@ -746,11 +814,12 @@ void APrototypeCharacter::ToggleFlashLight(const FInputActionValue& Value)
 
 void APrototypeCharacter::Interact(const FInputActionValue& Value)
 {
-	if (InteractionComp)
-	{
-		InteractionComp->TryInteract();
-	}
-	TArray<AActor*> OverlappedActors;
+	//if (InteractionComp)
+	//{
+	//	InteractionComp->TryInteract();
+	//}
+
+	/*TArray<AActor*> OverlappedActors;
 	GetCapsuleComponent()->GetOverlappingActors(OverlappedActors);
 
 	for (AActor* OverlappedActor : OverlappedActors)
@@ -763,7 +832,51 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 				break;
 			}
 		}
+	}*/
+
+	FVector NewLocation = GetActorLocation();
+	NewLocation.Z += 50.0f;
+
+	FVector Start = NewLocation;
+	FVector End = Start + this->GetActorForwardVector() * 100.f;
+
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		Hit,
+		Start,
+		End,
+		ECC_Visibility,
+		Params
+	);
+
+	//DrawDebugLine(
+	//	GetWorld(),
+	//	Start,
+	//	End,
+	//	FColor::Red,
+	//	false,
+	//	10.0f,
+	//	0,
+	//	2.0f
+	//);
+
+	if (!bHit) return;
+
+	AActor* HitActor = Hit.GetActor();
+
+	if (!HitActor) return;
+
+	if (HitActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+	{
+		if (IInteractionBase::Execute_CanBeInteracted(HitActor))
+		{
+			IInteractionBase::Execute_OnIneracted(HitActor, this);
+		}
 	}
+
 }
 
 void APrototypeCharacter::StartClimbing(ALadder* Ladder)
@@ -779,20 +892,57 @@ void APrototypeCharacter::StopClimbing()
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
 
+void APrototypeCharacter::StopReloading()
+{
+	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
+	if (AnimInst && CombatComponent)
+	{
+		// 현재 재생 중인 장전 관련 몽타주 모두 중지 (0.2초 블렌드 아웃)
+		AnimInst->Montage_Stop(0.2f, CombatComponent->SMG_ReloadSet.CrouchReload);
+		AnimInst->Montage_Stop(0.2f, CombatComponent->SMG_ReloadSet.CrouchAimReload);
+		AnimInst->Montage_Stop(0.2f, CombatComponent->Pistol_ReloadMontage);
+
+		// 무기 내부의 장전 상태값도 반드시 초기화
+		if (CombatComponent->GetEquippedWeapon())
+		{
+			CombatComponent->GetEquippedWeapon()->SetIsReloading(false);
+		}
+
+		// (선택 사항) 만약 손에 탄창 액터를 생성했다면 여기서 Destroy 처리
+		// CombatComponent->GetEquippedWeapon()->ShowMagazine(); // 탄창 복구 노티파이 강제 실행 효과
+	}
+}
+
 void APrototypeCharacter::EquipFlashLight()
 {
 	if (FlashLightClass)
 	{
 		FlashLight = GetWorld()->SpawnActor<AFlashLight>(FlashLightClass);
 
-		// 무기장착여부에 따른 소켓 결정 
-		FName SocketName = GetIsPistolEquipped() ? TEXT("FlashLightSocket_Pistol") : TEXT("FlashLightSocket_Normal");
+		// 기본 = 캐릭터 메쉬 소켓에 부착
+		USceneComponent* AttachParent = GetMesh();
+		FName SocketName = TEXT("FlashLightSocket_Normal");
 
-		// 손전등 부착 
-		FlashLight->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
-		FlashLight->SetActorEnableCollision(false);
+		if (GetIsSMGEquipped())
+		{
+			// SMG는 총기 메쉬 자체에 부착 
+			AttachParent = GetEquippedWeaponMesh();
+			SocketName = TEXT("FlashLightSocket_SMG");
+		}
+		else if (GetIsPistolEquipped())
+		{
+			SocketName = TEXT("FlashLightSocket_Pistol");
+		}
+
+		// 최종 부착
+		if (AttachParent)
+		{
+			FlashLight->AttachToComponent(AttachParent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
+			FlashLight->SetActorEnableCollision(false);
+		}
 	}
 
+	// 애니메이션 재생 
 	UPlayerAnimInstance* AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
 	if (AnimInst)
 	{
@@ -803,27 +953,66 @@ void APrototypeCharacter::EquipFlashLight()
 
 void APrototypeCharacter::ToggleLight(bool IsLight)
 {
-	UPlayerAnimInstance* AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
-	if (!AnimInst) return;
+	AWeapon* CurrentWeapon = GetEquippedWeapon();
 
-	//손전등 ON 
-	if (IsLight)
+	// 무기 별 Light Data 결정 
+	UFlashLightData* TargetData = nullptr;
+	if (CurrentWeapon && CurrentWeapon->WeaponData && CurrentWeapon->WeaponData->FlashlightSettings)
 	{
-		if (FlashLight == nullptr)
-		{
-			EquipFlashLight(); 
-		}
-	}//손전등 OFF
+		TargetData = CurrentWeapon->WeaponData->FlashlightSettings;
+	}
 	else
 	{
-		if (FlashLight)
+		TargetData = DefaultFlashlightData; // Unaremd Light Data
+	}
+	// 데이터가 아예 없을 때
+	float FinalIntensity = TargetData ? TargetData->Intensity : 5000.0f;
+	float FinalRadius = TargetData ? TargetData->AttenuationRadius : 2000.0f;
+
+	// SMG
+	if (GetIsSMGEquipped() && CurrentWeapon)
+	{
+		if (CurrentWeapon->SMGSpotLight)
 		{
-			PlayAnimMontage(LowerLight); // 집어넣는 동작 재생
+			CurrentWeapon->SMGSpotLight->Intensity = FinalIntensity;
+			CurrentWeapon->SMGSpotLight->AttenuationRadius = FinalRadius;
+			if (TargetData) CurrentWeapon->SMGSpotLight->OuterConeAngle = TargetData->OuterConeAngle;
+			CurrentWeapon->SMGSpotLight->SetVisibility(IsLight);
+		}
+
+		// 머티리얼 발광 강도 조절
+		if (CurrentWeapon->SMGLight)
+		{
+			UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(CurrentWeapon->SMGLight->GetMaterial(0));
+			if (DynMat)
+			{
+				float EmissiveVal = IsLight ? (TargetData ? TargetData->EmissiveIntensity : 50.f) : 0.0f;
+				DynMat->SetScalarParameterValue(TEXT("Intensity"), EmissiveVal);
+			}
+		}
+	}
+	// Unarmed & Pistol 손전등 엑터 소환 
+	else
+	{
+		if (IsLight)
+		{
+			if (FlashLight == nullptr)
+			{
+				EquipFlashLight();
+				if (FlashLight && TargetData)
+				{
+					FlashLight->InitializeLight(TargetData);
+				}
+			}
+			if (!CombatComponent->IsWeaponDrawn()) PlayAnimMontage(RaiseLight);
+		}
+		else if (FlashLight)
+		{
+			if (!CombatComponent->IsWeaponDrawn()) PlayAnimMontage(LowerLight);
 			FlashLight->Destroy();
 			FlashLight = nullptr;
 		}
 	}
-
 }
 
 bool APrototypeCharacter::GetIsUseFlashLight() const
@@ -834,6 +1023,8 @@ bool APrototypeCharacter::GetIsUseFlashLight() const
 void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 {
 	if (!CombatComponent || !CombatComponent->GetEquippedWeapon()) return;
+
+	if (GetIsReloading()) return;
 
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
 	if (!AnimInst) return;
@@ -1075,6 +1266,21 @@ bool APrototypeCharacter::IsFiring() const
 	return CombatComponent ? CombatComponent->IsFiring() : false;
 }
 
+void APrototypeCharacter::OnDoorTriggered()
+{
+	return TriggerDoorOpen(); 
+}
+
+bool APrototypeCharacter::IsInteracting() const
+{
+	if (GetMesh() && GetMesh()->GetAnimInstance())
+	{
+		// OpenDoor Montage 재생중인지 
+		return AnimData && GetMesh()->GetAnimInstance()->Montage_IsPlaying(AnimData->OpenDoorMontage);
+	}
+	return false;
+}
+
 void APrototypeCharacter::PlayFootstepSound(FName FootBoneName)
 {
 	FVector FootLocation = GetMesh()->GetSocketLocation(FootBoneName);
@@ -1110,6 +1316,7 @@ void APrototypeCharacter::PlayFootstepSound(FName FootBoneName)
 
 void APrototypeCharacter::SelectWeapon1(const FInputActionValue& Value)
 {
+	if (GetIsReloading()) return;
 	if (!CombatComponent) return;
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
 	if (!AnimInst) return;
@@ -1139,6 +1346,7 @@ void APrototypeCharacter::SelectWeapon1(const FInputActionValue& Value)
 
 void APrototypeCharacter::SelectWeapon2(const FInputActionValue& Value)
 {
+	if (GetIsReloading()) return;
 	if (!CombatComponent) return;
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
 	if (!AnimInst) return;

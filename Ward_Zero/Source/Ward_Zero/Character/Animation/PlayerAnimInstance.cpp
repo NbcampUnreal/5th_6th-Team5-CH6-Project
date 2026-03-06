@@ -40,6 +40,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsFiring = AnimInterface->IsFiring();
 		AimPitch = AnimInterface->GetAimPitch();
 		AimYaw = AnimInterface->GetAimYaw();
+		bIsInteracting = AnimInterface->IsInteracting();
 
 		USkeletalMeshComponent* TempMesh = AnimInterface->GetEquippedWeaponMesh();
 		WeaponMesh = IsValid(TempMesh) ? TempMesh : nullptr;
@@ -48,6 +49,15 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		EquippedWeapon = IsValid(TempWeapon) ? TempWeapon : nullptr;
 
 		bIsSMGEquipped = AnimInterface->GetIsSMGEquipped();
+
+		if (bIsReloading)
+		{
+			AimPitch = FMath::FInterpTo(AimPitch, 0.0f, DeltaSeconds, 5.0f);
+		}
+		else
+		{
+			AimPitch = AnimInterface->GetAimPitch();
+		}
 	}
 
 	float CurveValue = GetCurveValue(TEXT("HandIKLeftAlpha"));
@@ -63,7 +73,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	{
 		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, 0.0f, DeltaSeconds, 20.0f);
 	}
-
+	// Pistol IK 조건  
 	bool bPistolIKCondition =
 		bIsPistolEquipped &&
 		!bIsRunning &&
@@ -72,36 +82,20 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		!bIsReloading &&
 		!bIsUseFlashLight &&
 		!bIsSMGEquipped &&
-		!bIsFiring;
+		!bIsFiring &&
+		!bIsInteracting;
 
 	float TargetHandIKAlpha = bPistolIKCondition ? 1.0f : 0.0f;
 	PistolIKAlpha = FMath::FInterpTo(PistolIKAlpha, TargetHandIKAlpha, DeltaSeconds, 10.0f);
 
-	UpdateMovementCalculations(DeltaSeconds);
+	// SMG IK 조건 
+	bool bIKCondition =
+		bIsSMGEquipped &&
+		!bIsReloading &&
+		!bIsEquipping &&
+		!bIsQuickTurning &&
+		!bIsInteracting;
 
-	// 엔진 물리 데이터 동기화 
-	Velocity = Character->GetVelocity();
-	Acceleration = MovementComp->GetCurrentAcceleration();
-
-	// Distance Matching 노드를 위한 무브먼트 데이터 캐싱
-	CachedLastUpdateVelocity = MovementComp->GetLastUpdateVelocity();
-	bCachedUseSeparateBrakingFriction = MovementComp->bUseSeparateBrakingFriction;
-	CachedBrakingFriction = MovementComp->BrakingFriction;
-	CachedGroundFriction = MovementComp->GroundFriction;
-	CachedBrakingFrictionFactor = MovementComp->BrakingFrictionFactor;
-	CachedBrakingDecelerationWalking = MovementComp->BrakingDecelerationWalking;
-
-	//Unarmed FlashLight 
-	float TargetAlpha = (bIsUseFlashLight && !bIsSMGEquipped) ? 1.0f : 0.0f;
-	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetAlpha, DeltaSeconds, 5.0f);
-
-	//Pistol FlashLight 
-	float TargetIKAlpha = (bIsUseFlashLight && bIsPistolEquipped && !bIsEquipping
-		&& !bIsRunning && !bIsSMGEquipped) ? 1.0f : 0.0f;
-	FlashlightIKAlpha = FMath::FInterpTo(FlashlightIKAlpha, TargetIKAlpha, DeltaSeconds, 10.0f);
-
-	//SMG IK Alpha 
-	bool bIKCondition = bIsSMGEquipped && !bIsReloading && !bIsEquipping && !bIsQuickTurning;
 	float TargetSMGAlpha = bIKCondition ? 1.0f : 0.0f;
 
 	if (bIsEquipping || !bIsSMGEquipped)
@@ -113,6 +107,21 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		float InterpSpeed = bIKCondition ? 5.0f : 20.0f;
 		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, TargetSMGAlpha, DeltaSeconds, InterpSpeed);
 	}
+
+	UpdateMovementCalculations(DeltaSeconds);
+
+	// 엔진 물리 데이터 동기화 
+	Velocity = Character->GetVelocity();
+	Acceleration = MovementComp->GetCurrentAcceleration();
+
+	//Unarmed FlashLight IK Alpha
+	float TargetAlpha = (bIsUseFlashLight && !bIsSMGEquipped) ? 1.0f : 0.0f;
+	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetAlpha, DeltaSeconds, 5.0f);
+
+	//Pistol FlashLight IK Alpha
+	float TargetIKAlpha = (bIsUseFlashLight && bIsPistolEquipped && !bIsEquipping
+		&& !bIsRunning && !bIsSMGEquipped) ? 1.0f : 0.0f;
+	FlashlightIKAlpha = FMath::FInterpTo(FlashlightIKAlpha, TargetIKAlpha, DeltaSeconds, 10.0f);
 }
 
 void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
@@ -129,6 +138,8 @@ void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 void UPlayerAnimInstance::UpdateMovementCalculations(float DeltaSeconds)
 {
 	GroundSpeed = Velocity.Size2D();
+
+	float VerticalVelocity = Velocity.Z; //Z축이 음수면 떨어지는 상황 
 
 	float VelocityThreshold = bIsCrouching ? 12.0f : 5.0f;
 	bHasVelocity = GroundSpeed > VelocityThreshold;
@@ -152,6 +163,15 @@ void UPlayerAnimInstance::UpdateMovementCalculations(float DeltaSeconds)
 	const FRotator ControlRotationYaw = FRotator(0.f, Character->GetControlRotation().Yaw, 0.f);
 	BS_Direction = UKismetAnimationLibrary::CalculateDirection(DirectionVector, ControlRotationYaw);
 	LocomotionAngle = UKismetAnimationLibrary::CalculateDirection(DirectionVector, Character->GetActorRotation());
+
+	if (!bIsGround)
+	{
+		FallingTime += DeltaSeconds;
+	}
+	else
+	{
+		FallingTime = 0.0f;
+	}
 }
 
 void UPlayerAnimInstance::UpdatePivotLogic()
@@ -260,5 +280,13 @@ void UPlayerAnimInstance::UpdateSMGHandIK(float DeltaSeconds)
 		);
 
 		SMGHandIKTransform = FTransform(OutRotation, OutPosition, FVector(1.0f, 1.0f, 1.0f));
+	}
+}
+
+void UPlayerAnimInstance::AnimNotify_DoorTrigger()
+{
+	if (IPlayerAnimInterface* AnimInterface = Cast<IPlayerAnimInterface>(TryGetPawnOwner()))
+	{
+		AnimInterface->OnDoorTriggered();
 	}
 }

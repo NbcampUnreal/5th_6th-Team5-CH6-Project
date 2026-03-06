@@ -36,5 +36,6 @@ public:
 	virtual float GetAimPitch() const = 0;
 	virtual float GetAimYaw() const = 0;
 	virtual bool IsFiring() const = 0;
-
+	virtual void OnDoorTriggered() = 0;
+	virtual bool IsInteracting() const = 0;
 };
