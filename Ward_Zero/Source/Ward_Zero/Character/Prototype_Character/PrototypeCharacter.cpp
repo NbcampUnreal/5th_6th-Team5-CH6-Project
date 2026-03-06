@@ -676,10 +676,9 @@ void APrototypeCharacter::Move(const FInputActionValue& Value)
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	if (Controller == nullptr || bIsQuickTurning) return;
 
-	if (bIsClimbing)
+	if (GetIsReloading())
 	{
-		AddMovementInput(FVector::UpVector, MovementVector.Y);
-		return;
+		MovementVector *= 0.5f;
 	}
 
 	const FRotator Rotation = Controller->GetControlRotation();
@@ -706,15 +705,15 @@ void APrototypeCharacter::Look(const FInputActionValue& Value)
 
 void APrototypeCharacter::ToggleCrouch(const FInputActionValue& Value)
 {
-	if (bIsRunning || bIsClimbing) return;
+	if (bIsRunning) return;
+
+	if (bIsCrouched && GetIsReloading())
+	{
+		return;
+	}
+
 	if (bIsCrouched)
 	{
-		// 1. 일어서려고 할 때 (UnCrouch)
-		if (GetIsReloading())
-		{
-			// 장전 중이면 몽타주 중단
-			StopReloading();
-		}
 		UnCrouch();
 	}
 	else
@@ -727,7 +726,7 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 {
 	if (CombatComponent && CombatComponent->IsAiming()) return;
 
-	if (bIsCrouched || bIsClimbing) return;
+	if (bIsCrouched && GetIsReloading()) return;
 
 	if (StatusComponent && !StatusComponent->CanSprint()) return;
 
@@ -1310,6 +1309,7 @@ void APrototypeCharacter::PlayFootstepSound(FName FootBoneName)
 
 void APrototypeCharacter::SelectWeapon1(const FInputActionValue& Value)
 {
+	if (GetIsReloading()) return;
 	if (!CombatComponent) return;
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
 	if (!AnimInst) return;
@@ -1339,6 +1339,7 @@ void APrototypeCharacter::SelectWeapon1(const FInputActionValue& Value)
 
 void APrototypeCharacter::SelectWeapon2(const FInputActionValue& Value)
 {
+	if (GetIsReloading()) return;
 	if (!CombatComponent) return;
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
 	if (!AnimInst) return;
