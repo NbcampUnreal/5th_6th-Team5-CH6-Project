@@ -1075,7 +1075,16 @@ void APrototypeCharacter::Fire(const FInputActionValue& Value)
 {
 	if (CombatComponent)
 	{
-		CombatComponent->StartFire(FireMontage, GetMesh()->GetAnimInstance(), FireCameraShake);
+		AWeapon* CurrentWeapon = GetEquippedWeapon();
+		if (CurrentWeapon)
+		{
+			// 데이터 에셋에서 카메라 쉐이크를 가져와 사격 실행
+			CombatComponent->StartFire(
+				FireMontage,
+				GetMesh()->GetAnimInstance(),
+				CurrentWeapon->GetFireCameraShake() // 무기 데이터 에셋에 등록된 쉐이크 사용
+			);
+		}
 	}
 }
 

@@ -255,6 +255,26 @@ void AWeapon::SetIsReloading(bool reload)
     return;
 }
 
+UCurveVector* AWeapon::GetRecoilCurve() const
+{
+    return WeaponData ? WeaponData->RecoilCurve : nullptr;
+}
+
+float AWeapon::GetRecoilIntensity() const
+{
+    return WeaponData ? WeaponData->RecoilIntensity : 1.0f;
+}
+
+float AWeapon::GetRecoilRecoverySpeed() const
+{
+    return WeaponData ? WeaponData->RecoilRecoverySpeed : 5.0f;
+}
+
+TSubclassOf<UCameraShakeBase> AWeapon::GetFireCameraShake() const
+{
+    return WeaponData ? WeaponData->FireCameraShake : nullptr;
+}
+
 //기존 탄창이 사라질 때 노티파이 이벤트 
 void AWeapon::HideMagazine()
 {

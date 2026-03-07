@@ -7,6 +7,7 @@
 class UNiagaraSystem;
 class USoundBase;
 class UProjectileData;
+class UCurveVector;
 
 UCLASS(BlueprintType)
 class WARD_ZERO_API UWeaponData : public UPrimaryDataAsset
@@ -48,4 +49,20 @@ public:
 
     UPROPERTY(EditDefaultsOnly, Category = "Effects|Light")
     TObjectPtr<class UFlashLightData> FlashlightSettings;
+
+    // 반동 설정 (Recoil Settings) 
+    UPROPERTY(EditAnywhere, Category = "Recoil")
+    TObjectPtr<UCurveVector> RecoilCurve; 
+
+    UPROPERTY(EditAnywhere, Category = "Recoil")
+    float RecoilIntensity = 1.0f; 
+
+    UPROPERTY(EditAnywhere, Category = "Recoil")
+    float RecoilRecoverySpeed = 5.0f; 
+
+    UPROPERTY(EditAnywhere, Category = "Recoil")
+    float HorizontalRecoilRandomness = 0.5f; 
+
+    UPROPERTY(EditAnywhere, Category = "Recoil|Effects")
+    TSubclassOf<UCameraShakeBase> FireCameraShake;
 };
