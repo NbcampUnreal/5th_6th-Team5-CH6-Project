@@ -107,7 +107,7 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
         }
 
         // 사운드 결정 및 재생
-        USoundBase* SoundToPlay = ProjectileData->DefaultImpactSoundEffect;
+        
         if (ProjectileData->ImpactSoundMap.Contains(SurfaceType))
         {
             SoundToPlay = ProjectileData->ImpactSoundMap[SurfaceType];
