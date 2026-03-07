@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
@@ -40,17 +40,30 @@ public:
     UPROPERTY(EditAnywhere, Category = "Visual")
     TObjectPtr<class UNiagaraSystem> TracerEffect;
 
-    // Physics Material 이펙트 매핑
-    UPROPERTY(EditAnywhere, Category = "Visual|Impact")
-    TMap<FGameplayTag, TObjectPtr<UNiagaraSystem>> ImpactEffectTagMap;
 
-    // 매핑되지 않은 재질을 맞췄을 때 나올 기본 이펙트
+
     UPROPERTY(EditAnywhere, Category = "Visual|Impact")
     TObjectPtr<UNiagaraSystem> DefaultImpactEffect;
 
-    UPROPERTY(EditAnywhere, Category = "Sound|Impact")
-    TMap<FGameplayTag, TObjectPtr<USoundBase>> ImpactSoundTagMap;
+    UPROPERTY(EditAnywhere, Category = "Visual|Impact")
+    TObjectPtr<UNiagaraSystem> ConcreteImpactEffect; 
 
-    UPROPERTY(EditAnywhere, Category = "Sound|Impact")
-    TObjectPtr<USoundBase> DefaultImpactSound;
+    UPROPERTY(EditAnywhere, Category = "Visual|Impact")
+	TObjectPtr<UNiagaraSystem> MetalImpactEffect;
+
+    UPROPERTY(EditAnywhere, Category = "Visual|Impact")
+    TObjectPtr<UNiagaraSystem> MarbelImpactEffect; 
+
+
+    UPROPERTY(EditAnywhere, Category = "Visual|Sound")
+    TObjectPtr<USoundBase> DefaultImpactSoundEffect;
+
+    UPROPERTY(EditAnywhere, Category = "Visual|Sound")
+    TObjectPtr<USoundBase> ConcreteImpactSoundEffect;
+
+    UPROPERTY(EditAnywhere, Category = "Visual|Sound")
+    TObjectPtr<USoundBase> MetalImpactSoundEffect;
+
+    UPROPERTY(EditAnywhere, Category = "Visual|Sound")
+    TObjectPtr<USoundBase> MarbelImpactSoundEffect;
 };

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -37,9 +37,6 @@ protected:
 	// 데이터 에셋 
 	UPROPERTY(BlueprintReadWrite, Category = "Projectile")
 	TObjectPtr<UProjectileData> ProjectileData;
-
-	// 헬퍼 함수 
-	FGameplayTag GetTagFromSurfaceType(EPhysicalSurface SurfaceType);
 
 public:
 	UFUNCTION()
