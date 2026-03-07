@@ -64,6 +64,8 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 
     if (OtherActor && (OtherActor != GetOwner()))
     {
+
+        // Material 타입 가져오기 = enum 
         EPhysicalSurface SurfaceType = UGameplayStatics::GetSurfaceType(Hit);
 
         UNiagaraSystem* EffectToSpawn = ProjectileData->DefaultImpactEffect;
@@ -89,6 +91,10 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
         {
             EffectToSpawn = ProjectileData->ImpactEffect;
         }
+        else if (ProjectileData->ImpactEffectMap.Contains(SurfaceType))
+        {
+            EffectToSpawn = ProjectileData->ImpactEffectMap[SurfaceType];
+        }
 
         if (EffectToSpawn)
         {
@@ -98,6 +104,13 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
                 Hit.ImpactPoint,
                 Hit.ImpactNormal.Rotation()
             );
+        }
+
+        // 사운드 결정 및 재생
+        USoundBase* SoundToPlay = ProjectileData->DefaultImpactSoundEffect;
+        if (ProjectileData->ImpactSoundMap.Contains(SurfaceType))
+        {
+            SoundToPlay = ProjectileData->ImpactSoundMap[SurfaceType];
         }
 
         if (SoundToPlay)

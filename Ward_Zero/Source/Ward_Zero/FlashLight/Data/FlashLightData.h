@@ -11,14 +11,14 @@ class WARD_ZERO_API UFlashLightData : public UPrimaryDataAsset
 	
 public:
     UPROPERTY(EditAnywhere, Category = "Light Settings")
-    float Intensity = 5000.0f;
+    float Intensity = 0.f;
 
     UPROPERTY(EditAnywhere, Category = "Light Settings")
-    float OuterConeAngle = 30.0f;
+    float OuterConeAngle = 0.f;
 
     UPROPERTY(EditAnywhere, Category = "Light Settings")
-    float AttenuationRadius = 2000.0f;
+    float AttenuationRadius = 0.f;
 
     UPROPERTY(EditAnywhere, Category = "Material Settings")
-    float EmissiveIntensity = 50.0f;
+    float EmissiveIntensity = 0.f;
 };

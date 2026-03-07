@@ -38,4 +38,5 @@ public:
 	virtual bool IsFiring() const = 0;
 	virtual void OnDoorTriggered() = 0;
 	virtual bool IsInteracting() const = 0;
+	virtual float GetCurrSpread() const = 0;
 };

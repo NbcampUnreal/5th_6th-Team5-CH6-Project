@@ -40,13 +40,19 @@ public:
     UPROPERTY(EditAnywhere, Category = "Visual")
     TObjectPtr<class UNiagaraSystem> TracerEffect;
 
-
+    // Physics Material 이펙트 매핑
+    UPROPERTY(EditAnywhere, Category = "Visual|Impact")
+    TMap<TEnumAsByte<EPhysicalSurface>, TObjectPtr<UNiagaraSystem>> ImpactEffectMap;
 
     UPROPERTY(EditAnywhere, Category = "Visual|Impact")
     TObjectPtr<UNiagaraSystem> DefaultImpactEffect;
 
     UPROPERTY(EditAnywhere, Category = "Visual|Impact")
     TObjectPtr<UNiagaraSystem> ConcreteImpactEffect; 
+
+    // Physics Material 사운드 매핑 
+    UPROPERTY(EditAnywhere, Category = "Sound|Impact")
+    TMap<TEnumAsByte<EPhysicalSurface>, TObjectPtr<USoundBase>> ImpactSoundMap;
 
     UPROPERTY(EditAnywhere, Category = "Visual|Impact")
 	TObjectPtr<UNiagaraSystem> MetalImpactEffect;
