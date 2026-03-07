@@ -810,14 +810,14 @@ void APrototypeCharacter::CheckRunState()
 
 void APrototypeCharacter::TriggerDoorOpen()
 {
-	if (PendingDoorActor)
+	/*if (PendingDoorActor)
 	{
 		if (IInteractionBase* InteractInterface = Cast<IInteractionBase>(PendingDoorActor))
 		{
 			InteractInterface->OnIneracted(this);
 		}
 		PendingDoorActor = nullptr;
-	}
+	}*/
 }
 
 void APrototypeCharacter::Reload(const FInputActionValue& Value)
@@ -891,7 +891,7 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 	//	2.0f
 	//);
 
-	/*if (!bHit) return;
+	if (!bHit) return;
 
 	AActor* HitActor = Hit.GetActor();
 
@@ -908,7 +908,7 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 			}
 			IInteractionBase::Execute_OnIneracted(HitActor, this);
 		}
-	}*/
+	}
 
 }
 
