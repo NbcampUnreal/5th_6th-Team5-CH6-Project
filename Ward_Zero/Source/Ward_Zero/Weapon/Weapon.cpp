@@ -13,6 +13,7 @@
 #include "Weapon/Data/ProjectileData.h"
 #include "Weapon/Projectile/Projectile.h"
 #include "Components/SpotLightComponent.h"
+#include "FlashLight/Data/FlashLightData.h"
 //#include "DrawDebugHelpers.h"
 
 AWeapon::AWeapon()
@@ -35,14 +36,13 @@ AWeapon::AWeapon()
 
     SMGSpotLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("SMGSpotLight"));
     SMGSpotLight->SetupAttachment(SMGLight);
-
-    SMGSpotLight->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
-    SMGSpotLight->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f)); // 실린더 방향에 맞춰 정렬
+    SMGSpotLight->SetRelativeLocation(FVector(20.0f, 0.0f, 5.0f));
+    SMGSpotLight->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 
     // 빛 설정
-    SMGSpotLight->Intensity = 5000.f;      // 밝기
-    SMGSpotLight->OuterConeAngle = 30.f;  // 퍼지는 각도
-    SMGSpotLight->SetVisibility(false);   
+    SMGSpotLight->Intensity = 0.0f;      
+    SMGSpotLight->OuterConeAngle = 0.0f; 
+    SMGSpotLight->SetVisibility(false);
 }
 
 void AWeapon::Tick(float DeltaTime)
@@ -83,12 +83,28 @@ void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();	
 
+    if (SMGSpotLight)
+    {
+        SMGSpotLight->SetVisibility(false);
+        SMGSpotLight->Intensity = 0.0f; 
+    }
+
     if (WeaponData)
     {
         MaxCapacity = WeaponData->MaxCapacity;
         CurrentAmmo = MaxCapacity;
-        Damage = WeaponData->Damage;   
+        Damage = WeaponData->Damage;
         FireRate = WeaponData->FireRate;
+
+        if (WeaponData->FlashlightSettings && SMGSpotLight)
+        {
+            UFlashLightData* LightData = WeaponData->FlashlightSettings;
+            SMGSpotLight->Intensity = LightData->Intensity;
+            SMGSpotLight->OuterConeAngle = LightData->OuterConeAngle;
+            SMGSpotLight->AttenuationRadius = LightData->AttenuationRadius;
+
+            SMGSpotLight->SetVisibility(false);
+        }
     }
 
     if (SMGLight)
@@ -237,6 +253,26 @@ void AWeapon::SetIsReloading(bool reload)
 {
     bIsReloading = reload; 
     return;
+}
+
+UCurveVector* AWeapon::GetRecoilCurve() const
+{
+    return WeaponData ? WeaponData->RecoilCurve : nullptr;
+}
+
+float AWeapon::GetRecoilIntensity() const
+{
+    return WeaponData ? WeaponData->RecoilIntensity : 1.0f;
+}
+
+float AWeapon::GetRecoilRecoverySpeed() const
+{
+    return WeaponData ? WeaponData->RecoilRecoverySpeed : 5.0f;
+}
+
+TSubclassOf<UCameraShakeBase> AWeapon::GetFireCameraShake() const
+{
+    return WeaponData ? WeaponData->FireCameraShake : nullptr;
 }
 
 //기존 탄창이 사라질 때 노티파이 이벤트 

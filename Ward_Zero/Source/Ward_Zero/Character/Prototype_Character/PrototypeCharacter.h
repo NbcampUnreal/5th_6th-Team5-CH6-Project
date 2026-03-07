@@ -84,6 +84,7 @@ public:
     virtual bool IsFiring() const override;
     virtual void OnDoorTriggered() override;
     virtual bool IsInteracting() const override;
+    virtual float GetCurrSpread() const override;
 #pragma endregion
 
 protected:
@@ -243,12 +244,6 @@ public:
     TObjectPtr<AFlashLight> FlashLight;
 
     UFUNCTION()
-    void EquipFlashLight();
-    
-    UFUNCTION()
-    void ToggleLight(bool IsLight);
-
-    UFUNCTION()
     virtual bool GetIsUseFlashLight() const override; 
 
     UPROPERTY(BlueprintReadOnly, Category = "FlashLight")
@@ -256,6 +251,12 @@ public:
 
     UPROPERTY(EditDefaultsOnly, Category = "Flashlight")
     TObjectPtr<UFlashLightData> DefaultFlashlightData;
+
+    UFUNCTION(BlueprintCallable, Category = "FlashLight")
+    void UpdateFlashLightState();
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|FlashLight")
+    class USpotLightComponent* BodyRunLight;
 #pragma endregion 
 
 public:

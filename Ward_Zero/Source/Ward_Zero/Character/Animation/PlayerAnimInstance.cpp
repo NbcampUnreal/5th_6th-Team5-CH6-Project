@@ -22,6 +22,11 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	Super::NativeUpdateAnimation(DeltaSeconds);
 	if (!Character || !MovementComp) return;
 
+	// 물리 데이터 및 속도 계산 
+	Velocity = Character->GetVelocity();
+	Acceleration = MovementComp->GetCurrentAcceleration();
+	UpdateMovementCalculations(DeltaSeconds);
+
 	// 인터페이스를 거쳐 데이터를 가져오기 
 	if (IPlayerAnimInterface* AnimInterface = Cast<IPlayerAnimInterface>(TryGetPawnOwner()))
 	{
@@ -41,6 +46,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		AimPitch = AnimInterface->GetAimPitch();
 		AimYaw = AnimInterface->GetAimYaw();
 		bIsInteracting = AnimInterface->IsInteracting();
+		CurrSpread = AnimInterface->GetCurrSpread();
 
 		USkeletalMeshComponent* TempMesh = AnimInterface->GetEquippedWeaponMesh();
 		WeaponMesh = IsValid(TempMesh) ? TempMesh : nullptr;
@@ -74,19 +80,11 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, 0.0f, DeltaSeconds, 20.0f);
 	}
 	// Pistol IK 조건  
-	bool bPistolIKCondition =
-		bIsPistolEquipped &&
-		!bIsRunning &&
-		!bIsEquipping &&
-		!(GroundSpeed > 200.0f) &&
-		!bIsReloading &&
-		!bIsUseFlashLight &&
-		!bIsSMGEquipped &&
-		!bIsFiring &&
-		!bIsInteracting;
+	bool bPistolIKCondition = bIsPistolEquipped && !bIsSMGEquipped
+		&& !bIsEquipping && !bIsReloading && !bIsFiring && !bIsInteracting
+		&& !bIsUseFlashLight;
 
-	float TargetHandIKAlpha = bPistolIKCondition ? 1.0f : 0.0f;
-	PistolIKAlpha = FMath::FInterpTo(PistolIKAlpha, TargetHandIKAlpha, DeltaSeconds, 10.0f);
+	PistolIKAlpha = FMath::FInterpTo(PistolIKAlpha, bPistolIKCondition ? 1.0f : 0.0f, DeltaSeconds, 15.0f);
 
 	// SMG IK 조건 
 	bool bIKCondition =
@@ -108,20 +106,16 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, TargetSMGAlpha, DeltaSeconds, InterpSpeed);
 	}
 
-	UpdateMovementCalculations(DeltaSeconds);
-
-	// 엔진 물리 데이터 동기화 
-	Velocity = Character->GetVelocity();
-	Acceleration = MovementComp->GetCurrentAcceleration();
-
 	//Unarmed FlashLight IK Alpha
 	float TargetAlpha = (bIsUseFlashLight && !bIsSMGEquipped) ? 1.0f : 0.0f;
 	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetAlpha, DeltaSeconds, 5.0f);
 
 	//Pistol FlashLight IK Alpha
-	float TargetIKAlpha = (bIsUseFlashLight && bIsPistolEquipped && !bIsEquipping
-		&& !bIsRunning && !bIsSMGEquipped) ? 1.0f : 0.0f;
-	FlashlightIKAlpha = FMath::FInterpTo(FlashlightIKAlpha, TargetIKAlpha, DeltaSeconds, 10.0f);
+	bool bFlashlightIKCondition = bIsUseFlashLight && bIsPistolEquipped && !bIsSMGEquipped
+		&& !bIsRunning && (GroundSpeed <= 250.f) 
+		&& !bIsEquipping && !bIsReloading && !bIsInteracting;
+
+	FlashlightIKAlpha = FMath::FInterpTo(FlashlightIKAlpha, bFlashlightIKCondition ? 1.0f : 0.0f, DeltaSeconds, 20.0f);
 }
 
 void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)

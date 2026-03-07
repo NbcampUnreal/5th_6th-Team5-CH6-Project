@@ -170,6 +170,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement|Pivot")
 	FVector LocalVelocity2D;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Combat|Spread")
+	float CurrSpread;
+
 public:
 	UPROPERTY(BlueprintReadOnly, Category = "Weapon | Mesh")
 	USkeletalMeshComponent* WeaponMesh;

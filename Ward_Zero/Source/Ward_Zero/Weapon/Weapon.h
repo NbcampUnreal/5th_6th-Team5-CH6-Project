@@ -211,4 +211,11 @@ private:
     FVector LaserHitLocation;
 #pragma endregion
 
+// 반동 데이터 Getter 함수 
+public:
+    UCurveVector* GetRecoilCurve() const;
+    float GetRecoilIntensity() const;
+    float GetRecoilRecoverySpeed() const;
+    TSubclassOf<UCameraShakeBase> GetFireCameraShake() const;
+
 };
