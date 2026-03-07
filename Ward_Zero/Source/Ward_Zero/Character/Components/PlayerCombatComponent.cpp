@@ -7,6 +7,7 @@
 #include "Character/Animation/PlayerAnimInstance.h"
 #include "Curves/CurveVector.h"
 #include "Character/Data/CharacterCombatData.h"
+#include "Weapon/Data/WeaponData.h"
 
 UPlayerCombatComponent::UPlayerCombatComponent()
 {
@@ -179,12 +180,14 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 	float RecoilPitch = 0.0f;
 	float RecoilYaw = 0.0f;
 
+	float Intensity = EquippedWeapon->GetRecoilIntensity();
+
 	if (EquippedWeapon->RecoilCurve)
 	{
-		FVector CurveValue = EquippedWeapon->RecoilCurve->GetVectorValue(CurrentShotsFired);
+		FVector CurveValue = EquippedWeapon->GetRecoilCurve()->GetVectorValue((float)CurrentShotsFired);
 
-		RecoilPitch = CurveValue.Y;
-		RecoilYaw = CurveValue.Z;
+		RecoilPitch = CurveValue.Y * Intensity;
+		RecoilYaw = CurveValue.X * Intensity;
 
 		// 약간의 랜덤함 추가
 		RecoilPitch += FMath::RandRange(-0.5f, 0.5f);
@@ -192,12 +195,16 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 	}
 	else
 	{
-		RecoilPitch = FMath::RandRange(MaxRecoilPitch, MinRecoilPitch);
-		RecoilYaw = FMath::RandRange(MinRecoilYaw, MaxRecoilYaw);
+		float RandomVal = EquippedWeapon->WeaponData->HorizontalRecoilRandomness;
+		RecoilYaw += FMath::RandRange(-RandomVal, RandomVal);
+		RecoilPitch += FMath::RandRange(-RandomVal * 0.2f, RandomVal * 0.2f);
 	}
 
-	TargetRecoilRot.Pitch += RecoilPitch;
-	TargetRecoilRot.Yaw += RecoilYaw;
+	const float MaxPitchRecoil = -15.0f;
+	const float MaxYawRecoil = 10.0f;
+
+	TargetRecoilRot.Pitch = FMath::Clamp(TargetRecoilRot.Pitch + RecoilPitch, MaxPitchRecoil, 15.0f);
+	TargetRecoilRot.Yaw = FMath::Clamp(TargetRecoilRot.Yaw + RecoilYaw, -MaxYawRecoil, MaxYawRecoil);
 
 	// 다음 총알을 위해 발사 횟수 증가
 	CurrentShotsFired++;
@@ -288,10 +295,8 @@ void UPlayerCombatComponent::HandleRecoil(float DeltaTime)
 	}
 	else
 	{
-		if (CurrentWeaponIndex == 1)
-		{
-			TargetRecoilRot = FMath::RInterpTo(TargetRecoilRot, FRotator::ZeroRotator, DeltaTime, RecoilRecoverySpeed);
-		}
+		float RecoverySpeed = EquippedWeapon ? EquippedWeapon->GetRecoilRecoverySpeed() : RecoilRecoverySpeed;
+		TargetRecoilRot = FMath::RInterpTo(TargetRecoilRot, FRotator::ZeroRotator, DeltaTime, RecoverySpeed);
 	}
 }
 
