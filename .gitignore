@@ -25,6 +25,6 @@ Saved/
 *.ipch
 
 # Houdini Engine
-Plugins/HoudiniEngine/
-Intermediate/HoudiniEngine/
-Saved/HoudiniEngine/
+**/Plugins/HoudiniEngine/
+**/Intermediate/HoudiniEngine/
+**/Saved/HoudiniEngine/
