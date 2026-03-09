@@ -3,17 +3,29 @@
 #include "UI_KWJ/Reading/DocumentPickupActor.h"
 #include "UI_KWJ/Reading/DocumentData.h"
 #include "UI_KWJ/Reading/DocumentSubsystem.h"
-#include "../Character/Prototype_Character/PrototypeCharacter.h"
+#include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
+#include "Components/StaticMeshComponent.h"
+#include "Components/BoxComponent.h"
 #include "Ward_Zero.h"
 
 ADocumentPickupActor::ADocumentPickupActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	// 콜리전 전용 박스 (라인트레이스에 잡히는 역할)
+	InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
+	RootComponent = InteractionBox;
+	InteractionBox->SetBoxExtent(FVector(30.0f, 30.0f, 30.0f));
+	InteractionBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	InteractionBox->SetCollisionResponseToAllChannels(ECR_Ignore);
+	InteractionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
+	// 비주얼 메시 (콜리전 없음, 보이기만 함)
 	DocumentMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DocumentMesh"));
-	DocumentMesh->SetupAttachment(RootComponent);
+	DocumentMesh->SetupAttachment(InteractionBox);
+	DocumentMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void ADocumentPickupActor::BeginPlay()
@@ -21,11 +33,21 @@ void ADocumentPickupActor::BeginPlay()
 	Super::BeginPlay();
 }
 
-void ADocumentPickupActor::OnInteract_Implementation(APrototypeCharacter* Player)
+EInteractionType ADocumentPickupActor::GetInteractionType_Implementation() const
 {
-	if (!bCanInteract || !DocumentData || !Player) return;
+	return EInteractionType::Document;
+}
 
-	APlayerController* PC = Cast<APlayerController>(Player->GetController());
+bool ADocumentPickupActor::CanBeInteracted_Implementation() const
+{
+	return bCanInteract && DocumentData != nullptr;
+}
+
+void ADocumentPickupActor::OnIneracted_Implementation(APrototypeCharacter* Character)
+{
+	if (!bCanInteract || !DocumentData || !Character) return;
+
+	APlayerController* PC = Cast<APlayerController>(Character->GetController());
 	if (!PC) return;
 
 	ULocalPlayer* LP = PC->GetLocalPlayer();

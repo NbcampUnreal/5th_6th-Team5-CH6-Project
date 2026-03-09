@@ -236,13 +236,31 @@ void USaveWidget::UpdateDetailPanel(const FSaveFileInfo& Info)
 	}
 	if (TXT_SaveTime)
 	{
+		// 저장 시각 (시:분:초)
 		TXT_SaveTime->SetText(FText::FromString(
-			Info.SaveDateTime.ToString(TEXT("%Y/%m/%d %H:%M:%S"))
+			Info.SaveDateTime.ToString(TEXT("%H:%M:%S"))
+		));
+	}
+	if (TXT_SaveDate)
+	{
+		// 저장 날짜 (년/월/일)
+		TXT_SaveDate->SetText(FText::FromString(
+			Info.SaveDateTime.ToString(TEXT("%Y/%m/%d"))
 		));
 	}
 	if (TXT_LevelName)
 	{
 		TXT_LevelName->SetText(FText::FromString(Info.LevelName.ToString()));
+	}
+	if (TXT_Playtime)
+	{
+		// PlayTimeSeconds → "HH:MM:SS" 형식
+		int32 TotalSec = FMath::FloorToInt(Info.PlayTimeSeconds);
+		int32 Hours = TotalSec / 3600;
+		int32 Minutes = (TotalSec % 3600) / 60;
+		int32 Seconds = TotalSec % 60;
+		FString TimeStr = FString::Printf(TEXT("%02d:%02d:%02d"), Hours, Minutes, Seconds);
+		TXT_Playtime->SetText(FText::FromString(TimeStr));
 	}
 	if (IMG_Screenshot && Info.Thumbnail)
 	{

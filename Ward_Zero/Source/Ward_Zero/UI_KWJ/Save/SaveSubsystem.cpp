@@ -66,6 +66,13 @@ void USaveSubsystem::SaveGame(const FString& SlotName)
 	}
 
 	FString FinalSlotName = SlotName.IsEmpty() ? GenerateSlotName() : SlotName;
+
+
+	SaveData->PlayTimeSeconds = UGameplayStatics::GetRealTimeSeconds(GetWorld());
+
+	UGameplayStatics::SaveGameToSlot(SaveData, SavePrefix + FinalSlotName, 0);
+
+
 	SaveData->DisplayName = FinalSlotName;
 
 	// 캐시된 스크린샷 사용 (UI 열기 전에 미리 캡처)

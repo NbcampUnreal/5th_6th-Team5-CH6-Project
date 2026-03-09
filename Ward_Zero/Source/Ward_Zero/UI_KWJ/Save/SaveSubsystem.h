@@ -5,34 +5,13 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/LocalPlayerSubsystem.h"
+#include "UI_KWJ/Save/SaveTypes.h"          // ← FSaveFileInfo
 #include "SaveSubsystem.generated.h"
 
 class UWardSaveGame;
 class USaveWidget;
 
-USTRUCT(BlueprintType)
-struct FSaveFileInfo
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadOnly)
-	FString SlotName;
-
-	UPROPERTY(BlueprintReadOnly)
-	FString DisplayName;
-
-	UPROPERTY(BlueprintReadOnly)
-	FDateTime SaveDateTime;
-
-	UPROPERTY(BlueprintReadOnly)
-	float PlayTimeSeconds = 0.f;
-
-	UPROPERTY(BlueprintReadOnly)
-	FName LevelName;
-
-	UPROPERTY(BlueprintReadOnly)
-	UTexture2D* Thumbnail = nullptr;
-};
+// *** FSaveFileInfo 정의 삭제됨 — SaveTypes.h로 이동 ***
 
 UCLASS()
 class WARD_ZERO_API USaveSubsystem : public ULocalPlayerSubsystem

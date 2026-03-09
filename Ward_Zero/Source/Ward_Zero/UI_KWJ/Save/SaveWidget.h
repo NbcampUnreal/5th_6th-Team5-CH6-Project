@@ -49,7 +49,7 @@ public:
 	UButton* BTN_Close;
 
 	// ══════════════════════════════════════════
-	//  BindWidget — 선택 (선택된 세이브 상세)
+	//  BindWidgetOptional — 선택된 세이브 상세
 	// ══════════════════════════════════════════
 
 	/** 선택된 세이브 스크린샷 */
@@ -60,13 +60,21 @@ public:
 	UPROPERTY(meta = (BindWidgetOptional))
 	UTextBlock* TXT_SaveName;
 
-	/** 선택된 세이브 시간 */
+	/** 선택된 세이브 시각 (HH:MM:SS) */
 	UPROPERTY(meta = (BindWidgetOptional))
 	UTextBlock* TXT_SaveTime;
 
-	/** 선택된 세이브 레벨 */
+	/** 선택된 세이브 날짜 (YYYY/MM/DD) */
+	UPROPERTY(meta = (BindWidgetOptional))
+	UTextBlock* TXT_SaveDate;
+
+	/** 선택된 세이브 레벨/맵 이름 */
 	UPROPERTY(meta = (BindWidgetOptional))
 	UTextBlock* TXT_LevelName;
+
+	/** 플레이 타임 (누적 플레이 시간, HH:MM:SS) */
+	UPROPERTY(meta = (BindWidgetOptional))
+	UTextBlock* TXT_Playtime;
 
 	/** 로드 버튼 */
 	UPROPERTY(meta = (BindWidgetOptional))
