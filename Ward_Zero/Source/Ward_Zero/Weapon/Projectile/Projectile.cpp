@@ -63,7 +63,12 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 	if (!ProjectileData || OtherActor == GetOwner()) return;
 
 	EPhysicalSurface SurfaceType = UGameplayStatics::GetSurfaceType(Hit);
-	UNiagaraSystem* Effect = ProjectileData->DefaultImpactEffect;
+	UNiagaraSystem* Effect = nullptr;
+
+	if (ProjectileData->ImpactEffectMap.Contains(SurfaceType_Default))
+	{
+		Effect = ProjectileData->ImpactEffectMap[SurfaceType_Default];
+	}
 
 	// 표면별 이펙트 선택
 	if (ProjectileData->ImpactEffectMap.Contains(SurfaceType))
