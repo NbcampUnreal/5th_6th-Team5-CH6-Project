@@ -12,7 +12,7 @@ class UCurveVector;
 UCLASS(BlueprintType)
 class WARD_ZERO_API UWeaponData : public UPrimaryDataAsset
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
     virtual FPrimaryAssetId GetPrimaryAssetId() const override { return FPrimaryAssetId("WeaponData", GetFName()); }
@@ -52,16 +52,16 @@ public:
 
     // 반동 설정 (Recoil Settings) 
     UPROPERTY(EditAnywhere, Category = "Recoil")
-    TObjectPtr<UCurveVector> RecoilCurve; 
+    TObjectPtr<UCurveVector> RecoilCurve;
 
     UPROPERTY(EditAnywhere, Category = "Recoil")
-    float RecoilIntensity = 1.0f; 
+    float RecoilIntensity = 1.0f;
 
     UPROPERTY(EditAnywhere, Category = "Recoil")
-    float RecoilRecoverySpeed = 5.0f; 
+    float RecoilRecoverySpeed = 5.0f;
 
     UPROPERTY(EditAnywhere, Category = "Recoil")
-    float HorizontalRecoilRandomness = 0.5f; 
+    float HorizontalRecoilRandomness = 0.5f;
 
     UPROPERTY(EditAnywhere, Category = "Recoil|Effects")
     TSubclassOf<UCameraShakeBase> FireCameraShake;

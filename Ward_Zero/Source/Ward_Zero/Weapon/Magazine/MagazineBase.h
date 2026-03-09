@@ -10,7 +10,7 @@ UCLASS()
 class WARD_ZERO_API AMagazineBase : public AActor
 {
 	GENERATED_BODY()
-	
+
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> MagMesh;
@@ -18,7 +18,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UBoxComponent> BoxComp;
 
-public:	
+public:
 	AMagazineBase();
 
 	void Drop();

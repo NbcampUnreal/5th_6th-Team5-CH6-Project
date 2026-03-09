@@ -2,7 +2,7 @@
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
-#include "Character/Components/PlayerCombatComponent.h"
+#include "Character/Components/Combat/PlayerCombatComponent.h"
 #include "Weapon/Weapon.h"
 #include "Components/WidgetComponent.h"
 
@@ -17,11 +17,11 @@ AAmmoBox_DH::AAmmoBox_DH()
 
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	MeshComp->SetupAttachment(RootComponent);
-	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision); 
+	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	MarkerPillar = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MarkerPillar"));
 	MarkerPillar->SetupAttachment(RootComponent);
-	MarkerPillar->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f)); 
+	MarkerPillar->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
 	MarkerPillar->SetRelativeScale3D(FVector(0.1f, 0.1f, 0.5f));
 	MarkerPillar->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 

@@ -1,4 +1,4 @@
-﻿#include "Character/Components/PlayerStatusComponent.h"
+﻿#include "Character/Components/Status/PlayerStatusComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 
 UPlayerStatusComponent::UPlayerStatusComponent()
@@ -26,23 +26,17 @@ void UPlayerStatusComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	APrototypeCharacter* Player = Cast<APrototypeCharacter>(GetOwner());
 	if (!Player) return;
 
+	// 캐릭터의 GetIsRunning() 상태에 따라 스테미나 소모/회복
 	if (Player->GetIsRunning())
-	{		
+	{
+		// BeginPlay에서 DataAsset 값이 세팅된 StaminaDrainRate 사용
 		CurrStamina = FMath::Clamp(CurrStamina - (StaminaDrainRate * DeltaTime), 0.0f, MaxStamina);
-
-		if (CurrStamina <= 0.0f)
-		{
-			bIsExhausted = true;
-		}
+		if (CurrStamina <= 0.0f) bIsExhausted = true;
 	}
 	else
 	{
 		CurrStamina = FMath::Clamp(CurrStamina + (StaminaRegenRate * DeltaTime), 0.0f, MaxStamina);
-
-		if (bIsExhausted && CurrStamina >= MinStaminaToSprint)
-		{
-			bIsExhausted = false;
-		}
+		if (bIsExhausted && CurrStamina >= MinStaminaToSprint) bIsExhausted = false;
 	}
 }
 

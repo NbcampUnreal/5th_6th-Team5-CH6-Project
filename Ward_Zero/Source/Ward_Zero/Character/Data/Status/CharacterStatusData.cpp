@@ -1,4 +1,4 @@
-#include "Character/Data/CharacterStatusData.h"
+#include "Character/Data/Status/CharacterStatusData.h"
 
 FPrimaryAssetId UCharacterStatusData::GetPrimaryAssetId() const
 {

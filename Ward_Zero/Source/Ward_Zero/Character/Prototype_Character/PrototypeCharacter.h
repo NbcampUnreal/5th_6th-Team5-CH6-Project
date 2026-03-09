@@ -3,353 +3,137 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
-#include "Character/Components/PlayerStatusComponent.h" 
-#include "Character/Components/PlayerCombatComponent.h" 
-#include "Character/Components/InteractionComponent.h"
+#include "Character/Enum/CharacterType.h"
 #include "Character/Animation/Interface/PlayerAnimInterface.h"
 #include "PrototypeCharacter.generated.h"
 
-// 전방 선언 (Forward Declarations)
-class USpringArmComponent;
-class UCameraComponent;
-class UInputMappingContext;
-class UInputAction;
-class ALadder;
-class UCameraShakeBase;
-class AFlashLight;
-class UCharacterMovementData;
-class UCharacterStatusData;
-class UCharacterAnimData;
-class UCharacterCombatData;
-class UHealthVignetteWidget;
-class UFlashLightData;
-
 UENUM(BlueprintType)
-enum class EPlayerHitDirection : uint8
-{
-    Front,
-    Back,
-    Left,
-    Right
-};
-
-UENUM(BlueprintType)
-enum class EQuickTurnType : uint8
-{
-    None,
-    Unarmed_180,
-    Unarmed_L90,
-    Unarmed_R90,
-    Pistol_180,
-    Pistol_L90,
-    Pistol_R90
-};
+enum class EWeaponLayerType : uint8 { Unarmed, Pistol, SMG };
 
 UCLASS()
 class WARD_ZERO_API APrototypeCharacter : public ACharacter, public IPlayerAnimInterface
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    APrototypeCharacter();
+	APrototypeCharacter();
 
 protected:
-#pragma region 기본 캐릭터 함수 (Character Overrides)
-    virtual void BeginPlay() override;
-    virtual void Tick(float DeltaTime) override;
-    virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-    virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
-#pragma endregion 
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 public:
-#pragma region 인터페이스 구현 (IPlayerAnimInterface)
-    virtual bool GetIsRunning() const override;
-    virtual bool GetIsPistolEquipped() const override;
-    virtual bool GetIsCrouching() const override;
-    virtual bool GetIsGround() const override;
-    virtual bool GetIsQuickTurning() const override;
-    virtual int32 GetTurnIndex() const override;
-    virtual bool IsEquipping() const override;
-    virtual bool GetIsAiming() const override;
-    virtual FVector GetHandIKTargetLoc() const override;
-    virtual void SetIsQuickTurning(bool bIsTurning) override;
-    virtual bool GetIsClimbing() const override;
-    virtual USkeletalMeshComponent* GetEquippedWeaponMesh() override;
-    virtual class AWeapon* GetEquippedWeapon() override;
-    virtual bool GetIsReloading() const override;
-    virtual bool GetIsSMGEquipped() const override; 
-    virtual int32 GetCurrentWeaponIndex() const override;
-    virtual float GetAimPitch() const override;
-    virtual float GetAimYaw() const override;
-    virtual bool IsFiring() const override;
-    virtual void OnDoorTriggered() override;
-    virtual bool IsInteracting() const override;
-    virtual float GetCurrSpread() const override;
+#pragma region 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components") class UPlayerStatusComponent* StatusComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components") class UPlayerCombatComponent* CombatComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components") class UInteractionComponent* InteractionComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components") class UQuickTurnComponent* QuickTurnComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components") class UFlashlightComponent* FlashLightComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components") class UFootstepComponent* FootstepComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components") class UPlayerCameraComponent* CustomCameraComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera") class USpringArmComponent* CameraBoom;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera") class UCameraComponent* MainCamera;
 #pragma endregion
 
-protected:
-#pragma region 컴포넌트 (Components)
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Status")
-    UPlayerStatusComponent* StatusComponent;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Combat")
-    UPlayerCombatComponent* CombatComponent;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Interaction")
-    UInteractionComponent* InteractionComp;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Camera")
-    USpringArmComponent* CameraBoom;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Camera")
-    UCameraComponent* MainCamera;
-
-#pragma endregion 
-
-#pragma region 데이터 에셋 
-protected:
-    UPROPERTY(EditDefaultsOnly, Category = "DataAsset")
-    UCharacterMovementData* MovementData;
-
-    UPROPERTY(EditDefaultsOnly, Category = "DataAsset")
-    UCharacterStatusData* StatusData;
-
-    UPROPERTY(EditDefaultsOnly, Category = "DataAsset")
-    UCharacterAnimData* AnimData;
-
-    UPROPERTY(EditDefaultsOnly, Category = "DataAsset")
-    UCharacterCombatData* CombatData;
+#pragma region 데이터 에셋
+	UPROPERTY(EditDefaultsOnly, Category = "DataAsset") class UCharacterMovementData* MovementData;
+	UPROPERTY(EditDefaultsOnly, Category = "DataAsset") class UCharacterStatusData* StatusData;
+	UPROPERTY(EditDefaultsOnly, Category = "DataAsset") class UCharacterAnimData* AnimData;
+	UPROPERTY(EditDefaultsOnly, Category = "DataAsset") class UCharacterCombatData* CombatData;
+	UPROPERTY(EditDefaultsOnly, Category = "DataAsset") class UCameraData* CameraConfig;
 #pragma endregion
 
-#pragma region 입력 시스템 (Input System)
-    // 입력 매핑 & 액션
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-    UInputMappingContext* DefaultMappingContext;
-
-    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* MoveAction;
-    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* LookAction;
-    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* RunAction;
-    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* CrouchAction;
-    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* InteractAction;
-    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* EquipAction;
-    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* AimAction;
-    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* FireAction;
-    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* QuickTurnAction;
-    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* ReloadAction;
-    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* FlashLightAction;
-    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* EquipSlot1Action;
-    UPROPERTY(EditAnywhere, Category = "Input|Actions") UInputAction* EquipSlot2Action;
-
-    // 입력 처리 바인딩 함수
-    void Move(const FInputActionValue& Value);
-    void Look(const FInputActionValue& Value);
-    void StartRunning(const FInputActionValue& Value);
-    void EndRunning(const FInputActionValue& Value);
-    void ToggleCrouch(const FInputActionValue& Value);
-    void Interact(const FInputActionValue& Value);
-    void ToggleEquip(const FInputActionValue& Value);
-    void StartAiming(const FInputActionValue& Value);
-    void StopAiming(const FInputActionValue& Value);
-    void Fire(const FInputActionValue& Value);
-    void Reload(const FInputActionValue& Value);
-    void ToggleFlashLight(const FInputActionValue& Value);
-    void SelectWeapon1(const FInputActionValue& Value);
-    void SelectWeapon2(const FInputActionValue& Value);
-    void StopFire(const FInputActionValue& Value);
-
-#pragma endregion 
-
-#pragma region 이동 및 카메라 설정 (Movement & Camera Config)
-    // 이동 속도 설정
-    UPROPERTY(EditDefaultsOnly, Category = "Movement|Speed") float WalkSpeed = 200.0f;
-    UPROPERTY(EditDefaultsOnly, Category = "Movement|Speed") float RunSpeed = 450.0f;
-    UPROPERTY(EditDefaultsOnly, Category = "Movement|Speed") float ClimbSpeed = 150.0f;
-    UPROPERTY(EditDefaultsOnly, Category = "Movement|Speed") float CrouchMovementSpeed = 150.0f;
-    UPROPERTY(EditDefaultsOnly, Category = "Movement|Turn") float WalkTurnRate = 2.5f;
-
-    // 카메라 위치 & 밥(Bob) 설정
-    UPROPERTY(EditDefaultsOnly, Category = "Camera|Base") float CrouchedArmLength = 100.0f;
-    UPROPERTY(EditDefaultsOnly, Category = "Camera|Base") float CrouchedCameraHeight = 0.0f;
-    UPROPERTY(EditDefaultsOnly, Category = "Camera|Base") float CrouchedWalkCameraHeight = 10.0f;
-    UPROPERTY(EditAnywhere, Category = "Camera|Bob") float BobFrequency = 12.0f;
-    UPROPERTY(EditAnywhere, Category = "Camera|Bob") float BobAmplitude = 2.0f;
-    UPROPERTY(EditAnywhere, Category = "Camera|Bob") float BobHorizontalAmplitude = 1.0f;
-
-    // 조준 설정
-    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim") float AimLookSensitivity = 0.5f;
-    UPROPERTY(EditAnywhere, Category = "Camera|Aim") float AimArmLength = 40.0f;
-    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim") float AimFOV = 50.0f;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Aim")
-    FVector PistolAimSocketOffset = FVector(-20.0f, 30.0f, 20.0f); // 권총 조준 위치
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Aim")
-    FVector SMGAimSocketOffset = FVector(-60.0f, 50.0f, 20.0f);    // SMG 조준 위치 
-    UPROPERTY(EditDefaultsOnly, Category = "Camera|Aim") float AimInterpSpeed = 20.0f;
-#pragma endregion 
-
-public:
-#pragma region 퀵 턴 시스템 (Quick Turn System)
-    UPROPERTY(BlueprintReadOnly, Category = "Turn")
-    EQuickTurnType QuickTurnType = EQuickTurnType::None;
-
-    UPROPERTY(BlueprintReadOnly, Category = "Turn")
-    int32 TurnIndex = 0;
-
-    UFUNCTION(BlueprintCallable, Category = "Turn")
-    void StartQuickTurn(float TargetYawDelta);
-
-    UFUNCTION(BlueprintCallable, Category = "Turn")
-    void StopQuickTurn();
-
-    void PerformQuickTurn180();
-    void PerformQuickTurn90(float Angle);
-
-protected:
-    void ProcessMovementTurn(FVector2D MovementVector);
-
-    UPROPERTY(EditDefaultsOnly, Category = "Turn|Duration")
-    float Duration180 = 0.6f;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Turn|Duration")
-    float Duration90 = 0.4f;
-#pragma endregion 
-
-public:
-#pragma region 등반 시스템 (Climbing System)
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Climbing")
-    bool bIsClimbing = false;
-
-    UPROPERTY(BlueprintReadOnly, Category = "Climbing")
-    TObjectPtr<ALadder> CurrentLadder = nullptr;
-
-    UFUNCTION(BlueprintCallable)
-    void StartClimbing(ALadder* Ladder);
-
-    UFUNCTION(BlueprintCallable)
-    void StopClimbing();
+#pragma region 입력 액션
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputMappingContext* DefaultMappingContext;
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* MoveAction;
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* LookAction;
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* RunAction;
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* CrouchAction;
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* InteractAction;
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* EquipAction;
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* AimAction;
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* FireAction;
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* QuickTurnAction;
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* ReloadAction;
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* FlashlightAction;
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* EquipSlot1Action;
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* EquipSlot2Action;
 #pragma endregion
 
-#pragma region 장전 
-public:
-    void StopReloading();
-#pragma endregion 
+#pragma region 애니메이션 레이어
+	UPROPERTY(EditAnywhere, Category = "Animation") TSubclassOf<UAnimInstance> UnarmedLayer;
+	UPROPERTY(EditAnywhere, Category = "Animation") TSubclassOf<UAnimInstance> PistolLayer;
+	UPROPERTY(EditAnywhere, Category = "Animation") TSubclassOf<UAnimInstance> SMGLayer;
 
-public:
-#pragma region 손전등 시스템 FlashLight
-    UPROPERTY(EditAnywhere, Category = "FlashLight")
-    TSubclassOf<AFlashLight> FlashLightClass;
-
-    UPROPERTY()
-    TObjectPtr<AFlashLight> FlashLight;
-
-    UFUNCTION()
-    virtual bool GetIsUseFlashLight() const override; 
-
-    UPROPERTY(BlueprintReadOnly, Category = "FlashLight")
-    bool bIsUseFlashLight = false; 
-
-    UPROPERTY(EditDefaultsOnly, Category = "Flashlight")
-    TObjectPtr<UFlashLightData> DefaultFlashlightData;
-
-    UFUNCTION(BlueprintCallable, Category = "FlashLight")
-    void UpdateFlashLightState();
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|FlashLight")
-    class USpotLightComponent* BodyRunLight;
-#pragma endregion 
-
-public:
-#pragma region 발소리 시스템 (Footstep System)
-
-    UFUNCTION(BlueprintCallable, Category = "Audio|Footstep")
-    void PlayFootstepSound(FName FootBoneName);
-
-protected:
-    // 장소에 따른 3가지 발소리 에셋 (에디터에서 넣을 수 있게 세팅)
-    UPROPERTY(EditDefaultsOnly, Category = "Audio|Footstep")
-    USoundBase* Sound_DefaultStep;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Audio|Footstep")
-    USoundBase* Sound_MetalStep; 
+	UPROPERTY(BlueprintReadOnly, Category = "Animation")
+	EWeaponLayerType CurrentLayerType = EWeaponLayerType::Unarmed;
 #pragma endregion
 
-protected:
-#pragma region 애니메이션 및 몽타주 (Animation & Montages)
-    // 애니메이션 레이어 링크
-    UPROPERTY(EditAnywhere, Category = "Animations|Layers") TSubclassOf<class UAnimInstance> UnarmedLayerClass;
-    UPROPERTY(EditAnywhere, Category = "Animations|Layers") TSubclassOf<class UAnimInstance> PistolLayerClass;
+#pragma region IPlayerAnimInterface 구현
+	virtual bool GetIsRunning() const override { return bIsRunning; }
+	virtual bool GetIsPistolEquipped() const override;
+	virtual bool GetIsCrouching() const override { return bIsCrouched; }
+	virtual bool GetIsGround() const override;
+	virtual bool GetIsQuickTurning() const override;
+	virtual int32 GetTurnIndex() const override;
+	virtual bool IsEquipping() const override;
+	virtual FVector GetHandIKTargetLoc() const override;
+	virtual bool GetIsAiming() const override;
+	virtual void SetIsQuickTurning(bool bIsTurning) override;
+	virtual USkeletalMeshComponent* GetEquippedWeaponMesh() override;
+	virtual class AWeapon* GetEquippedWeapon() override;
+	virtual bool GetIsReloading() const override;
+	virtual bool GetIsUseFlashLight() const override;
+	virtual bool GetIsSMGEquipped() const override;
+	virtual int32 GetCurrentWeaponIndex() const override;
+	virtual float GetAimPitch() const override;
+	virtual float GetAimYaw() const override;
+	virtual bool IsFiring() const override;
+	virtual float GetCurrSpread() const override;
+#pragma endregion
 
-    UPROPERTY(EditAnywhere, Category = "Animations|Layers") TSubclassOf<class UAnimInstance> SMGLayerClass;
+	void Move(const FInputActionValue& Value);
+	void Look(const FInputActionValue& Value);
+	void StartRunning(const FInputActionValue& Value);
+	void EndRunning(const FInputActionValue& Value);
+	void ToggleCrouch(const FInputActionValue& Value);
+	void Interact(const FInputActionValue& Value);
+	void ToggleEquip(const FInputActionValue& Value);
+	void StartAiming(const FInputActionValue& Value);
+	void StopAiming(const FInputActionValue& Value);
+	void Fire(const FInputActionValue& Value);
+	void StopFire(const FInputActionValue& Value);
+	void Reload(const FInputActionValue& Value);
+	void ToggleFlashLight(const FInputActionValue& Value);
+	void SelectWeapon1(const FInputActionValue& Value);
+	void SelectWeapon2(const FInputActionValue& Value);
 
-    // 액션 몽타주
-    UPROPERTY(EditAnywhere, Category = "Animations|Action") UAnimMontage* EquipMontage;
-    UPROPERTY(EditAnywhere, Category = "Animations|Action") UAnimMontage* UnEquipMontage;
-    UPROPERTY(EditAnywhere, Category = "Animations|Action") UAnimMontage* FireMontage;
+	void CheckRunState();
+	void PerformQuickTurn180();
+	void OnDeath();
 
-    //SMG
-    UPROPERTY(EditAnywhere, Category = "Animations|Action") UAnimMontage* SMG_EquipMontage;
-    UPROPERTY(EditAnywhere, Category = "Animations|Action") UAnimMontage* SMG_LowerMontage;
+	UFUNCTION(BlueprintCallable)
+	void PlayFootstepSound(FName FootBoneName);
 
-    // 손전등 몽타주 
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|FlashLight") UAnimMontage* RaiseLight;
-    UPROPERTY(EditDefaultsOnly, Category = "Animations|FlashLight") UAnimMontage* LowerLight;
+public:
+	EPlayerHitDirection GetHitDirection(const FVector& ToAttackerDir);
+	void PlayHitReaction(const FVector& ToAttackerDir);
+	void PlayDeathReaction(const FVector& ToAttackerDir);
 
-    // 카메라 쉐이크
-    UPROPERTY(EditAnywhere, Category = "Animations|Effects") TSubclassOf<UCameraShakeBase> FireCameraShake;
-
-    // 리액션 처리 함수
-    void PlayHitReaction(const FVector& ToAttackerDir);
-    void PlayDeathReaction(const FVector& ToAttackerDir);
-    EPlayerHitDirection GetHitDirection(const FVector& ToAttackerDir);
-
-    UFUNCTION()
-    void OnDeath(); // StatusComponent가 죽었다고 하면 실행
-#pragma endregion 
-
+	UPROPERTY()
+	AActor* PendingDoorActor;
 private:
-#pragma region 내부 상태 및 계산 변수 (Internal State & Data)
-    // 달리기 상태
-    bool bIsRunning = false;
-    void CheckRunState();
+	bool bIsRunning = false;
+	float BobTime = 0.0f; // 카메라 밥 계산용
 
-    // 턴 시스템 계산용 
-    UPROPERTY()
-    bool bIsQuickTurning = false;
-    float TurnAlpha = 0.0f;
-    float TurnDuration = 0.0f;
-    float TurnStartYaw = 0.0f;
-    float TurnYawDelta = 0.0f;
-    float ControlStartYaw = 0.0f;
+	// 원본 백업 변수들
+	float OriginalArmLength = 180.0f;
+	FVector OriginalSocketOffset = FVector(0.0f, 35.0f, 10.0f);
+	float OriginalFOV = 60.0f;
 
-    // 카메라 및 조준 복원용 변수
-    float StandingArmLength = 180.0f;
-    float StandingCameraHeight = 45.0f;
-    float CurrentBaseCameraZ = 45.0f;
-    float BobTime = 0.0f;
-
-    float OriginalArmLength = 180.0f;
-    FVector OriginalSocketOffset;
-    FVector OriginalTargetOffset;
-    float OriginalFOV = 60.0f;
-#pragma endregion 
-
-#pragma region Interaction - WJ
-public:
-    UPROPERTY(EditDefaultsOnly, Category = "UI")
-    TSubclassOf<UHealthVignetteWidget> HealthVignetteClass;
-
-    UPROPERTY()
-    UHealthVignetteWidget* HealthVignetteWidget;
-#pragma endregion 
-
-private:
-    // 현재 상호작용 중인 문 (노티파이에서 접근용)
-    UPROPERTY()
-    AActor* PendingDoorActor;
-
-public:
-    // 애니메이션 몽타주에서 호출할 함수 (BlueprintCallable로 설정하여 노티파이에서 호출 가능하게 함)
-    UFUNCTION(BlueprintCallable, Category = "Interaction")
-    void TriggerDoorOpen();
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float AimLookSensitivity = 0.5f;
 };

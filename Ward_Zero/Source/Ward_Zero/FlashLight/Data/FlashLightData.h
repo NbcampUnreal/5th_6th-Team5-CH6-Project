@@ -7,8 +7,8 @@
 UCLASS(BlueprintType)
 class WARD_ZERO_API UFlashLightData : public UPrimaryDataAsset
 {
-	GENERATED_BODY()
-	
+    GENERATED_BODY()
+
 public:
     UPROPERTY(EditAnywhere, Category = "Light Settings")
     float Intensity = 0.f;

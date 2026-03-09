@@ -1,4 +1,4 @@
-#include "Character/Data/CharacterCombatData.h"
+#include "Character/Data/Combat/CharacterCombatData.h"
 
 FPrimaryAssetId UCharacterCombatData::GetPrimaryAssetId() const
 {

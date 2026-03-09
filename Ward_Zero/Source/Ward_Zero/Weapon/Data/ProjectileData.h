@@ -11,8 +11,8 @@ class UNiagaraSystem;
 UCLASS(BlueprintType)
 class WARD_ZERO_API UProjectileData : public UPrimaryDataAsset
 {
-	GENERATED_BODY()
-	
+    GENERATED_BODY()
+
 public:
     virtual FPrimaryAssetId GetPrimaryAssetId() const override { return FPrimaryAssetId("ProjectileData", GetFName()); }
 
@@ -44,32 +44,7 @@ public:
     UPROPERTY(EditAnywhere, Category = "Visual|Impact")
     TMap<TEnumAsByte<EPhysicalSurface>, TObjectPtr<UNiagaraSystem>> ImpactEffectMap;
 
-    UPROPERTY(EditAnywhere, Category = "Visual|Impact")
-    TObjectPtr<UNiagaraSystem> DefaultImpactEffect;
-
-    UPROPERTY(EditAnywhere, Category = "Visual|Impact")
-    TObjectPtr<UNiagaraSystem> ConcreteImpactEffect; 
-
     // Physics Material 사운드 매핑 
     UPROPERTY(EditAnywhere, Category = "Sound|Impact")
     TMap<TEnumAsByte<EPhysicalSurface>, TObjectPtr<USoundBase>> ImpactSoundMap;
-
-    UPROPERTY(EditAnywhere, Category = "Visual|Impact")
-	TObjectPtr<UNiagaraSystem> MetalImpactEffect;
-
-    UPROPERTY(EditAnywhere, Category = "Visual|Impact")
-    TObjectPtr<UNiagaraSystem> MarbelImpactEffect; 
-
-
-    UPROPERTY(EditAnywhere, Category = "Visual|Sound")
-    TObjectPtr<USoundBase> DefaultImpactSoundEffect;
-
-    UPROPERTY(EditAnywhere, Category = "Visual|Sound")
-    TObjectPtr<USoundBase> ConcreteImpactSoundEffect;
-
-    UPROPERTY(EditAnywhere, Category = "Visual|Sound")
-    TObjectPtr<USoundBase> MetalImpactSoundEffect;
-
-    UPROPERTY(EditAnywhere, Category = "Visual|Sound")
-    TObjectPtr<USoundBase> MarbelImpactSoundEffect;
 };

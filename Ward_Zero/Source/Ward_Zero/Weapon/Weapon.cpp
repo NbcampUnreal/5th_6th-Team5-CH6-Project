@@ -8,7 +8,7 @@
 #include "GameFramework/Character.h"
 #include "Magazine/MagazineBase.h"
 #include "Curves/CurveVector.h"
-#include "Character/Components/PlayerCombatComponent.h"
+#include "Character/Components/Combat/PlayerCombatComponent.h"
 #include "Weapon/Data/WeaponData.h"
 #include "Weapon/Data/ProjectileData.h"
 #include "Weapon/Projectile/Projectile.h"
@@ -18,12 +18,12 @@
 
 AWeapon::AWeapon()
 {
-	PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bCanEverTick = true;
 
-	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
-	SetRootComponent(WeaponMesh);
-	WeaponMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
-	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
+    SetRootComponent(WeaponMesh);
+    WeaponMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+    WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
     GunMagMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GunMagMesh"));
     GunMagMesh->SetupAttachment(WeaponMesh, TEXT("MagSocket"));
@@ -40,8 +40,8 @@ AWeapon::AWeapon()
     SMGSpotLight->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 
     // 빛 설정
-    SMGSpotLight->Intensity = 0.0f;      
-    SMGSpotLight->OuterConeAngle = 0.0f; 
+    SMGSpotLight->Intensity = 0.0f;
+    SMGSpotLight->OuterConeAngle = 0.0f;
     SMGSpotLight->SetVisibility(false);
 }
 
@@ -81,12 +81,12 @@ void AWeapon::Tick(float DeltaTime)
 
 void AWeapon::BeginPlay()
 {
-	Super::BeginPlay();	
+    Super::BeginPlay();
 
     if (SMGSpotLight)
     {
         SMGSpotLight->SetVisibility(false);
-        SMGSpotLight->Intensity = 0.0f; 
+        SMGSpotLight->Intensity = 0.0f;
     }
 
     if (WeaponData)
@@ -115,11 +115,11 @@ void AWeapon::BeginPlay()
 
 void AWeapon::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
 {
-	SetOwner(NewOwner);
-	WeaponInstigator = NewInstigator;
-	WeaponOwnerController = NewInstigator ? NewInstigator->GetController() : nullptr;
+    SetOwner(NewOwner);
+    WeaponInstigator = NewInstigator;
+    WeaponOwnerController = NewInstigator ? NewInstigator->GetController() : nullptr;
 
-	AttachToComponent(InParent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, InSocketName);
+    AttachToComponent(InParent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, InSocketName);
 }
 
 void AWeapon::Fire(const FVector& HitTarget)
@@ -175,7 +175,7 @@ void AWeapon::Fire(const FVector& HitTarget)
         UNiagaraFunctionLibrary::SpawnSystemAttached(
             WeaponData->MuzzleFlash,
             WeaponMesh,
-            TEXT("Muzzle"), 
+            TEXT("Muzzle"),
             FVector::ZeroVector,
             FRotator::ZeroRotator,
             EAttachLocation::SnapToTarget, true
@@ -200,7 +200,6 @@ void AWeapon::Fire(const FVector& HitTarget)
 void AWeapon::SpendRound()
 {
     CurrentAmmo = FMath::Clamp(CurrentAmmo - 1, 0, MaxCapacity);
-
     UE_LOG(LogTemp, Warning, TEXT("Ammo: %d / %d"), CurrentAmmo, MaxCapacity);
 }
 
@@ -246,12 +245,12 @@ void AWeapon::PlayReloadSound()
     {
         UGameplayStatics::PlaySoundAtLocation(this, WeaponData->ReloadSound, GetActorLocation());
     }
-	UE_LOG(LogTemp, Warning, TEXT("장전 소리"));
+    UE_LOG(LogTemp, Warning, TEXT("장전 소리"));
 }
 
 void AWeapon::SetIsReloading(bool reload)
 {
-    bIsReloading = reload; 
+    bIsReloading = reload;
     return;
 }
 
@@ -326,7 +325,7 @@ void AWeapon::ShowMagazine()
     }
     if (GunMagMesh)
     {
-        GunMagMesh->SetVisibility(true); 
+        GunMagMesh->SetVisibility(true);
     }
     bIsReloading = false;
 }
