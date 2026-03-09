@@ -73,12 +73,12 @@ void ADoorActor::OnEndOverlap(UPrimitiveComponent*, AActor* OtherActor,
 void ADoorActor::OnIneractionRangeEntered_Implementation()
 {
 	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, "I am an ineractable");
-	// À§Á¬ Ç¥½Ã µî
+	// ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½ ï¿½ï¿½
 }
 
 void ADoorActor::OnIneractionRangeExited_Implementation()
 {
-	// À§Á¬ ¼û±è µî
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
 }
 
 void ADoorActor::OnIneracted_Implementation(APrototypeCharacter* Character)
@@ -94,7 +94,7 @@ void ADoorActor::HandleInteraction_Implementation(APrototypeCharacter* Character
 	if (!DoorTimelineFloatCurve || !Character)
 		return;
 
-	// ===== ÇÃ·¹ÀÌ¾î ¹æÇâ °è»ê =====
+	// ===== ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ =====
 	FVector DoorLocation = GetActorLocation();
 	FVector PlayerLocation = Character->GetActorLocation();
 
@@ -103,7 +103,7 @@ void ADoorActor::HandleInteraction_Implementation(APrototypeCharacter* Character
 
 	float Dot = FVector::DotProduct(DoorForward, ToPlayer);
 
-	// ===== ¿­¸®´Â ¹æÇâ °áÁ¤ =====
+	// ===== ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ =====
 	//TargetYaw = (Dot >= 0.f) ? 90.f : -90.f;
 	//DoorTimelineComp->SetPlayRate(2.0f);
 
@@ -119,4 +119,9 @@ void ADoorActor::HandleInteraction_Implementation(APrototypeCharacter* Character
 
 	bIsOpen = !bIsOpen;
 
+}
+
+EInteractionType ADoorActor::GetInteractionType_Implementation() const
+{
+	return EInteractionType::Door;
 }

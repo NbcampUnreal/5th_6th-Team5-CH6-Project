@@ -11,15 +11,15 @@ UCLASS()
 class WARD_ZERO_API AFlashLight : public AActor
 {
 	GENERATED_BODY()
-	
+
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> StaticMesh;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<USpotLightComponent> SpotLight;
-	
-public:	
+
+public:
 	AFlashLight();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flashlight|LightSettings", meta = (ClampMin = "0.0"))

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
+#include "Character/Enum/CharacterType.h"
 #include "CharacterAnimData.generated.h"
 
 class UAnimMontage;
@@ -18,12 +19,12 @@ enum class EWeaponAnimType : uint8
 UCLASS(BlueprintType)
 class WARD_ZERO_API UCharacterAnimData : public UPrimaryDataAsset
 {
-	GENERATED_BODY()
-	
+    GENERATED_BODY()
+
 public:
     virtual FPrimaryAssetId GetPrimaryAssetId() const override { return FPrimaryAssetId("CharacterData", GetFName()); }
 
-    // 피격 몽타주 (방향별)
+    //// 피격 몽타주 (방향별)
     UPROPERTY(EditAnywhere, Category = "Montage|Hit")
     TMap<EPlayerHitDirection, TObjectPtr<UAnimMontage>> UnarmedHitMontages;
 

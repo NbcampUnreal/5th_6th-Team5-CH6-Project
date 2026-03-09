@@ -1,11 +1,12 @@
 ﻿#include "PlayerAnimInstance.h"
-#include "GameFramework/Character.h" // 기본 물리 데이터는 ACharacter에서 가져오기 
+#include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Character/Animation/Interface/PlayerAnimInterface.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "KismetAnimationLibrary.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Weapon/Weapon.h"
+#include "Animation/AnimNode_Inertialization.h" 
 
 void UPlayerAnimInstance::NativeInitializeAnimation()
 {
@@ -22,12 +23,10 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	Super::NativeUpdateAnimation(DeltaSeconds);
 	if (!Character || !MovementComp) return;
 
-	// 물리 데이터 및 속도 계산 
 	Velocity = Character->GetVelocity();
 	Acceleration = MovementComp->GetCurrentAcceleration();
 	UpdateMovementCalculations(DeltaSeconds);
 
-	// 인터페이스를 거쳐 데이터를 가져오기 
 	if (IPlayerAnimInterface* AnimInterface = Cast<IPlayerAnimInterface>(TryGetPawnOwner()))
 	{
 		bIsRunning = AnimInterface->GetIsRunning();
@@ -37,15 +36,12 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsQuickTurning = AnimInterface->GetIsQuickTurning();
 		TurnIndex = AnimInterface->GetTurnIndex();
 		bIsEquipping = AnimInterface->IsEquipping();
-		HandIKTargetLocation = AnimInterface->GetHandIKTargetLoc();
 		bIsAiming = AnimInterface->GetIsAiming();
-		bIsClimbing = AnimInterface->GetIsClimbing();
 		bIsReloading = AnimInterface->GetIsReloading();
 		bIsUseFlashLight = AnimInterface->GetIsUseFlashLight();
 		bIsFiring = AnimInterface->IsFiring();
 		AimPitch = AnimInterface->GetAimPitch();
 		AimYaw = AnimInterface->GetAimYaw();
-		bIsInteracting = AnimInterface->IsInteracting();
 		CurrSpread = AnimInterface->GetCurrSpread();
 
 		USkeletalMeshComponent* TempMesh = AnimInterface->GetEquippedWeaponMesh();
@@ -81,7 +77,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	}
 	// Pistol IK 조건  
 	bool bPistolIKCondition = bIsPistolEquipped && !bIsSMGEquipped
-		&& !bIsEquipping && !bIsReloading && !bIsFiring && !bIsInteracting
+		&& !bIsEquipping && !bIsReloading && !bIsInteracting
 		&& !bIsUseFlashLight;
 
 	PistolIKAlpha = FMath::FInterpTo(PistolIKAlpha, bPistolIKCondition ? 1.0f : 0.0f, DeltaSeconds, 15.0f);
@@ -112,7 +108,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	//Pistol FlashLight IK Alpha
 	bool bFlashlightIKCondition = bIsUseFlashLight && bIsPistolEquipped && !bIsSMGEquipped
-		&& !bIsRunning && (GroundSpeed <= 250.f) 
+		&& !bIsRunning && (GroundSpeed <= 250.f)
 		&& !bIsEquipping && !bIsReloading && !bIsInteracting;
 
 	FlashlightIKAlpha = FMath::FInterpTo(FlashlightIKAlpha, bFlashlightIKCondition ? 1.0f : 0.0f, DeltaSeconds, 20.0f);
@@ -124,7 +120,6 @@ void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	if (!Character) return;
 
 	UpdateMovementCalculations(DeltaSeconds);
-	UpdatePivotLogic();
 	UpdateMovementDirection();
 	UpdateOrientationWarping(DeltaSeconds);
 }
@@ -133,56 +128,22 @@ void UPlayerAnimInstance::UpdateMovementCalculations(float DeltaSeconds)
 {
 	GroundSpeed = Velocity.Size2D();
 
-	float VerticalVelocity = Velocity.Z; //Z축이 음수면 떨어지는 상황 
-
 	float VelocityThreshold = bIsCrouching ? 12.0f : 5.0f;
 	bHasVelocity = GroundSpeed > VelocityThreshold;
 
-	// 가속도 계산 (Z축 제외)
 	const FVector Accel2D = Acceleration * FVector(1.f, 1.f, 0.f);
 	bIsAcceleration = Accel2D.Size() > 10.0f;
-
-	// Displacement 및 Start Distance
-	DisplacementSinceLastUpdate = GroundSpeed * DeltaSeconds;
-	if (bIsAcceleration) StartDistance += DisplacementSinceLastUpdate;
-	else StartDistance = 0.0f;
-
-	// 로컬 속도 (Pivot 및 Warping용)
 	LocalVelocity2D = Character->GetActorRotation().UnrotateVector(Velocity);
 
-	// 입력 방향 벡터 결정
 	const FVector DirectionVector = (GroundSpeed < 15.0f && bIsAcceleration) ? Acceleration : Velocity;
-
-	// 방향 각도 계산
 	const FRotator ControlRotationYaw = FRotator(0.f, Character->GetControlRotation().Yaw, 0.f);
 	BS_Direction = UKismetAnimationLibrary::CalculateDirection(DirectionVector, ControlRotationYaw);
 	LocomotionAngle = UKismetAnimationLibrary::CalculateDirection(DirectionVector, Character->GetActorRotation());
 
 	if (!bIsGround)
-	{
 		FallingTime += DeltaSeconds;
-	}
 	else
-	{
 		FallingTime = 0.0f;
-	}
-}
-
-void UPlayerAnimInstance::UpdatePivotLogic()
-{
-	if (bIsAcceleration && bHasVelocity)
-	{
-		const FVector VelocityDir = Velocity.GetSafeNormal2D();
-		const FVector AccelDir = Acceleration.GetSafeNormal2D();
-		const float Dot = FVector::DotProduct(VelocityDir, AccelDir);
-
-		// Hysteresis 적용 피벗 감지
-		bIsPivoting = bIsPivoting ? (Dot < 0.0f) : (Dot < -0.5f);
-	}
-	else
-	{
-		bIsPivoting = false;
-	}
 }
 
 void UPlayerAnimInstance::UpdateMovementDirection()
@@ -215,6 +176,7 @@ void UPlayerAnimInstance::UpdateMovementDirection()
 		else if (FMath::IsWithin(BS_Direction, -110.f, 0.f)) CurrentDir = ELocomotionDirection::Left;
 		break;
 	}
+
 }
 
 void UPlayerAnimInstance::UpdateOrientationWarping(float DeltaSeconds)
@@ -234,53 +196,20 @@ void UPlayerAnimInstance::UpdateOrientationWarping(float DeltaSeconds)
 	OrientationWarpingAlpha = FMath::FInterpTo(OrientationWarpingAlpha, TargetAlpha, DeltaSeconds, 6.0f);
 }
 
-bool UPlayerAnimInstance::ShouldDistanceMatchStop() const
-{
-	return bHasVelocity && !bIsAcceleration;
-}
-
-void UPlayerAnimInstance::AnimNotify_StopQuickTurn()
-{
-	if (IPlayerAnimInterface* AnimInterface = Cast<IPlayerAnimInterface>(TryGetPawnOwner()))
-	{
-		AnimInterface->SetIsQuickTurning(false);
-
-		bIsQuickTurning = false;
-	}
-}
-
 void UPlayerAnimInstance::UpdateLocomotionState(ELocomotionState StateName)
 {
 	bIsRunning = (StateName == ELocomotionState::Running);
 }
 
-void UPlayerAnimInstance::UpdateSMGHandIK(float DeltaSeconds)
+void UPlayerAnimInstance::RequestLayerInertialBlend(float BlendTime)
 {
-	if (WeaponMesh && Character && Character->GetMesh())
+	FInertializationRequest Request;
+	Request.Duration = BlendTime;
+
+	UE::Anim::IInertializationRequester* Requester = (UE::Anim::IInertializationRequester*)this;
+
+	if (Requester)
 	{
-		// Transform Space는 RTS_World 기준
-		FTransform SocketTransform = WeaponMesh->GetSocketTransform(TEXT("SMG_LeftHand"), RTS_World);
-
-		// World Space 위치를 hand_r 뼈대 공간으로 변환 
-		FVector OutPosition;
-		FRotator OutRotation;
-
-		Character->GetMesh()->TransformToBoneSpace(
-			TEXT("hand_r"),
-			SocketTransform.GetLocation(),
-			SocketTransform.Rotator(),
-			OutPosition,
-			OutRotation
-		);
-
-		SMGHandIKTransform = FTransform(OutRotation, OutPosition, FVector(1.0f, 1.0f, 1.0f));
-	}
-}
-
-void UPlayerAnimInstance::AnimNotify_DoorTrigger()
-{
-	if (IPlayerAnimInterface* AnimInterface = Cast<IPlayerAnimInterface>(TryGetPawnOwner()))
-	{
-		AnimInterface->OnDoorTriggered();
+		Requester->RequestInertialization(Request);
 	}
 }

@@ -9,7 +9,9 @@ enum class EInteractionType : uint8
 {
 	None,
 	Door,
-	Ammo
+	Ammo,
+	Document,  
+	Save      
 };
 
 UINTERFACE(MinimalAPI)
@@ -40,4 +42,7 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent)
 	bool CanBeInteracted() const;
+
+	UFUNCTION(BlueprintNativeEvent)
+	EInteractionType GetInteractionType() const;
 };

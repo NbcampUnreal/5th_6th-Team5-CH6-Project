@@ -67,7 +67,7 @@ public:
     // 탄약이 남아있는지 확인
     bool HasAmmo() const { return CurrentAmmo > 0; }
 
-	bool IsFullAmmo() const { return CurrentAmmo >= MaxCapacity; }
+    bool IsFullAmmo() const { return CurrentAmmo >= MaxCapacity; }
 
     // 현재 재장전 중인가?
     bool IsReloading() const { return bIsReloading; }
@@ -115,7 +115,7 @@ public:
     FName HandSocketName = TEXT("MagSocket"); //손 탄창 부착한 소켓 
 
     UPROPERTY(EditDefaultsOnly, Category = "Weapon|Sockets") //총 탄창 소켓
-    FName MagSocketName = TEXT("MagSocket");
+        FName MagSocketName = TEXT("MagSocket");
 
     UPROPERTY(EditAnywhere, Category = "Weapon | Effects")
     class UNiagaraSystem* ShellEjectEffect;
@@ -126,12 +126,6 @@ public:
 
 protected:
 #pragma region 무기 능력치 설정 (Weapon Config & Stats)
-    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Stats")
-    float Damage = 10.0f;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Weapon|Stats")
-    float FireRange = 5000.0f;
-
     UPROPERTY(EditDefaultsOnly, Category = "Weapon|Stats")
     bool bIsAutomatic = false;
 
@@ -145,12 +139,12 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Weapon|Stats")
     TSubclassOf<UWZDamageType> DamageTypeClass;
 
- public:
+public:
     UPROPERTY(EditDefaultsOnly, Category = "Weapon|Recoil")
     UCurveVector* RecoilCurve;
 #pragma endregion
 
- protected:
+protected:
 #pragma region 무기 상태 (Weapon State)
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|State")
     int32 CurrentAmmo;
@@ -160,6 +154,9 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|State")
     int32 ReserveAmmo = 30;
+
+    UPROPERTY()
+    float Damage;
 #pragma endregion
 
 public:
@@ -211,7 +208,7 @@ private:
     FVector LaserHitLocation;
 #pragma endregion
 
-// 반동 데이터 Getter 함수 
+    // 반동 데이터 Getter 함수 
 public:
     UCurveVector* GetRecoilCurve() const;
     float GetRecoilIntensity() const;

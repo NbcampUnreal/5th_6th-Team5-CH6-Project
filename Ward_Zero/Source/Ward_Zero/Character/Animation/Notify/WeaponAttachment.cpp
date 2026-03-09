@@ -1,7 +1,7 @@
 #include "Character/Animation/Notify/WeaponAttachment.h"
 #include "WeaponAttachment.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
-#include "Character/Components/PlayerCombatComponent.h"
+#include "Character/Components/Combat/PlayerCombatComponent.h"
 
 void UWeaponAttachment::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {

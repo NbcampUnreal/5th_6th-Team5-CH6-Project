@@ -7,8 +7,8 @@
 UCLASS(BlueprintType)
 class WARD_ZERO_API UCharacterStatusData : public UPrimaryDataAsset
 {
-	GENERATED_BODY()
-	
+    GENERATED_BODY()
+
 protected:
     virtual FPrimaryAssetId GetPrimaryAssetId() const override;
 

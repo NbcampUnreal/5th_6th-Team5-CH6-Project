@@ -16,7 +16,7 @@ UCLASS()
 class WARD_ZERO_API AProjectile : public AActor
 {
 	GENERATED_BODY()
-	
+
 public:
 	AProjectile();
 

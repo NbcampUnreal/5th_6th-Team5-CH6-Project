@@ -49,10 +49,10 @@ protected:
 	UFUNCTION()
 	void UpdateTimelineComp(float Output);
 
-	// ¸ñÇ¥ È¸Àü°ª
+	// ï¿½ï¿½Ç¥ È¸ï¿½ï¿½ï¿½ï¿½
 	float TargetYaw = 90.f;
 
-	// ¹® ±âº» È¸Àü°ª ÀúÀå
+	// ï¿½ï¿½ ï¿½âº» È¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	FRotator InitialRotation;
 
 	// ===== IGimmickInterface =====
@@ -62,7 +62,7 @@ public:
 	virtual void OnIneracted_Implementation(APrototypeCharacter* Character) override;
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
-
+	virtual EInteractionType GetInteractionType_Implementation() const override;
 private:
 	UFUNCTION()
 	void OnBeginOverlap(
@@ -79,6 +79,4 @@ private:
 		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex);
-
-
 };

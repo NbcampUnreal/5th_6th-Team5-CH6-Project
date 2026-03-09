@@ -24,6 +24,7 @@ public class Ward_Zero : ModuleRules
             "PhysicsCore",
             "NavigationSystem",
             "AnimGraphRuntime",
+            "AnimationBlueprintLibrary",
             
             
             //GAS

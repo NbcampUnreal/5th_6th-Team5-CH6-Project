@@ -5,8 +5,8 @@
 #include "UI_KWJ/Save/SaveWidget.h"
 #include "UI_KWJ/GameOver/GameOverSubsystem.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
-#include "Character/Components/PlayerStatusComponent.h"
-#include "Character/Components/PlayerCombatComponent.h"
+#include "Character/Components/Status/PlayerStatusComponent.h"
+#include "Character/Components/Combat/PlayerCombatComponent.h"
 #include "Weapon/Weapon.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
@@ -281,7 +281,7 @@ UWardSaveGame* USaveSubsystem::CollectCurrentGameState()
 	}
 
 	// 손전등
-	SaveData->bIsFlashLightOn = Character->bIsUseFlashLight;
+	SaveData->bIsFlashLightOn = Character->GetIsUseFlashLight();
 
 	// 레벨 & 시간
 	SaveData->CurrentLevelName = FName(*UGameplayStatics::GetCurrentLevelName(GetWorld()));
