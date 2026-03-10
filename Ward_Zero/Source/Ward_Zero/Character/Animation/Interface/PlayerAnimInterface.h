@@ -4,6 +4,8 @@
 #include "UObject/Interface.h"
 #include "PlayerAnimInterface.generated.h"
 
+class UPlayerCombatComponent;
+
 UINTERFACE(MinimalAPI)
 class UPlayerAnimInterface : public UInterface
 {
@@ -35,5 +37,5 @@ public:
     virtual float GetAimYaw() const = 0;
     virtual bool IsFiring() const = 0;
     virtual float GetCurrSpread() const = 0;
-
+    virtual UPlayerCombatComponent* GetCombatComp() const = 0;
 };

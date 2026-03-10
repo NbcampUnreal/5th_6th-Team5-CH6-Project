@@ -43,6 +43,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		AimPitch = AnimInterface->GetAimPitch();
 		AimYaw = AnimInterface->GetAimYaw();
 		CurrSpread = AnimInterface->GetCurrSpread();
+		CombatComp = AnimInterface->GetCombatComp();
 
 		USkeletalMeshComponent* TempMesh = AnimInterface->GetEquippedWeaponMesh();
 		WeaponMesh = IsValid(TempMesh) ? TempMesh : nullptr;

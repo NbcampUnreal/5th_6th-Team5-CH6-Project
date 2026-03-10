@@ -9,6 +9,8 @@
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "GameplayTagContainer.h"
 #include "Chaos/ChaosEngineInterface.h"
+#include "Perception/AISense_Hearing.h"
+#include "Character/Noise/NoiseFucLibrary/PlayerNoise.h"
 
 AProjectile::AProjectile()
 {
@@ -63,19 +65,43 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 	if (!ProjectileData || OtherActor == GetOwner()) return;
 
 	EPhysicalSurface SurfaceType = UGameplayStatics::GetSurfaceType(Hit);
-	UNiagaraSystem* Effect = nullptr;
 
-	if (ProjectileData->ImpactEffectMap.Contains(SurfaceType_Default))
+	// 이펙트 호출 
+	UNiagaraSystem* Effect = ProjectileData->ImpactEffectMap.Contains(SurfaceType)
+		? ProjectileData->ImpactEffectMap[SurfaceType]
+		: ProjectileData->ImpactEffectMap.FindRef(SurfaceType_Default);
+
+	if (Effect)
 	{
-		Effect = ProjectileData->ImpactEffectMap[SurfaceType_Default];
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Effect, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
 	}
 
-	// 표면별 이펙트 선택
-	if (ProjectileData->ImpactEffectMap.Contains(SurfaceType))
-		Effect = ProjectileData->ImpactEffectMap[SurfaceType];
+	// 사운드 재생 
+	if (ProjectileData->ImpactSoundMap.Contains(SurfaceType) || ProjectileData->ImpactSoundMap.Contains(SurfaceType_Default))
+	{
+		USoundBase* Sound = ProjectileData->ImpactSoundMap.Contains(SurfaceType)
+			? ProjectileData->ImpactSoundMap[SurfaceType]
+			: ProjectileData->ImpactSoundMap[SurfaceType_Default];
 
-	if (Effect) UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Effect, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
+		if (Sound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, Sound, Hit.ImpactPoint);
+		}
+	}
 
+	if (ProjectileData)
+	{
+		UPlayerNoise::ReportNoise(
+			GetWorld(),
+			GetInstigator(),
+			Hit.ImpactPoint,
+			ProjectileData->ImpactNoiseLoudness,
+			ProjectileData->ImpactNoiseRange,
+			ProjectileData->ImpactNoiseTag
+		);
+	}
+
+	// 데미지 처리 및 제거
 	UGameplayStatics::ApplyPointDamage(OtherActor, ProjectileData->Damage, GetActorForwardVector(), Hit, GetInstigatorController(), this, ProjectileData->DamageTypeClass);
 
 	Destroy();

@@ -93,6 +93,7 @@ public:
 	virtual float GetAimYaw() const override;
 	virtual bool IsFiring() const override;
 	virtual float GetCurrSpread() const override;
+	virtual UPlayerCombatComponent* GetCombatComp() const override;
 #pragma endregion
 
 	void Move(const FInputActionValue& Value);
@@ -136,4 +137,10 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Camera")
 	float AimLookSensitivity = 0.5f;
+
+public:
+	bool bHasKeyCard = false;
+
+	bool HasKeyCard() const { return bHasKeyCard; }
+	void GiveKeyCard() { bHasKeyCard = true; }
 };

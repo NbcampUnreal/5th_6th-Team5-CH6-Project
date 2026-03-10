@@ -14,6 +14,8 @@
 #include "Weapon/Projectile/Projectile.h"
 #include "Components/SpotLightComponent.h"
 #include "FlashLight/Data/FlashLightData.h"
+#include "Perception/AISense_Hearing.h"
+#include "Character/Noise/NoiseFucLibrary/PlayerNoise.h"
 //#include "DrawDebugHelpers.h"
 
 AWeapon::AWeapon()
@@ -168,6 +170,22 @@ void AWeapon::Fire(const FVector& HitTarget)
     if (WeaponData->FireSound)
     {
         UGameplayStatics::PlaySoundAtLocation(this, WeaponData->FireSound, GetActorLocation());
+    }
+
+    if (WeaponInstigator)
+    {
+        AActor* NoiseMaker = WeaponInstigator ? Cast<AActor>(WeaponInstigator) : GetOwner();
+        if (NoiseMaker && WeaponData)
+        {
+            UPlayerNoise::ReportNoise(
+                GetWorld(),
+                NoiseMaker,
+                GetActorLocation(),
+                WeaponData->NoiseLoudness,
+                WeaponData->NoiseRange,
+                WeaponData->NoiseTag
+            );
+        }
     }
 
     if (WeaponData->MuzzleFlash)
@@ -334,5 +352,12 @@ void AWeapon::ShowMagazine()
 void AWeapon::AddAmmo(int32 Amount)
 {
     ReserveAmmo += Amount;
+
+    // 탄창 주울 때 소리 
+    if (WeaponData && WeaponData->PickupMagSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, WeaponData->PickupMagSound, GetActorLocation());
+    }
+
     UE_LOG(LogTemp, Warning, TEXT("Ammo Added! Current Reserve: %d"), ReserveAmmo);
 }

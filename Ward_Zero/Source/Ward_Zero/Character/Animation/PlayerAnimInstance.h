@@ -53,6 +53,9 @@ protected:
 	TObjectPtr<class UCharacterMovementComponent> MovementComp;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<class UPlayerCombatComponent> CombatComp;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	class AWeapon* EquippedWeapon;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")

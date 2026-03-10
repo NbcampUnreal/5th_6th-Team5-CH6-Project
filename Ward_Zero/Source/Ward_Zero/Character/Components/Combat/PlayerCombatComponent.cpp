@@ -178,7 +178,7 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 	Params.AddIgnoredActor(GetOwner());
 	Params.AddIgnoredActor(EquippedWeapon);
 
-	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, Start + (Dir * 10000.f), ECC_Visibility, Params);
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, Start + (Dir * 10000.f), ECC_GameTraceChannel2, Params);
 	EquippedWeapon->Fire(bHit ? Hit.ImpactPoint : Hit.TraceEnd);
 
 	CurrentShotsFired++;
@@ -285,6 +285,12 @@ void UPlayerCombatComponent::ToggleEquip(UAnimMontage* Montage, UAnimInstance* A
 	if (!EquippedWeapon) return;
 	bIsWeaponDrawn = !bIsWeaponDrawn;
 
+	USoundBase* SoundToPlay = bIsWeaponDrawn ? EquippedWeapon->WeaponData->EquipSound : EquippedWeapon->WeaponData->UnequipSound;
+	if (SoundToPlay)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, SoundToPlay, GetOwner()->GetActorLocation());
+	}
+
 	UAnimMontage* MontageToPlay = Montage ? Montage : GetCurrentEquipMontage(bIsWeaponDrawn);
 	if (bIsWeaponDrawn) EquippedWeapon->SetActorHiddenInGame(false);
 	if (AnimInst && MontageToPlay) AnimInst->Montage_Play(MontageToPlay);
@@ -305,6 +311,11 @@ void UPlayerCombatComponent::ChangeWeapon(int32 NewIndex, UAnimInstance* AnimIns
 		else EquippedWeapon->SetActorHiddenInGame(true); // 권총은 숨김
 	}
 
+	if (EquippedWeapon && EquippedWeapon->WeaponData->UnequipSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->WeaponData->UnequipSound, GetOwner()->GetActorLocation());
+	}
+
 	CurrentWeaponIndex = NewIndex;
 	EquippedWeapon = (CurrentWeaponIndex == 1) ? PistolWeapon : SMGWeapon;
 
@@ -314,6 +325,11 @@ void UPlayerCombatComponent::ChangeWeapon(int32 NewIndex, UAnimInstance* AnimIns
 	{
 		EquippedWeapon->SetActorHiddenInGame(false);
 		HandleWeaponAttachment(true); // 손으로 부착
+	}
+
+	if (EquippedWeapon && EquippedWeapon->WeaponData->EquipSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->WeaponData->EquipSound, GetOwner()->GetActorLocation());
 	}
 
 	// 애니메이션 인스턴스에 메쉬 정보 업데이트

@@ -28,6 +28,8 @@ APrototypeCharacter::APrototypeCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	Tags.AddUnique(TEXT("Player"));
+
 	// 컴포넌트 생성
 	StatusComp = CreateDefaultSubobject<UPlayerStatusComponent>(TEXT("StatusComp"));
 	CombatComp = CreateDefaultSubobject<UPlayerCombatComponent>(TEXT("CombatComp"));
@@ -37,7 +39,7 @@ APrototypeCharacter::APrototypeCharacter()
 	FootstepComp = CreateDefaultSubobject<UFootstepComponent>(TEXT("FootstepComp"));
 	CustomCameraComp = CreateDefaultSubobject<UPlayerCameraComponent>(TEXT("CustomCameraComp"));
 
-	// 카메라 설정 (원본과 동일)
+	// 카메라 설정 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
@@ -51,7 +53,7 @@ APrototypeCharacter::APrototypeCharacter()
 	MainCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	MainCamera->bUsePawnControlRotation = false;
 
-	// 물리 설정 (원본 1:1 복사)
+	// 물리 설정 
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 240.0f, 0.0f);
@@ -77,7 +79,7 @@ void APrototypeCharacter::BeginPlay()
 			if (DefaultMappingContext) Sub->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
-	// 1. [수정] 스테미나/체력 데이터 에셋 값 연결 (원본 로직 복구)
+	// 스테미나/체력 데이터 에셋 값 연결 (원본 로직 복구)
 	if (StatusData && StatusComp)
 	{
 		StatusComp->MaxHealth = StatusData->MaxHealth;
@@ -176,7 +178,7 @@ void APrototypeCharacter::Tick(float DeltaTime)
 		CustomCameraComp->UpdateCamera(DeltaTime);
 	}
 }
-
+#pragma region Input Biding
 void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -200,6 +202,7 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		EI->BindAction(EquipSlot2Action, ETriggerEvent::Started, this, &APrototypeCharacter::SelectWeapon2);
 	}
 }
+#pragma endregion
 
 void APrototypeCharacter::Move(const FInputActionValue& Value)
 {
@@ -300,6 +303,11 @@ void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 
 	CombatComp->ToggleEquip(nullptr, AnimInst);
 
+	if (FlashLightComp)
+	{
+		FlashLightComp->SetFlashlightOff();
+	}
+
 	TSubclassOf<UAnimInstance> TargetLayer = UnarmedLayer;
 	if (bWillDraw)
 	{
@@ -311,6 +319,24 @@ void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 	{
 		FlashLightComp->UpdateFlashlight(0.0f);
 	}
+
+	/*if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			if (UWeaponUISubsystem* WeaponUI = LP->GetSubsystem<UWeaponUISubsystem>())
+			{
+				if (CombatComp->IsWeaponDrawn())
+				{
+					WeaponUI->NotifyWeaponChanged(CombatComp->GetCurrentWeaponIndex(), true);
+				}
+				else
+				{
+					WeaponUI->NotifyWeaponHolstered();
+				}
+			}
+		}
+	}*/
 }
 
 void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
@@ -325,7 +351,6 @@ void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 		// 카메라 설정 
 		CameraBoom->bInheritPitch = false;
 		CameraBoom->bEnableCameraLag = false;
-		CameraBoom->bEnableCameraRotationLag = false;
 		MainCamera->bUsePawnControlRotation = true;
 
 		// 컨트롤러 시야각 제한 및 크로스헤어 표시
@@ -340,10 +365,6 @@ void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 				HUD->SetCrosshairVisibility(true);
 			}
 		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("조준 실패"));
 	}
 }
 
@@ -362,7 +383,6 @@ void APrototypeCharacter::StopAiming(const FInputActionValue& Value)
 	// 카메라 설정 복구
 	CameraBoom->bInheritPitch = true;
 	CameraBoom->bEnableCameraLag = true;
-	CameraBoom->bEnableCameraRotationLag = true;
 
 	if (MainCamera)
 	{
@@ -443,9 +463,26 @@ void APrototypeCharacter::SelectWeapon1(const FInputActionValue& Value)
 	// 무기 교체 
 	CombatComp->ChangeWeapon(1, AnimInst);
 
+	// 무기 교체 시 손전등 내리고 끄기 
+	if (FlashLightComp)
+	{
+		FlashLightComp->SetFlashlightOff();
+	}
+
 	// 레이어 연결 및 손전등 상태 갱신
 	if (PistolLayer) AnimInst->LinkAnimClassLayers(PistolLayer);
 	if (FlashLightComp) FlashLightComp->UpdateFlashlight(0.0f);
+
+	/*if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			if (UWeaponUISubsystem* WeaponUI = LP->GetSubsystem<UWeaponUISubsystem>())
+			{
+				WeaponUI->NotifyWeaponChanged(1, true);
+			}
+		}
+	}*/
 }
 
 
@@ -469,9 +506,25 @@ void APrototypeCharacter::SelectWeapon2(const FInputActionValue& Value)
 	// 무기 교체 
 	CombatComp->ChangeWeapon(2, AnimInst);
 
+	if (FlashLightComp)
+	{
+		FlashLightComp->SetFlashlightOff();
+	}
+
 	// 레이어 연결 및 손전등 상태 갱신
 	if (SMGLayer) AnimInst->LinkAnimClassLayers(SMGLayer);
 	if (FlashLightComp) FlashLightComp->UpdateFlashlight(0.0f);
+
+	/*if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			if (UWeaponUISubsystem* WeaponUI = LP->GetSubsystem<UWeaponUISubsystem>())
+			{
+				WeaponUI->NotifyWeaponChanged(2, true);
+			}
+		}
+	}*/
 }
 void APrototypeCharacter::Interact(const FInputActionValue& Value)
 {
@@ -648,24 +701,36 @@ float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 
 	float ActualDamage = StatusComp->ApplyDamage(DamageAmount);
 
-	FVector ToAttackerDir = FVector::ZeroVector;
-	if (DamageCauser)
+	FVector AttackerLocation;
+
+	// 1순위 = 플레이어를 공격한 몬스터의 위치 
+	if (EventInstigator && EventInstigator->GetPawn())
 	{
-		ToAttackerDir = (DamageCauser->GetActorLocation() - GetActorLocation());
-		ToAttackerDir.Z = 0.0f;
-		ToAttackerDir.Normalize();
+		AttackerLocation = EventInstigator->GetPawn()->GetActorLocation();
 	}
+	// 2순위 = 공격한 주체가 없다면 데미지를 일으킨 액터의 위치
+	else if (DamageCauser)
+	{
+		AttackerLocation = DamageCauser->GetActorLocation();
+	}
+	else return ActualDamage;
+
+	// 방향 벡터 계산 플레이어 기준 AI 공격 방향 
+	FVector ToAttackerDir = (AttackerLocation - GetActorLocation());
+	ToAttackerDir.Z = 0.0f;
+	ToAttackerDir.Normalize();
 
 	if (!StatusComp->IsDead())
 	{
 		if (GetIsQuickTurning() && QuickTurnComp) QuickTurnComp->StopQuickTurn();
-
-		if (CombatComp && CombatComp->GetEquippedWeapon())
-		{
-			CombatComp->CancelReload(GetMesh()->GetAnimInstance());
-		}
+		if (CombatComp) CombatComp->CancelReload(GetMesh()->GetAnimInstance());
 
 		PlayHitReaction(ToAttackerDir);
+	}
+	else
+	{
+		PlayDeathReaction(ToAttackerDir);
+		OnDeath();
 	}
 
 	return ActualDamage;
@@ -673,12 +738,23 @@ float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 
 EPlayerHitDirection APrototypeCharacter::GetHitDirection(const FVector& ToAttackerDir)
 {
+	if (ToAttackerDir.IsNearlyZero()) return EPlayerHitDirection::Front; // 기본값
+
+	// 캐릭터의 앞/오른쪽 벡터와 공격자 방향의 내적 계산
 	float ForwardDot = FVector::DotProduct(GetActorForwardVector(), ToAttackerDir);
 	float RightDot = FVector::DotProduct(GetActorRightVector(), ToAttackerDir);
 
-	if (ForwardDot >= 0.5f) return EPlayerHitDirection::Front;
-	if (ForwardDot <= -0.5f) return EPlayerHitDirection::Back;
-	return (RightDot > 0.f) ? EPlayerHitDirection::Right : EPlayerHitDirection::Left;
+	EPlayerHitDirection Result;
+
+	// 0.707 = 45도 
+	if (ForwardDot >= 0.5f) Result = EPlayerHitDirection::Front;
+	else if (ForwardDot <= -0.5f) Result = EPlayerHitDirection::Back;
+	else if (RightDot >= 0.f) Result = EPlayerHitDirection::Right;
+	else Result = EPlayerHitDirection::Left;
+
+	UE_LOG(LogTemp, Log, TEXT("Hit Direction: %d (F_Dot: %f, R_Dot: %f)"), (int32)Result, ForwardDot, RightDot);
+
+	return Result;
 }
 
 void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
@@ -703,23 +779,23 @@ void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
 }
 void APrototypeCharacter::PlayDeathReaction(const FVector& ToAttackerDir)
 {
-	// 사망 시 방향별 몽타주 재생 및 래그돌 처리
 	EPlayerHitDirection HitDir = GetHitDirection(ToAttackerDir);
-	UAnimMontage* MontageToPlay = nullptr;
-
-	if (AnimData && AnimData->DeathMontages.Contains(HitDir))
-	{
-		MontageToPlay = AnimData->DeathMontages[HitDir];
-	}
+	UAnimMontage* MontageToPlay = (AnimData) ? AnimData->DeathMontages.FindRef(HitDir) : nullptr;
 
 	if (MontageToPlay)
 	{
-		PlayAnimMontage(MontageToPlay);
+		// 몽타주 재생
+		float Duration = PlayAnimMontage(MontageToPlay);
+
+		// 몽타주가 끝날 때쯤 래그돌이 켜지도록 타이머 설정 (예: 재생 시간의 80%)
+		FTimerHandle RagdollTimer;
+		GetWorldTimerManager().SetTimer(RagdollTimer, [this]() {
+			GetMesh()->SetSimulatePhysics(true);
+			}, Duration * 0.8f, false);
 	}
 	else
 	{
-		// 몽타주가 없으면 즉시 물리 시뮬레이션 (래그돌)
-		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+		// 몽타주가 없으면 즉시 래그돌
 		GetMesh()->SetSimulatePhysics(true);
 	}
 }
@@ -729,15 +805,25 @@ bool APrototypeCharacter::GetIsPistolEquipped() const { return CombatComp && Com
 bool APrototypeCharacter::GetIsGround() const { return GetCharacterMovement()->IsMovingOnGround(); }
 bool APrototypeCharacter::GetIsQuickTurning() const { return QuickTurnComp && QuickTurnComp->IsQuickTurning(); }
 int32 APrototypeCharacter::GetTurnIndex() const { return QuickTurnComp ? QuickTurnComp->GetTurnIndex() : 0; }
+FVector APrototypeCharacter::GetHandIKTargetLoc() const { return CombatComp ? CombatComp->GetHandIKTarget() : FVector::ZeroVector; }
+bool APrototypeCharacter::GetIsAiming() const { return CombatComp && CombatComp->IsAiming(); }
+void APrototypeCharacter::SetIsQuickTurning(bool bIsTurning) { if (QuickTurnComp && !bIsTurning) QuickTurnComp->StopQuickTurn(); }
+AWeapon* APrototypeCharacter::GetEquippedWeapon() { return CombatComp ? CombatComp->GetEquippedWeapon() : nullptr; }
+bool APrototypeCharacter::GetIsReloading() const { return CombatComp && CombatComp->GetIsReloading(); }
+bool APrototypeCharacter::GetIsUseFlashLight() const { return FlashLightComp ? FlashLightComp->IsUsingFlashlight() : false; }
+bool APrototypeCharacter::GetIsSMGEquipped() const { return CombatComp && (CombatComp->GetCurrentWeaponIndex() == 2) && CombatComp->IsWeaponDrawn(); }
+int32 APrototypeCharacter::GetCurrentWeaponIndex() const { return CombatComp ? CombatComp->GetCurrentWeaponIndex() : 0; }
+float APrototypeCharacter::GetAimPitch() const { return CombatComp ? CombatComp->GetAimPitch() : 0.0f; }
+float APrototypeCharacter::GetAimYaw() const { return CombatComp ? CombatComp->GetAimYaw() : 0.0f; }
+bool APrototypeCharacter::IsFiring() const { return CombatComp && CombatComp->IsFiring(); }
+float APrototypeCharacter::GetCurrSpread() const { return CombatComp ? CombatComp->CurrentSpread : 0.0f; }
+UPlayerCombatComponent* APrototypeCharacter::GetCombatComp() const { return CombatComp ? CombatComp : nullptr; }
 bool APrototypeCharacter::IsEquipping() const
 {
 	if (UAnimInstance* AI = GetMesh()->GetAnimInstance())
 		return AI->Montage_IsPlaying(nullptr);
 	return false;
 }
-FVector APrototypeCharacter::GetHandIKTargetLoc() const { return CombatComp ? CombatComp->GetHandIKTarget() : FVector::ZeroVector; }
-bool APrototypeCharacter::GetIsAiming() const { return CombatComp && CombatComp->IsAiming(); }
-void APrototypeCharacter::SetIsQuickTurning(bool bIsTurning) { if (QuickTurnComp && !bIsTurning) QuickTurnComp->StopQuickTurn(); }
 USkeletalMeshComponent* APrototypeCharacter::GetEquippedWeaponMesh()
 {
 	if (CombatComp)
@@ -750,19 +836,3 @@ USkeletalMeshComponent* APrototypeCharacter::GetEquippedWeaponMesh()
 	}
 	return nullptr;
 }
-AWeapon* APrototypeCharacter::GetEquippedWeapon() { return CombatComp ? CombatComp->GetEquippedWeapon() : nullptr; }
-bool APrototypeCharacter::GetIsReloading() const { return CombatComp && CombatComp->GetIsReloading(); }
-bool APrototypeCharacter::GetIsUseFlashLight() const
-{
-	return FlashLightComp ? FlashLightComp->IsUsingFlashlight() : false;
-}
-bool APrototypeCharacter::GetIsSMGEquipped() const
-{
-	// 원본 로직: 인덱스 2번이면서 무기를 꺼낸 상태여야 함
-	return CombatComp && (CombatComp->GetCurrentWeaponIndex() == 2) && CombatComp->IsWeaponDrawn();
-}
-int32 APrototypeCharacter::GetCurrentWeaponIndex() const { return CombatComp ? CombatComp->GetCurrentWeaponIndex() : 0; }
-float APrototypeCharacter::GetAimPitch() const { return CombatComp ? CombatComp->GetAimPitch() : 0.0f; }
-float APrototypeCharacter::GetAimYaw() const { return CombatComp ? CombatComp->GetAimYaw() : 0.0f; }
-bool APrototypeCharacter::IsFiring() const { return CombatComp && CombatComp->IsFiring(); }
-float APrototypeCharacter::GetCurrSpread() const { return CombatComp ? CombatComp->CurrentSpread : 0.0f; }
