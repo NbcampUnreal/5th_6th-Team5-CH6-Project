@@ -26,4 +26,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Audio")
 	class USoundBase* Sound_MetalStep;
+
+	UPROPERTY(EditAnywhere, Category = "Data")
+	TObjectPtr<class UFootstepData> FootstepDataAsset;
 };

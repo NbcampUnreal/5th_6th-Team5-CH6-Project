@@ -1,8 +1,16 @@
 #include "Character/Components/FootStep/FootstepComponent.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
+#include "Perception/AISense_Hearing.h"
+#include "Character/Noise/NoiseFucLibrary/PlayerNoise.h"
+#include "Character/Data/FootStep/FootstepData.h"
+#include "Chaos/ChaosEngineInterface.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 
-UFootstepComponent::UFootstepComponent() { PrimaryComponentTick.bCanEverTick = false; }
+UFootstepComponent::UFootstepComponent() 
+{ 
+    PrimaryComponentTick.bCanEverTick = false; 
+}
 
 void UFootstepComponent::PlayFootstep(FName FootBoneName)
 {
@@ -24,19 +32,23 @@ void UFootstepComponent::PlayFootstep(FName FootBoneName)
         // 데이터 에셋이나 TMap을 사용하여 표면별 사운드 선택
         USoundBase* SoundToPlay = Sound_DefaultStep;
 
-        if (SurfaceType == SurfaceType1) 
+        if (FootstepDataAsset)
         {
-            SoundToPlay = Sound_ConcreteStep;
-        }
-        if (SurfaceType == SurfaceType2) 
-        {
-            SoundToPlay = Sound_Marble;
-        }
-        if (SurfaceType == SurfaceType3) 
-        {
-            SoundToPlay = Sound_MetalStep;
-        }
+            // 현재 밟은 표면(SurfaceType)으로 데이터 검색
+            const FFootstepInfo* FootStepInfo = FootstepDataAsset->SurfaceFootstepMap.Find(SurfaceType);
 
-        if (SoundToPlay) UGameplayStatics::PlaySoundAtLocation(this, SoundToPlay, Hit.ImpactPoint);
+            // 만약 해당 표면에 대한 정보가 없다면 Default 데이터로 대체
+            if (!FootStepInfo)
+            {
+                FootStepInfo = FootstepDataAsset->SurfaceFootstepMap.Find(SurfaceType_Default);
+            }
+
+            if (FootStepInfo)
+            {
+                UGameplayStatics::PlaySoundAtLocation(this, FootStepInfo->StepSound, Hit.ImpactPoint);
+                UPlayerNoise::ReportNoise(GetWorld(), Owner, Hit.ImpactPoint,
+                    FootStepInfo->NoiseLoudness, FootStepInfo->NoiseRange, TEXT("Footstep"));
+            }
+        }
     }
 }

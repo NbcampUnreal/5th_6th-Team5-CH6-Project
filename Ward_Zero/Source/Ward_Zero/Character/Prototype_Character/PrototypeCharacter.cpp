@@ -701,24 +701,36 @@ float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 
 	float ActualDamage = StatusComp->ApplyDamage(DamageAmount);
 
-	FVector ToAttackerDir = FVector::ZeroVector;
-	if (DamageCauser)
+	FVector AttackerLocation;
+
+	// 1순위 = 플레이어를 공격한 몬스터의 위치 
+	if (EventInstigator && EventInstigator->GetPawn())
 	{
-		ToAttackerDir = (DamageCauser->GetActorLocation() - GetActorLocation());
-		ToAttackerDir.Z = 0.0f;
-		ToAttackerDir.Normalize();
+		AttackerLocation = EventInstigator->GetPawn()->GetActorLocation();
 	}
+	// 2순위 = 공격한 주체가 없다면 데미지를 일으킨 액터의 위치
+	else if (DamageCauser)
+	{
+		AttackerLocation = DamageCauser->GetActorLocation();
+	}
+	else return ActualDamage;
+
+	// 방향 벡터 계산 플레이어 기준 AI 공격 방향 
+	FVector ToAttackerDir = (AttackerLocation - GetActorLocation());
+	ToAttackerDir.Z = 0.0f;
+	ToAttackerDir.Normalize();
 
 	if (!StatusComp->IsDead())
 	{
 		if (GetIsQuickTurning() && QuickTurnComp) QuickTurnComp->StopQuickTurn();
-
-		if (CombatComp && CombatComp->GetEquippedWeapon())
-		{
-			CombatComp->CancelReload(GetMesh()->GetAnimInstance());
-		}
+		if (CombatComp) CombatComp->CancelReload(GetMesh()->GetAnimInstance());
 
 		PlayHitReaction(ToAttackerDir);
+	}
+	else
+	{
+		PlayDeathReaction(ToAttackerDir);
+		OnDeath();
 	}
 
 	return ActualDamage;
@@ -726,12 +738,23 @@ float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 
 EPlayerHitDirection APrototypeCharacter::GetHitDirection(const FVector& ToAttackerDir)
 {
+	if (ToAttackerDir.IsNearlyZero()) return EPlayerHitDirection::Front; // 기본값
+
+	// 캐릭터의 앞/오른쪽 벡터와 공격자 방향의 내적 계산
 	float ForwardDot = FVector::DotProduct(GetActorForwardVector(), ToAttackerDir);
 	float RightDot = FVector::DotProduct(GetActorRightVector(), ToAttackerDir);
 
-	if (ForwardDot >= 0.5f) return EPlayerHitDirection::Front;
-	if (ForwardDot <= -0.5f) return EPlayerHitDirection::Back;
-	return (RightDot > 0.f) ? EPlayerHitDirection::Right : EPlayerHitDirection::Left;
+	EPlayerHitDirection Result;
+
+	// 0.707 = 45도 
+	if (ForwardDot >= 0.5f) Result = EPlayerHitDirection::Front;
+	else if (ForwardDot <= -0.5f) Result = EPlayerHitDirection::Back;
+	else if (RightDot >= 0.f) Result = EPlayerHitDirection::Right;
+	else Result = EPlayerHitDirection::Left;
+
+	UE_LOG(LogTemp, Log, TEXT("Hit Direction: %d (F_Dot: %f, R_Dot: %f)"), (int32)Result, ForwardDot, RightDot);
+
+	return Result;
 }
 
 void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
@@ -756,23 +779,23 @@ void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
 }
 void APrototypeCharacter::PlayDeathReaction(const FVector& ToAttackerDir)
 {
-	// 사망 시 방향별 몽타주 재생 및 래그돌 처리
 	EPlayerHitDirection HitDir = GetHitDirection(ToAttackerDir);
-	UAnimMontage* MontageToPlay = nullptr;
-
-	if (AnimData && AnimData->DeathMontages.Contains(HitDir))
-	{
-		MontageToPlay = AnimData->DeathMontages[HitDir];
-	}
+	UAnimMontage* MontageToPlay = (AnimData) ? AnimData->DeathMontages.FindRef(HitDir) : nullptr;
 
 	if (MontageToPlay)
 	{
-		PlayAnimMontage(MontageToPlay);
+		// 몽타주 재생
+		float Duration = PlayAnimMontage(MontageToPlay);
+
+		// 몽타주가 끝날 때쯤 래그돌이 켜지도록 타이머 설정 (예: 재생 시간의 80%)
+		FTimerHandle RagdollTimer;
+		GetWorldTimerManager().SetTimer(RagdollTimer, [this]() {
+			GetMesh()->SetSimulatePhysics(true);
+			}, Duration * 0.8f, false);
 	}
 	else
 	{
-		// 몽타주가 없으면 즉시 물리 시뮬레이션 (래그돌)
-		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+		// 몽타주가 없으면 즉시 래그돌
 		GetMesh()->SetSimulatePhysics(true);
 	}
 }

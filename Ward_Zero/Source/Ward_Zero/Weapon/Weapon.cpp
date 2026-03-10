@@ -15,6 +15,7 @@
 #include "Components/SpotLightComponent.h"
 #include "FlashLight/Data/FlashLightData.h"
 #include "Perception/AISense_Hearing.h"
+#include "Character/Noise/NoiseFucLibrary/PlayerNoise.h"
 //#include "DrawDebugHelpers.h"
 
 AWeapon::AWeapon()
@@ -173,14 +174,18 @@ void AWeapon::Fire(const FVector& HitTarget)
 
     if (WeaponInstigator)
     {
-        UAISense_Hearing::ReportNoiseEvent(
-            GetWorld(),
-            GetActorLocation(),
-            1.0f,                    
-            WeaponInstigator,
-            2500.0f,      
-            TEXT("WeaponFire")
-        );
+        AActor* NoiseMaker = WeaponInstigator ? Cast<AActor>(WeaponInstigator) : GetOwner();
+        if (NoiseMaker && WeaponData)
+        {
+            UPlayerNoise::ReportNoise(
+                GetWorld(),
+                NoiseMaker,
+                GetActorLocation(),
+                WeaponData->NoiseLoudness,
+                WeaponData->NoiseRange,
+                WeaponData->NoiseTag
+            );
+        }
     }
 
     if (WeaponData->MuzzleFlash)

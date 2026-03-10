@@ -74,4 +74,13 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Sound")
     TObjectPtr<USoundBase> PickupMagSound;
+
+    UPROPERTY(EditAnywhere, Category = "AI | Noise")
+    FName NoiseTag = TEXT("GunShot");
+
+    UPROPERTY(EditAnywhere, Category = "AI | Noise")
+    float NoiseLoudness = 1.0f;
+
+    UPROPERTY(EditAnywhere, Category = "AI | Noise")
+    float NoiseRange = 3000.0f;
 };

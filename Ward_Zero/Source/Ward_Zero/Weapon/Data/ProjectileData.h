@@ -47,4 +47,14 @@ public:
     // Physics Material 사운드 매핑 
     UPROPERTY(EditAnywhere, Category = "Sound|Impact")
     TMap<TEnumAsByte<EPhysicalSurface>, TObjectPtr<USoundBase>> ImpactSoundMap;
+
+    // 노이즈 
+    UPROPERTY(EditAnywhere, Category = "AI | Noise")
+    FName ImpactNoiseTag = TEXT("Impact");
+
+    UPROPERTY(EditAnywhere, Category = "AI | Noise")
+    float ImpactNoiseLoudness = 0.8f;
+
+    UPROPERTY(EditAnywhere, Category = "AI | Noise")
+    float ImpactNoiseRange = 1500.0f;
 };
