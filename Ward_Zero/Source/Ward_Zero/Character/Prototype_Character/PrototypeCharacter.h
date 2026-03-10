@@ -93,6 +93,7 @@ public:
 	virtual float GetAimYaw() const override;
 	virtual bool IsFiring() const override;
 	virtual float GetCurrSpread() const override;
+	virtual UPlayerCombatComponent* GetCombatComp() const override;
 #pragma endregion
 
 	void Move(const FInputActionValue& Value);

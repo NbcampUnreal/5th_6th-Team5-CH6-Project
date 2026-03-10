@@ -347,5 +347,12 @@ void AWeapon::ShowMagazine()
 void AWeapon::AddAmmo(int32 Amount)
 {
     ReserveAmmo += Amount;
+
+    // 탄창 주울 때 소리 
+    if (WeaponData && WeaponData->PickupMagSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, WeaponData->PickupMagSound, GetActorLocation());
+    }
+
     UE_LOG(LogTemp, Warning, TEXT("Ammo Added! Current Reserve: %d"), ReserveAmmo);
 }

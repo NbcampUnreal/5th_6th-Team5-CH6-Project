@@ -31,6 +31,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Flashlight")
 	TObjectPtr<class UFlashLightData> DefaultFlashlightData;
 
+public:
+	void SetFlashlightOff();
+
 private:
 	bool bIsUseFlashlight = false;
 

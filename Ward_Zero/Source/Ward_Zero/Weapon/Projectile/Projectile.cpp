@@ -63,19 +63,31 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 	if (!ProjectileData || OtherActor == GetOwner()) return;
 
 	EPhysicalSurface SurfaceType = UGameplayStatics::GetSurfaceType(Hit);
-	UNiagaraSystem* Effect = nullptr;
 
-	if (ProjectileData->ImpactEffectMap.Contains(SurfaceType_Default))
+	// 1. VFX (이펙트) 로직
+	UNiagaraSystem* Effect = ProjectileData->ImpactEffectMap.Contains(SurfaceType)
+		? ProjectileData->ImpactEffectMap[SurfaceType]
+		: ProjectileData->ImpactEffectMap.FindRef(SurfaceType_Default);
+
+	if (Effect)
 	{
-		Effect = ProjectileData->ImpactEffectMap[SurfaceType_Default];
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Effect, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
 	}
 
-	// 표면별 이펙트 선택
-	if (ProjectileData->ImpactEffectMap.Contains(SurfaceType))
-		Effect = ProjectileData->ImpactEffectMap[SurfaceType];
+	// 2. SFX (사운드) 로직 추가! ◀ 이 부분이 빠져있었습니다.
+	if (ProjectileData->ImpactSoundMap.Contains(SurfaceType) || ProjectileData->ImpactSoundMap.Contains(SurfaceType_Default))
+	{
+		USoundBase* Sound = ProjectileData->ImpactSoundMap.Contains(SurfaceType)
+			? ProjectileData->ImpactSoundMap[SurfaceType]
+			: ProjectileData->ImpactSoundMap[SurfaceType_Default];
 
-	if (Effect) UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Effect, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
+		if (Sound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, Sound, Hit.ImpactPoint);
+		}
+	}
 
+	// 데미지 처리 및 제거
 	UGameplayStatics::ApplyPointDamage(OtherActor, ProjectileData->Damage, GetActorForwardVector(), Hit, GetInstigatorController(), this, ProjectileData->DamageTypeClass);
 
 	Destroy();

@@ -61,6 +61,13 @@ void UFlashlightComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	UpdateFlashlight(DeltaTime);
 }
 
+void UFlashlightComponent::SetFlashlightOff()
+{
+	bIsUseFlashlight = false;
+
+	UpdateFlashlight(0.0f);
+}
+
 void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 {
 	APrototypeCharacter* Player = Cast<APrototypeCharacter>(GetOwner());
@@ -70,8 +77,32 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 	IPlayerAnimInterface* AnimIF = Cast<IPlayerAnimInterface>(Player);
 	if (!AnimIF) return;
 
-	// 초기화 -> 매 프레임 모든 라이트 상태를 기본적으로 끔 
+	UPlayerCombatComponent* CombatComp = Player->FindComponentByClass<UPlayerCombatComponent>();
+	if (!CombatComp) return;
+
+	// 초기화 -> 모든 무기 라이트 상태 초기화
 	AWeapon* CurrentWeapon = Player->GetEquippedWeapon();
+	if (CombatComp)
+	{
+		TArray<AWeapon*> AllWeapons;
+		if (CombatComp->PistolWeapon) AllWeapons.Add(CombatComp->PistolWeapon);
+		if (CombatComp->SMGWeapon) AllWeapons.Add(CombatComp->SMGWeapon);
+
+		for (AWeapon* Weapon : AllWeapons)
+		{
+			if (Weapon && Weapon->SMGSpotLight)
+			{
+				Weapon->SMGSpotLight->SetVisibility(false);
+
+				// 메쉬 발광(Emissive)도 초기화
+				if (Weapon->SMGLight)
+				{
+					UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(Weapon->SMGLight->GetMaterial(0));
+					if (DynMat) DynMat->SetScalarParameterValue(TEXT("Intensity"), 0.0f);
+				}
+			}
+		}
+	}
 
 	if (FlashLightActor)
 	{
@@ -79,6 +110,8 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 		if (auto* Spot = FlashLightActor->FindComponentByClass<USpotLightComponent>()) Spot->SetVisibility(false);
 	}
 	if (BodyRunLight) BodyRunLight->SetVisibility(false);
+
+	if (!bIsUseFlashlight) return;
 
 	if (CurrentWeapon && CurrentWeapon->SMGSpotLight) {
 		CurrentWeapon->SMGSpotLight->SetVisibility(false);

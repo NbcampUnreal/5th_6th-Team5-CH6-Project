@@ -65,4 +65,13 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Recoil|Effects")
     TSubclassOf<UCameraShakeBase> FireCameraShake;
+
+    UPROPERTY(EditAnywhere, Category = "Sound")
+    TObjectPtr<USoundBase> EquipSound;      // 총 꺼내는 소리
+
+    UPROPERTY(EditAnywhere, Category = "Sound")
+    TObjectPtr<USoundBase> UnequipSound;    // 총 넣는 소리
+
+    UPROPERTY(EditAnywhere, Category = "Sound")
+    TObjectPtr<USoundBase> PickupMagSound;
 };

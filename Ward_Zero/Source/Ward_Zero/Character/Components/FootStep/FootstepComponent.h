@@ -19,5 +19,11 @@ protected:
 	class USoundBase* Sound_DefaultStep;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Audio")
+	class USoundBase* Sound_ConcreteStep;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Audio")
+	class USoundBase* Sound_Marble;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Audio")
 	class USoundBase* Sound_MetalStep;
 };
