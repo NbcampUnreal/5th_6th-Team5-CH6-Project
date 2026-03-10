@@ -21,19 +21,19 @@ ABaseZombie_AIController::ABaseZombie_AIController()
 	AIPerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComp"));
 	UAISenseConfig_Sight* SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
 	UAISenseConfig_Hearing* HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("HearingConfig"));
-	SightConfig->SightRadius = 1500.f;
-	SightConfig->LoseSightRadius = 2000.f;
-	SightConfig->PeripheralVisionAngleDegrees = 60.f;
+	SightConfig->SightRadius = 10.f;
+	SightConfig->LoseSightRadius = 10.f;
+	SightConfig->PeripheralVisionAngleDegrees = 10.f;
 	
-	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
-	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
-	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	SightConfig->DetectionByAffiliation.bDetectEnemies = false;
+	SightConfig->DetectionByAffiliation.bDetectNeutrals = false;
+	SightConfig->DetectionByAffiliation.bDetectFriendlies = false;
 	
-	HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
-	HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
-	HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	HearingConfig->DetectionByAffiliation.bDetectEnemies = false;
+	HearingConfig->DetectionByAffiliation.bDetectNeutrals = false;
+	HearingConfig->DetectionByAffiliation.bDetectFriendlies = false;
 	
-	HearingConfig->HearingRange = 2000.f;
+	HearingConfig->HearingRange = 10.f;
 
 	AIPerceptionComp->ConfigureSense(*HearingConfig);
 	AIPerceptionComp->ConfigureSense(*SightConfig);
@@ -159,18 +159,27 @@ void ABaseZombie_AIController::UpdatePerceptionConfig()
 	{
 		return;
 	}
+	AIPerceptionComp->ForgetAll();
 	UAISenseConfig_Sight* SightConfig = AIPerceptionComp->GetSenseConfig<UAISenseConfig_Sight>();
 	if (SightConfig)
 	{
 		SightConfig->SightRadius = StatusComp->GetBaseDetectionRange();
 		SightConfig->LoseSightRadius = StatusComp->GetLoseSightRange();
 		SightConfig->PeripheralVisionAngleDegrees = StatusComp->GetViewAngle() / 2;
+		SightConfig->DetectionByAffiliation.bDetectEnemies = true;
+		SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
+		SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	
+		
 		
 		AIPerceptionComp->RequestStimuliListenerUpdate();
 	}
 	UAISenseConfig_Hearing* HearingConfig = AIPerceptionComp->GetSenseConfig<UAISenseConfig_Hearing>();
 	if (HearingConfig)
 	{
+		HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
+		HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
+		HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
 		//HearingConfig->HearingRange = StatusComp->GetHearingRange();
 	}
 }
@@ -231,8 +240,8 @@ bool ABaseZombie_AIController::Activate()
 		RunBehaviorTree(BT_BaseZombie);
 		if (StatusComp)
 		{
-			UpdatePerceptionConfig();
 			StatusComp->SetMainState(StatusComp->GetStartState());
+			UpdatePerceptionConfig();
 			return true;
 		}else
 		{
