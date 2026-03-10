@@ -21,6 +21,7 @@ class WARD_ZERO_API USaveSubsystem : public ULocalPlayerSubsystem
 public:
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 
 	// ══════════════════════════════════════════
 	//  핵심 기능
@@ -65,7 +66,7 @@ private:
 	UWardSaveGame* PendingSaveData = nullptr;
 
 	FDelegateHandle OnLevelLoadedHandle;
-	void OnLevelLoaded();
+	void OnLevelLoaded(UWorld* LoadedWorld);
 
 	// 게임 오버 UI에서 세이브 창을 열었는지 여부
 	bool bOpenedFromGameOver = false;

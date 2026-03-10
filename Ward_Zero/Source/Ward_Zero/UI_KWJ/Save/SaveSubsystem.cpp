@@ -28,13 +28,14 @@ void USaveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 
 	// 레벨 로드 완료 시 PendingSaveData 적용 콜백 등록
-	OnLevelLoadedHandle = FCoreUObjectDelegates::PostLoadMapWithWorld.AddLambda(
-		[this](UWorld* LoadedWorld) { OnLevelLoaded(); });
+	// AddUObject: this가 파괴되면 콜백 자동 무시 (AddLambda보다 안전)
+	OnLevelLoadedHandle = FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(
+		this, &USaveSubsystem::OnLevelLoaded);
 
 	UE_LOG(LogWard_Zero, Log, TEXT("SaveSubsystem 초기화 완료"));
 }
 
-void USaveSubsystem::OnLevelLoaded()
+void USaveSubsystem::OnLevelLoaded(UWorld* LoadedWorld)
 {
 	if (!PendingSaveData) return;
 
@@ -50,6 +51,14 @@ void USaveSubsystem::OnLevelLoaded()
 			UE_LOG(LogWard_Zero, Log, TEXT("레벨 전환 후 세이브 데이터 적용 완료"));
 		});
 	}
+}
+
+void USaveSubsystem::Deinitialize()
+{
+	// 콜백 해제 — 서브시스템 파괴 후 콜백이 호출되면 크래시 발생
+	FCoreUObjectDelegates::PostLoadMapWithWorld.Remove(OnLevelLoadedHandle);
+
+	Super::Deinitialize();
 }
 
 // ════════════════════════════════════════════════════════
@@ -306,7 +315,10 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 {
 	if (!SaveData) return;
 
-	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	APlayerController* PC = UGameplayStatics::GetPlayerController(World, 0);
 	if (!PC) return;
 
 	APrototypeCharacter* Character = Cast<APrototypeCharacter>(PC->GetPawn());
