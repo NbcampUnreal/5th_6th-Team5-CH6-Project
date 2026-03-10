@@ -33,11 +33,16 @@ ABaseZombie_AIController::ABaseZombie_AIController()
 	HearingConfig->DetectionByAffiliation.bDetectNeutrals = false;
 	HearingConfig->DetectionByAffiliation.bDetectFriendlies = false;
 	
+	
+	
 	HearingConfig->HearingRange = 10.f;
 
 	AIPerceptionComp->ConfigureSense(*HearingConfig);
 	AIPerceptionComp->ConfigureSense(*SightConfig);
 	AIPerceptionComp->SetDominantSense(SightConfig->GetSenseImplementation());
+	
+	
+	
 }
 
 void ABaseZombie_AIController::BeginPlay()
@@ -89,6 +94,8 @@ void ABaseZombie_AIController::OnPossess(APawn* InPawn)
 		
 		if (StatusComp)
 		{
+			UAIPerceptionSystem* Psys = UAIPerceptionSystem::GetCurrent(GetWorld());
+			Psys->UnregisterSource(*GetOwner());
 			//UpdatePerceptionConfig();
 			StatusComp->OnMainStateChanged.AddDynamic(this, &ABaseZombie_AIController::HandleMainStateChange);
 			StatusComp->OnSubStateChanged.AddDynamic(this, &ABaseZombie_AIController::HandleSubStateChange);
@@ -240,6 +247,8 @@ bool ABaseZombie_AIController::Activate()
 		RunBehaviorTree(BT_BaseZombie);
 		if (StatusComp)
 		{
+			UAIPerceptionSystem* Psys = UAIPerceptionSystem::GetCurrent(GetWorld());
+			Psys->RegisterSource(*GetOwner());
 			StatusComp->SetMainState(StatusComp->GetStartState());
 			UpdatePerceptionConfig();
 			return true;
