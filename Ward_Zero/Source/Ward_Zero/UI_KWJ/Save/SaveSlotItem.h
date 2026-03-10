@@ -64,6 +64,10 @@ private:
 	/** 이 슬롯이 표현하는 세이브 정보 캐싱 */
 	FSaveFileInfo SlotInfo;
 
+	/** 썸네일 텍스처 GC 방지용 참조 */
+	UPROPERTY()
+	UTexture2D* CachedThumbnail = nullptr;
+
 	/** BTN_Slot 클릭 콜백 */
 	UFUNCTION()
 	void OnButtonClicked();

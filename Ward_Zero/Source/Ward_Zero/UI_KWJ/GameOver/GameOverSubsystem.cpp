@@ -13,7 +13,6 @@ void UGameOverSubsystem::ShowGameOver()
 	{
 		Widget->SetVisibility(ESlateVisibility::Visible);
 
-		// 페이드인 연출 시작
 		Widget->PlayFadeIn();
 
 		APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
@@ -24,9 +23,6 @@ void UGameOverSubsystem::ShowGameOver()
 			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 			PC->SetInputMode(InputMode);
 			PC->SetShowMouseCursor(true);
-
-			// 게임 일시정지 (선택)
-			// PC->SetPause(true);
 		}
 	}
 }
@@ -54,7 +50,15 @@ bool UGameOverSubsystem::IsGameOver() const
 
 UGameOverWidget* UGameOverSubsystem::GetOrCreateWidget()
 {
-	if (GameOverWidget) return GameOverWidget;
+	if (IsValid(GameOverWidget))
+	{
+		if (!GameOverWidget->IsInViewport())
+		{
+			GameOverWidget->AddToViewport(300);
+			GameOverWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		return GameOverWidget;
+	}
 
 	if (!GameOverWidgetClass)
 	{
@@ -66,7 +70,7 @@ UGameOverWidget* UGameOverSubsystem::GetOrCreateWidget()
 
 	if (!GameOverWidgetClass)
 	{
-		UE_LOG(LogWard_Zero, Error, TEXT("WBP_GameOver를 찾을 수 없습니다!"));
+		UE_LOG(LogWard_Zero, Error, TEXT("WBP_GameOver not found!"));
 		return nullptr;
 	}
 
@@ -76,7 +80,6 @@ UGameOverWidget* UGameOverSubsystem::GetOrCreateWidget()
 	GameOverWidget = CreateWidget<UGameOverWidget>(PC, GameOverWidgetClass);
 	if (GameOverWidget)
 	{
-		// 메인메뉴(200)보다 위에 표시
 		GameOverWidget->AddToViewport(300);
 		GameOverWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
