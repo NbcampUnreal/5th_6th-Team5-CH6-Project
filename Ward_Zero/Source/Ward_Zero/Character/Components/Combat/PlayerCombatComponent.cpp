@@ -178,7 +178,7 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 	Params.AddIgnoredActor(GetOwner());
 	Params.AddIgnoredActor(EquippedWeapon);
 
-	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, Start + (Dir * 10000.f), ECC_Visibility, Params);
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, Start + (Dir * 10000.f), ECC_GameTraceChannel2, Params);
 	EquippedWeapon->Fire(bHit ? Hit.ImpactPoint : Hit.TraceEnd);
 
 	CurrentShotsFired++;
