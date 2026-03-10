@@ -11,7 +11,8 @@ enum class EInteractionType : uint8
 	Door,
 	Ammo,
 	Document,  
-	Save      
+	Save,
+	Key
 };
 
 UINTERFACE(MinimalAPI)

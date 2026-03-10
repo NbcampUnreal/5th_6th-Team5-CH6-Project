@@ -50,6 +50,9 @@ protected:
 	UFUNCTION()
 	void UpdateDoor(float Value);
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bRequireKeyCard = true;
+
 public:	
 
 	virtual void Tick(float DeltaTime) override;
