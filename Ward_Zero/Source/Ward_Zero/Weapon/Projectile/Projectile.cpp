@@ -64,6 +64,24 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 {
 	if (!ProjectileData || OtherActor == GetOwner()) return;
 
+	ECollisionResponse Response = OtherComp->GetCollisionResponseToChannel(ECC_GameTraceChannel2);
+
+	if (OtherActor && OtherComp)
+	{
+		FVector HitLocation = Hit.ImpactPoint; 
+		FString ActorName = OtherActor->GetName();
+		FString CompName = OtherComp->GetName();
+
+		if (GEngine)
+		{
+			FString ScreenMsg = FString::Printf(TEXT("Hit: %s (%s) at %s"), *ActorName, *CompName, *HitLocation.ToCompactString());
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, ScreenMsg);
+		}
+
+		DrawDebugSphere(GetWorld(), HitLocation, 10.0f, 12, FColor::Red, false, 5.0f);
+	}
+
+
 	EPhysicalSurface SurfaceType = UGameplayStatics::GetSurfaceType(Hit);
 
 	// 이펙트 호출 

@@ -699,38 +699,45 @@ float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 {
 	if (!StatusComp || StatusComp->IsDead()) return 0.0f;
 
+	// 데미지 적용 (HP 감소 및 사망 판정)
 	float ActualDamage = StatusComp->ApplyDamage(DamageAmount);
 
+	// AI 위치 파악
 	FVector AttackerLocation;
+	bool bAttackerFound = false;
 
-	// 1순위 = 플레이어를 공격한 몬스터의 위치 
 	if (EventInstigator && EventInstigator->GetPawn())
 	{
 		AttackerLocation = EventInstigator->GetPawn()->GetActorLocation();
+		bAttackerFound = true;
 	}
-	// 2순위 = 공격한 주체가 없다면 데미지를 일으킨 액터의 위치
 	else if (DamageCauser)
 	{
 		AttackerLocation = DamageCauser->GetActorLocation();
+		bAttackerFound = true;
 	}
-	else return ActualDamage;
 
-	// 방향 벡터 계산 플레이어 기준 AI 공격 방향 
-	FVector ToAttackerDir = (AttackerLocation - GetActorLocation());
+	// 방향 벡터 계산 
+	FVector ToAttackerDir;
+	if (bAttackerFound)
+	{
+		ToAttackerDir = (AttackerLocation - GetActorLocation());
+	}
+	else
+	{
+		ToAttackerDir = GetActorForwardVector();
+	}
+
 	ToAttackerDir.Z = 0.0f;
 	ToAttackerDir.Normalize();
 
 	if (!StatusComp->IsDead())
 	{
-		if (GetIsQuickTurning() && QuickTurnComp) QuickTurnComp->StopQuickTurn();
-		if (CombatComp) CombatComp->CancelReload(GetMesh()->GetAnimInstance());
-
 		PlayHitReaction(ToAttackerDir);
 	}
 	else
 	{
 		PlayDeathReaction(ToAttackerDir);
-		OnDeath();
 	}
 
 	return ActualDamage;
@@ -784,19 +791,16 @@ void APrototypeCharacter::PlayDeathReaction(const FVector& ToAttackerDir)
 
 	if (MontageToPlay)
 	{
-		// 몽타주 재생
 		float Duration = PlayAnimMontage(MontageToPlay);
 
-		// 몽타주가 끝날 때쯤 래그돌이 켜지도록 타이머 설정 (예: 재생 시간의 80%)
-		FTimerHandle RagdollTimer;
-		GetWorldTimerManager().SetTimer(RagdollTimer, [this]() {
-			GetMesh()->SetSimulatePhysics(true);
-			}, Duration * 0.8f, false);
+		// 몽타주가 끝날 때쯤 OnDeath(래그돌)를 호출하도록 타이머 설정
+		FTimerHandle DeathTimer;
+		GetWorldTimerManager().SetTimer(DeathTimer, this, &APrototypeCharacter::OnDeath, Duration * 0.8f, false);
 	}
 	else
 	{
-		// 몽타주가 없으면 즉시 래그돌
-		GetMesh()->SetSimulatePhysics(true);
+		// 재생할 몽타주가 없다면 즉시 OnDeath
+		OnDeath();
 	}
 }
 
