@@ -15,9 +15,9 @@ ADoorActor::ADoorActor()
 	Door = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Door"));
 	Door->SetupAttachment(DoorFrame);
 
-	InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
-	InteractionBox->SetupAttachment(DoorFrame);
-	InteractionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	//InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
+	//InteractionBox->SetupAttachment(DoorFrame);
+	//InteractionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
 	DoorTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("DoorTimeline"));
 }
@@ -35,8 +35,8 @@ void ADoorActor::BeginPlay()
 		DoorTimelineComp->AddInterpFloat(DoorTimelineFloatCurve, UpdateFunctionFloat);
 	}
 
-	InteractionBox->OnComponentBeginOverlap.AddDynamic(this, &ADoorActor::OnBeginOverlap);
-	InteractionBox->OnComponentEndOverlap.AddDynamic(this, &ADoorActor::OnEndOverlap);
+	//InteractionBox->OnComponentBeginOverlap.AddDynamic(this, &ADoorActor::OnBeginOverlap);
+	//InteractionBox->OnComponentEndOverlap.AddDynamic(this, &ADoorActor::OnEndOverlap);
 }
 
 void ADoorActor::Tick(float DeltaTime)

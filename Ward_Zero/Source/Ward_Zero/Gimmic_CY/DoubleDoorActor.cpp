@@ -67,6 +67,19 @@ void ADoubleDoorActor::OnIneracted_Implementation(APrototypeCharacter* Character
 
 void ADoubleDoorActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
+	if (!Character) return;
+
+	if (bRequireKeyCard)
+	{
+		// 카드키 체크
+		if (!Character->HasKeyCard())
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, "Need your Key Card ");
+			return;
+		}
+	}
+
+
 	if (!DoorCurve) return;
 
 	if (bIsOpen)
