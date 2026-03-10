@@ -22,6 +22,7 @@
 #include "Character/Animation/PlayerAnimInstance.h"
 #include "UI_KWJ/GameOver/GameOverSubsystem.h"
 #include "UI_KWJ/Save/SaveSubsystem.h"
+#include "UI_KWJ/WeaponUI/WeaponUISubsystem.h"
 #include "Gimmic_CY/InteractionBase.h"
 
 APrototypeCharacter::APrototypeCharacter()
@@ -177,6 +178,17 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	{
 		CustomCameraComp->UpdateCamera(DeltaTime);
 	}
+
+	if(APlayerController * PC = Cast<APlayerController>(GetController()))
+	{
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			if (UWeaponUISubsystem* WeaponUI = LP->GetSubsystem<UWeaponUISubsystem>())
+			{
+				WeaponUI->UpdateWeaponStatus();
+			}
+		}
+	}
 }
 #pragma region Input Biding
 void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -320,7 +332,7 @@ void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 		FlashLightComp->UpdateFlashlight(0.0f);
 	}
 
-	/*if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		if (ULocalPlayer* LP = PC->GetLocalPlayer())
 		{
@@ -336,7 +348,7 @@ void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 				}
 			}
 		}
-	}*/
+	}
 }
 
 void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
@@ -473,7 +485,7 @@ void APrototypeCharacter::SelectWeapon1(const FInputActionValue& Value)
 	if (PistolLayer) AnimInst->LinkAnimClassLayers(PistolLayer);
 	if (FlashLightComp) FlashLightComp->UpdateFlashlight(0.0f);
 
-	/*if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		if (ULocalPlayer* LP = PC->GetLocalPlayer())
 		{
@@ -482,7 +494,7 @@ void APrototypeCharacter::SelectWeapon1(const FInputActionValue& Value)
 				WeaponUI->NotifyWeaponChanged(1, true);
 			}
 		}
-	}*/
+	}
 }
 
 
@@ -515,7 +527,7 @@ void APrototypeCharacter::SelectWeapon2(const FInputActionValue& Value)
 	if (SMGLayer) AnimInst->LinkAnimClassLayers(SMGLayer);
 	if (FlashLightComp) FlashLightComp->UpdateFlashlight(0.0f);
 
-	/*if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		if (ULocalPlayer* LP = PC->GetLocalPlayer())
 		{
@@ -524,7 +536,7 @@ void APrototypeCharacter::SelectWeapon2(const FInputActionValue& Value)
 				WeaponUI->NotifyWeaponChanged(2, true);
 			}
 		}
-	}*/
+	}
 }
 void APrototypeCharacter::Interact(const FInputActionValue& Value)
 {
