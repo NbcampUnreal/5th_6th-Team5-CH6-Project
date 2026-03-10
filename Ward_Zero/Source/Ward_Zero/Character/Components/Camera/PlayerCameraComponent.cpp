@@ -1,4 +1,4 @@
-#include "Character/Components/Camera/PlayerCameraComponent.h"
+﻿#include "Character/Components/Camera/PlayerCameraComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Character/Components/Combat/PlayerCombatComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -31,6 +31,22 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
 
     float Speed = OwnerCharacter->GetVelocity().Size();
 
+    bool bIsCrouchedNow = OwnerCharacter->bIsCrouched;
+    if (bIsCrouchedNow != bWasCrouched)
+    {
+        float CapsuleHeightDiff = 45.0f;
+
+        if (bIsCrouchedNow)
+        {
+            CameraBoom->SocketOffset.Z += CapsuleHeightDiff;
+        }
+        else
+        {
+            CameraBoom->SocketOffset.Z -= CapsuleHeightDiff;
+        }
+        bWasCrouched = bIsCrouchedNow;
+    }
+
     // 목표 수치 초기화 
     float TargetArmLength = CameraData->DefaultArmLength;
     float TargetFOV = CameraData->DefaultFOV;
@@ -43,13 +59,63 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
         TargetFOV = CameraData->AimFOV;
 
         // 무기별 조준 오프셋 적용
-        TargetSocketOffset = (Combat->GetCurrentWeaponIndex() == 2) ?
-            CameraData->SMGAimSocketOffset : CameraData->PistolAimSocketOffset;
+        if (OwnerCharacter->bIsCrouched)
+        {
+            TargetSocketOffset = (Combat->GetCurrentWeaponIndex() == 2) ? CameraData->CrouchedSMGAimSocketOffset : CameraData->CrouchedPistolAimSocketOffset;
 
-        BobTime = 0.0f;
+            if (Combat->GetCurrentWeaponIndex() == 1 && Speed > 10.0f)
+            {
+                TargetSocketOffset.Z += CameraData->CrouchedWalkAimZOffset;
+            }
+        }
+        else
+        {
+            TargetSocketOffset = (Combat->GetCurrentWeaponIndex() == 2) ? CameraData->SMGAimSocketOffset : CameraData->PistolAimSocketOffset;
+        }
+
+        bool bIsShooting = Combat->IsFiring();
+
+        if (!bIsShooting)
+        {
+            BobTime += DeltaTime;
+
+            float CurrentSway = (Speed > 10.f) ? CameraData->WalkSwayIntensity : CameraData->BreathSwayIntensity;
+
+            float SwayPitch = FMath::Sin(BobTime * 2.0f) * CurrentSway * 0.05f;
+            float SwayYaw = FMath::Cos(BobTime * 1.0f) * CurrentSway * 0.05f;
+
+            FRotator NewSwayRot = FRotator(SwayPitch, SwayYaw, 0.0f);
+            FRotator DeltaSway = NewSwayRot - LastSwayRot;
+            LastSwayRot = NewSwayRot;
+
+            if (AController* Controller = OwnerCharacter->GetController())
+            {
+                Controller->SetControlRotation(Controller->GetControlRotation() + DeltaSway);
+            }
+        }
+        else
+        {
+            if (!LastSwayRot.IsNearlyZero())
+            {
+                if (AController* Controller = OwnerCharacter->GetController())
+                {
+                    Controller->SetControlRotation(Controller->GetControlRotation() - LastSwayRot);
+                }
+                LastSwayRot = FRotator::ZeroRotator;
+            }
+        }
     }
     else
     {
+        if (!LastSwayRot.IsNearlyZero())
+        {
+            if (AController* Controller = OwnerCharacter->GetController())
+            {
+                Controller->SetControlRotation(Controller->GetControlRotation() - LastSwayRot);
+            }
+            LastSwayRot = FRotator::ZeroRotator;
+        }
+
         // 비조준 상태
         if (OwnerCharacter->bIsCrouched)
         {

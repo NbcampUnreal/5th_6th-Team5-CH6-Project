@@ -1,6 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
@@ -35,4 +33,7 @@ private:
 	float BobTime = 0.0f;
 	FVector OriginalSocketOffset;
 	FVector OriginalTargetOffset;
+	FRotator LastSwayRot = FRotator::ZeroRotator;
+
+	bool bWasCrouched = false;
 };

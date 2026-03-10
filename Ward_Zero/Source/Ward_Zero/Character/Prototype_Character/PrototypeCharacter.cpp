@@ -28,6 +28,8 @@ APrototypeCharacter::APrototypeCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	Tags.AddUnique(TEXT("Player"));
+
 	// 컴포넌트 생성
 	StatusComp = CreateDefaultSubobject<UPlayerStatusComponent>(TEXT("StatusComp"));
 	CombatComp = CreateDefaultSubobject<UPlayerCombatComponent>(TEXT("CombatComp"));
@@ -325,7 +327,6 @@ void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 		// 카메라 설정 
 		CameraBoom->bInheritPitch = false;
 		CameraBoom->bEnableCameraLag = false;
-		CameraBoom->bEnableCameraRotationLag = false;
 		MainCamera->bUsePawnControlRotation = true;
 
 		// 컨트롤러 시야각 제한 및 크로스헤어 표시
@@ -362,7 +363,6 @@ void APrototypeCharacter::StopAiming(const FInputActionValue& Value)
 	// 카메라 설정 복구
 	CameraBoom->bInheritPitch = true;
 	CameraBoom->bEnableCameraLag = true;
-	CameraBoom->bEnableCameraRotationLag = true;
 
 	if (MainCamera)
 	{

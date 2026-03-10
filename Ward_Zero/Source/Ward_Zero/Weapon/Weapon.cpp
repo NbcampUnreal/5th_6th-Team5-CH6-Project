@@ -14,6 +14,7 @@
 #include "Weapon/Projectile/Projectile.h"
 #include "Components/SpotLightComponent.h"
 #include "FlashLight/Data/FlashLightData.h"
+#include "Perception/AISense_Hearing.h"
 //#include "DrawDebugHelpers.h"
 
 AWeapon::AWeapon()
@@ -168,6 +169,18 @@ void AWeapon::Fire(const FVector& HitTarget)
     if (WeaponData->FireSound)
     {
         UGameplayStatics::PlaySoundAtLocation(this, WeaponData->FireSound, GetActorLocation());
+    }
+
+    if (WeaponInstigator)
+    {
+        UAISense_Hearing::ReportNoiseEvent(
+            GetWorld(),
+            GetActorLocation(),
+            1.0f,                    
+            WeaponInstigator,
+            2500.0f,      
+            TEXT("WeaponFire")
+        );
     }
 
     if (WeaponData->MuzzleFlash)
