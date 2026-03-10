@@ -137,4 +137,10 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Camera")
 	float AimLookSensitivity = 0.5f;
+
+public:
+	bool bHasKeyCard = false;
+
+	bool HasKeyCard() const { return bHasKeyCard; }
+	void GiveKeyCard() { bHasKeyCard = true; }
 };
