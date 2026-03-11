@@ -51,7 +51,7 @@ public:
 	
 	float AppyDamage(float Amount, bool bIsCritical)
 	{
-		if (bIsCritical)
+		if (true)
 		{
 			CurrentHP = FMath::Max(0.f, CurrentHP - Amount);
 		}else
