@@ -97,7 +97,7 @@ void ABaseZombie::BeginPlay()
 	
 	if (ABaseZombie_AIController* AIC = GetController<ABaseZombie_AIController>())
 	{
-		AIC->UpdatePerceptionConfig();
+		//AIC->UpdatePerceptionConfig();
 	}
 	bUseControllerRotationYaw = false;
 
