@@ -140,6 +140,12 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 {
 	if (!EquippedWeapon || !PlayerCamera) return;
 
+	if (!EquippedWeapon->HasAmmo() || EquippedWeapon->IsReloading())
+	{
+		EquippedWeapon->PlayDryFireSound();
+		return;
+	}
+
 	// 애니메이션 재생
 	UAnimMontage* MontageToPlay = FireMontage ? FireMontage : ((CurrentWeaponIndex == 1) ? Pistol_FireMontage : SMG_FireMontage);
 	if (AnimInst && MontageToPlay) AnimInst->Montage_Play(MontageToPlay);
