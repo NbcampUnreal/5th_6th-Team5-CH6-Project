@@ -16,6 +16,7 @@
 #include "FlashLight/Data/FlashLightData.h"
 #include "Perception/AISense_Hearing.h"
 #include "Character/Noise/NoiseFucLibrary/PlayerNoise.h"
+#include "Character/Prototype_Character/PrototypeCharacter.h"
 //#include "DrawDebugHelpers.h"
 
 AWeapon::AWeapon()
@@ -26,9 +27,11 @@ AWeapon::AWeapon()
     SetRootComponent(WeaponMesh);
     WeaponMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
     WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    WeaponMesh->SetCastShadow(false);
 
     GunMagMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GunMagMesh"));
     GunMagMesh->SetupAttachment(WeaponMesh, TEXT("MagSocket"));
+    GunMagMesh->SetCastShadow(false);
 
     SMGLight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SMGLight"));
     SMGLight->SetupAttachment(RootComponent);
@@ -52,38 +55,42 @@ void AWeapon::Tick(float DeltaTime)
     Super::Tick(DeltaTime);
 
     // 레이저 포인터 위치 계산 로직
-    if (WeaponMesh)
+    if (CachedOwnerCharacter && CachedOwnerCharacter->GetEquippedWeapon() == this && CachedOwnerCharacter->GetIsAiming())
     {
         FVector Start = WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
-        // 총구 방향으로 멀리 쏨
         FVector End = Start + (WeaponMesh->GetForwardVector() * 10000.0f);
 
         FHitResult Hit;
         FCollisionQueryParams Params;
         Params.AddIgnoredActor(this);
-        Params.AddIgnoredActor(GetOwner()); // 총 주인도 무시
+        Params.AddIgnoredActor(GetOwner());
 
-        // 레이저 트레이스
         if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
         {
-            LaserHitLocation = Hit.ImpactPoint; // 부딪힌 곳 저장
+            LaserHitLocation = Hit.ImpactPoint;
         }
         else
         {
-            LaserHitLocation = End; // 안 부딪히면 허공 끝 저장
+            LaserHitLocation = End;
         }
 
-        // (선택) 만약 나이아가라 레이저 이펙트가 있다면 여기서 업데이트
         if (LaserSightComponent)
         {
             LaserSightComponent->SetVariableVec3(TEXT("BeamEnd"), LaserHitLocation);
+            LaserSightComponent->SetVisibility(true);
         }
+    }
+    else if (LaserSightComponent)
+    {
+        LaserSightComponent->SetVisibility(false);
     }
 }
 
 void AWeapon::BeginPlay()
 {
     Super::BeginPlay();
+
+    CachedOwnerCharacter = Cast<APrototypeCharacter>(GetOwner());
 
     if (SMGSpotLight)
     {
@@ -134,84 +141,9 @@ void AWeapon::Fire(const FVector& HitTarget)
         return;
     }
 
-    // 발사 위치 및 회전값 계산
-    // 소켓의 위치와 회전값 가져오기 
-    FVector MuzzleLocation = WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
-    FRotator MuzzleRotation = WeaponMesh->GetSocketRotation(TEXT("Muzzle"));
+    FireEffectsOnly();
 
-    // 회전값에서 앞방향(Forward) 벡터를 계산 
-    FVector MuzzleForward = FRotationMatrix(MuzzleRotation).GetUnitAxis(EAxis::X);
-
-    // 총구 앞 15cm 지점에서 생성
-    FVector SpawnLocation = MuzzleLocation + (MuzzleForward * 15.0f);
-
-    // 생성 지점에서 조준점을 바라보는 회전값 재계산
-    FRotator ProjectileRotation = (HitTarget - SpawnLocation).Rotation();
-
-    // 월드에 총알 액터 스폰 
-    UWorld* World = GetWorld();
-    if (World)
-    {
-        FActorSpawnParameters SpawnParams;
-        SpawnParams.Owner = GetOwner();
-        SpawnParams.Instigator = Cast<APawn>(GetOwner());
-        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-        // 보정된 위치와 조준 방향으로 총알 스폰
-        AProjectile* SpawnedProjectile = World->SpawnActor<AProjectile>(ProjectileClass, SpawnLocation, ProjectileRotation, SpawnParams);
-
-        if (SpawnedProjectile && WeaponData->ProjectileData)
-        {
-            SpawnedProjectile->InitializeProjectile(WeaponData->ProjectileData);
-        }
-    }
-
-    // 사운드 재생 
-    if (WeaponData->FireSound)
-    {
-        UGameplayStatics::PlaySoundAtLocation(this, WeaponData->FireSound, GetActorLocation());
-    }
-
-    if (WeaponInstigator)
-    {
-        AActor* NoiseMaker = WeaponInstigator ? Cast<AActor>(WeaponInstigator) : GetOwner();
-        if (NoiseMaker && WeaponData)
-        {
-            UPlayerNoise::ReportNoise(
-                GetWorld(),
-                NoiseMaker,
-                GetActorLocation(),
-                WeaponData->NoiseLoudness,
-                WeaponData->NoiseRange,
-                WeaponData->NoiseTag
-            );
-        }
-    }
-
-    if (WeaponData->MuzzleFlash)
-    {
-        UNiagaraFunctionLibrary::SpawnSystemAttached(
-            WeaponData->MuzzleFlash,
-            WeaponMesh,
-            TEXT("Muzzle"),
-            FVector::ZeroVector,
-            FRotator::ZeroRotator,
-            EAttachLocation::SnapToTarget, true
-        );
-    }
-
-    if (WeaponData->ShellEjectEffect)
-    {
-        UNiagaraFunctionLibrary::SpawnSystemAttached(
-            WeaponData->ShellEjectEffect,
-            WeaponMesh,
-            TEXT("ShellEject"), // 무기 메시에 미리 만들어둔 소켓 이름
-            FVector::ZeroVector,
-            FRotator::ZeroRotator,
-            EAttachLocation::SnapToTarget, true
-        );
-    }
-
+    // 탄약 소모
     SpendRound();
 }
 
@@ -264,6 +196,38 @@ void AWeapon::PlayReloadSound()
         UGameplayStatics::PlaySoundAtLocation(this, WeaponData->ReloadSound, GetActorLocation());
     }
     UE_LOG(LogTemp, Warning, TEXT("장전 소리"));
+}
+
+void AWeapon::FireEffectsOnly()
+{
+    if (!WeaponData) return;
+
+    // 사운드 재생
+    if (WeaponData->FireSound)
+        UGameplayStatics::PlaySoundAtLocation(this, WeaponData->FireSound, GetActorLocation());
+
+    // 총구 화염 (Muzzle Flash)
+    if (WeaponData->MuzzleFlash)
+    {
+        UNiagaraFunctionLibrary::SpawnSystemAttached(
+            WeaponData->MuzzleFlash, WeaponMesh, TEXT("Muzzle"),
+            FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::SnapToTarget, true);
+    }
+
+    // 탄피 배출 (Shell Eject)
+    if (WeaponData->ShellEjectEffect)
+    {
+        UNiagaraFunctionLibrary::SpawnSystemAttached(
+            WeaponData->ShellEjectEffect, WeaponMesh, TEXT("ShellEject"),
+            FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::SnapToTarget, true);
+    }
+
+    // 소음 발생 (AI용)
+    if (WeaponInstigator && WeaponData)
+    {
+        UPlayerNoise::ReportNoise(GetWorld(), WeaponInstigator, GetActorLocation(),
+            WeaponData->NoiseLoudness, WeaponData->NoiseRange, WeaponData->NoiseTag);
+    }
 }
 
 void AWeapon::SetIsReloading(bool reload)

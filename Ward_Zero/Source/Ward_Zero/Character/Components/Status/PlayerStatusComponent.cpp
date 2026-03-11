@@ -10,6 +10,8 @@ void UPlayerStatusComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	SetComponentTickInterval(0.2f);
+
 	CurrHealth = MaxHealth;
 	bIsDead = false;
 

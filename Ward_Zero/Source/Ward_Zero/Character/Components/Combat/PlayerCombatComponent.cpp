@@ -9,12 +9,16 @@
 #include "Character/Data/Camera/CameraData.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Weapon/Data/WeaponData.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Weapon/Projectile/Projectile.h"
 
 UPlayerCombatComponent::UPlayerCombatComponent() { PrimaryComponentTick.bCanEverTick = true; }
 
 void UPlayerCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	InitializeProjectilePool();
 
 	// CombatData 에셋 참조 및 수치 동기화
 	if (APrototypeCharacter* OwnerChar = Cast<APrototypeCharacter>(GetOwner()))
@@ -153,6 +157,7 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 	// 카메라 쉐이크
 	if (CamShake) UGameplayStatics::PlayWorldCameraShake(GetWorld(), CamShake, PlayerCamera->GetComponentLocation(), 0.f, 500.f);
 
+	// 반동(Recoil) 계산
 	float RecoilPitch = 0.0f;
 	float RecoilYaw = 0.0f;
 	float Intensity = EquippedWeapon->GetRecoilIntensity();
@@ -175,20 +180,37 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 	TargetRecoilRot.Pitch = FMath::Clamp(TargetRecoilRot.Pitch + RecoilPitch, -30.0f, 15.0f);
 	TargetRecoilRot.Yaw = FMath::Clamp(TargetRecoilRot.Yaw + RecoilYaw, -10.0f, 10.0f);
 
-	// [원본 복구] 탄퍼짐 로직
+	// 라인트레이스 (발사 시점에 딱 한 번만 수행하여 목표 지점 확정)
 	FVector Start = PlayerCamera->GetComponentLocation();
 	FVector Dir = FMath::VRandCone(PlayerCamera->GetForwardVector(), FMath::DegreesToRadians(CurrentSpread));
-
 	FHitResult Hit;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
 	Params.AddIgnoredActor(EquippedWeapon);
 
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, Start + (Dir * 10000.f), ECC_GameTraceChannel2, Params);
-	EquippedWeapon->Fire(bHit ? Hit.ImpactPoint : Hit.TraceEnd);
 
+	FVector FinalHitTarget = bHit ? Hit.ImpactPoint : Hit.TraceEnd;
+
+	// 무기 효과 재생 
+	EquippedWeapon->FireEffectsOnly();
+	EquippedWeapon->SpendRound();
+
+	// 오브젝트 풀에서 총알 활성화 (메모리 할당 0)
+	AProjectile* Proj = GetProjectileFromPool();
+	if (Proj)
+	{
+		FVector MuzzleLoc = EquippedWeapon->WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
+		FRotator FireRot = UKismetMathLibrary::FindLookAtRotation(MuzzleLoc, FinalHitTarget);
+
+		Proj->SetActorLocationAndRotation(MuzzleLoc, FireRot);
+		Proj->InitializeProjectile(EquippedWeapon->WeaponData->ProjectileData);
+		Proj->SetProjectileActive(true);
+	}
+
+	// 상태 업데이트
 	CurrentShotsFired++;
-	CurrentSpread = FMath::Clamp(CurrentSpread + 2.5f, 0.0f, 5.0f); // FireSpreadPenalty, MaxSpread
+	CurrentSpread = FMath::Clamp(CurrentSpread + 2.5f, 0.0f, 5.0f);
 }
 
 void UPlayerCombatComponent::HandleRecoil(float DeltaTime)
@@ -227,6 +249,52 @@ void UPlayerCombatComponent::UpdateSpread(float DeltaTime)
 	float Speed = OwnerCharacter->GetVelocity().Size();
 	if (Speed > 10.0f) CurrentSpread = FMath::FInterpTo(CurrentSpread, MaxSpread, DeltaTime, SpreadExpandRate);
 	else CurrentSpread = FMath::FInterpTo(CurrentSpread, MinSpread, DeltaTime, SpreadShrinkRate);
+}
+
+void UPlayerCombatComponent::InitializeProjectilePool()
+{
+	if (!ProjectileClass) return;
+
+	for (int32 i = 0; i < ProjectilePoolSize; i++)
+	{
+		FActorSpawnParameters Params;
+		Params.Owner = GetOwner();
+		Params.Instigator = Cast<APawn>(GetOwner());
+
+		AProjectile* NewProj = GetWorld()->SpawnActor<AProjectile>(ProjectileClass, FVector::ZeroVector, FRotator::ZeroRotator, Params);
+		if (NewProj)
+		{
+			NewProj->SetProjectileActive(false); // 비활성 상태로 풀에 보관
+			ProjectilePool.Add(NewProj);
+		}
+	}
+}
+
+AProjectile* UPlayerCombatComponent::GetProjectileFromPool()
+{
+	// 풀이 비어있는지 먼저 확인
+	if (ProjectilePool.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Projectile Pool is EMPTY! Check ProjectileClass in Blueprint."));
+		return nullptr;
+	}
+
+	// 비활성화된 총알 찾기
+	for (AProjectile* Proj : ProjectilePool)
+	{
+		if (IsValid(Proj) && !Proj->IsProjectileActive())
+		{
+			return Proj;
+		}
+	}
+
+	// 모든 총알이 사용 중일 때 안전하게 첫 번째 요소 반환 
+	if (ProjectilePool.IsValidIndex(0))
+	{
+		return ProjectilePool[0];
+	}
+
+	return nullptr;
 }
 
 void UPlayerCombatComponent::SetCameraPitchLimit(bool IsAiming)
@@ -277,9 +345,17 @@ void UPlayerCombatComponent::CalculateAimOffset()
 {
 	ACharacter* Owner = Cast<ACharacter>(GetOwner());
 	if (!Owner || !PlayerCamera) return;
-	FRotator Delta = (PlayerCamera->GetForwardVector().Rotation() - Owner->GetActorRotation()).GetNormalized();
-	AimYaw = FMath::Clamp(Delta.Yaw, -90.f, 90.f);
-	AimPitch = FMath::Clamp(Delta.Pitch, -90.f, 90.f);
+
+	// ControlRotation(바라보는 곳)과 ActorRotation(몸체 방향)의 차이 계산
+	FRotator ControlRot = Owner->GetControlRotation();
+	FRotator ActorRot = Owner->GetActorRotation();
+
+	// 두 회전값의 차이를 구함 (NormalizedDeltaRotator 사용)
+	FRotator Delta = UKismetMathLibrary::NormalizedDeltaRotator(ControlRot, ActorRot);
+
+	// AimYaw와 Pitch를 업데이트 (Clamp는 필요에 따라 조절)
+	AimYaw = Delta.Yaw;
+	AimPitch = Delta.Pitch;
 }
 
 void UPlayerCombatComponent::UpdateHandIK() { if (EquippedWeapon) HandIKTargetLocation = EquippedWeapon->GetLaserTargetLocation(); }

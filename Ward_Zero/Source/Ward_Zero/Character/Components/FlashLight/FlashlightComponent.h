@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Character/Animation/Interface/PlayerAnimInterface.h"
 #include "FlashlightComponent.generated.h"
 
 
@@ -17,6 +18,7 @@ public:
 
 	void ToggleFlashlight();
 	void UpdateFlashlight(float DeltaTime);
+	float CalculateFocusAlpha(class USpotLightComponent* Light, float MaxDist);
 
 	bool IsUsingFlashlight() const { return bIsUseFlashlight; }
 
@@ -49,4 +51,12 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "FlashLight|Montage")
 	TObjectPtr<UAnimMontage> LowerLightMontage;
+
+public:
+	// 0(걷기/조준) ~ 1(달리기) 사이를 부드럽게 오가는 변수
+	float SprintInterpAlpha = 0.0f;
+
+	// 캐싱용 변수 - 매번 Cast 하지 않게 최적화 
+	UPROPERTY() 
+	TObjectPtr<class UPlayerCombatComponent> CachedCombatComp;
 };

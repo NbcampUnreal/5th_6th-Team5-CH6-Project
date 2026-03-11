@@ -10,6 +10,7 @@ class UAnimMontage;
 class UCameraShakeBase;
 class UAnimInstance;
 class UCharacterCombatData;
+class AProjectile;
 
 USTRUCT(BlueprintType)
 struct FSMGReloadAnimSet
@@ -77,6 +78,25 @@ private:
 	void UpdateHandIK();
 	void HandleRecoil(float DeltaTime);
 	void UpdateSpread(float DeltaTime);
+
+protected:
+	// 풀링 설정
+	UPROPERTY(EditAnywhere, Category = "Combat|Pool")
+	int32 ProjectilePoolSize = 30;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Pool")
+	TSubclassOf<AProjectile> ProjectileClass;
+
+private:
+	// 생성된 총알들을 보관하는 배열
+	UPROPERTY()
+	TArray<AProjectile*> ProjectilePool;
+
+	// 풀 초기화
+	void InitializeProjectilePool();
+
+	// 풀에서 가용한 총알 가져오기
+	AProjectile* GetProjectileFromPool();
 
 public:
 #pragma region 참조 클래스  

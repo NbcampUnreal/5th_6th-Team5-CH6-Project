@@ -36,4 +36,7 @@ private:
 	FRotator LastSwayRot = FRotator::ZeroRotator;
 
 	bool bWasCrouched = false;
+
+	UPROPERTY()
+	TObjectPtr<class UPlayerCombatComponent> CachedCombatComp; 
 };
