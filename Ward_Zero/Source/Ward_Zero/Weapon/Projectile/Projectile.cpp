@@ -26,6 +26,7 @@ AProjectile::AProjectile()
 
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
 	ProjectileMesh->SetupAttachment(RootComponent);
+	ProjectileMesh->SetCastShadow(false);
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComp"));
 	ProjectileMovement->UpdatedComponent = CollisionComp;
@@ -40,6 +41,42 @@ AProjectile::AProjectile()
 	TracerComponent->SetupAttachment(RootComponent);
 }
 
+void AProjectile::SetProjectileActive(bool bActive)
+{
+	if (bActive && !ProjectileData) return;
+
+
+	bIsActive = bActive;
+	// 시각적/물리적 활성화 설정
+	SetActorHiddenInGame(!bActive);
+	SetActorEnableCollision(bActive);
+	SetActorTickEnabled(bActive);
+
+	if (bActive)
+	{
+		// 물리 엔진 속도 초기화
+		if (ProjectileMovement)
+		{
+			ProjectileMovement->Velocity = GetActorForwardVector() * ProjectileMovement->InitialSpeed;
+			ProjectileMovement->Activate();
+		}
+		// 수명이 다하면 다시 풀로 돌려보내기 (비활성화)
+		if (ProjectileData)
+		{
+			GetWorldTimerManager().SetTimer(DeactivateTimer, [this]() 
+				{ 
+					SetProjectileActive(false); 
+				}, ProjectileData->LifeSpan, false
+			);
+		}
+	}
+	else
+	{
+		if (ProjectileMovement) ProjectileMovement->Deactivate();
+		GetWorldTimerManager().ClearTimer(DeactivateTimer);
+	}
+}
+
 void AProjectile::InitializeProjectile(UProjectileData* Data)
 {
 	if (!Data) return;
@@ -52,7 +89,6 @@ void AProjectile::InitializeProjectile(UProjectileData* Data)
 
 	// ProjectileMovement의 속도를 실제 물리 엔진에 갱신
 	ProjectileMovement->Velocity = GetActorForwardVector() * Data->InitialSpeed;
-	SetLifeSpan(Data->LifeSpan);
 
 	if (Data->TracerEffect && TracerComponent)
 	{
@@ -62,7 +98,7 @@ void AProjectile::InitializeProjectile(UProjectileData* Data)
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (!ProjectileData || OtherActor == GetOwner()) return;
+	if (!ProjectileData || OtherActor == GetOwner() || !bIsActive) return;
 
 	ECollisionResponse Response = OtherComp->GetCollisionResponseToChannel(ECC_GameTraceChannel2);
 
@@ -122,5 +158,5 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 	// 데미지 처리 및 제거
 	UGameplayStatics::ApplyPointDamage(OtherActor, ProjectileData->Damage, GetActorForwardVector(), Hit, GetInstigatorController(), this, ProjectileData->DamageTypeClass);
 
-	Destroy();
+	SetProjectileActive(false);
 }

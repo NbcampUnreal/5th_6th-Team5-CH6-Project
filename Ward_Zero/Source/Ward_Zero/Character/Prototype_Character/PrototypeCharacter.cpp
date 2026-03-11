@@ -129,37 +129,15 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	if (QuickTurnComp && QuickTurnComp->IsQuickTurning()) return;
 
 	// 손전등 실시간 갱신
-	if (FlashLightComp)
+	if (FlashLightComp && FlashLightComp->IsUsingFlashlight()) // 손전등 사용 중일때만 호출 
 	{
 		FlashLightComp->UpdateFlashlight(DeltaTime);
 	}
 
 	// 캐릭터 몸체 회전 (비조준 / 조준)
-	if (CombatComp && CombatComp->IsAiming())
-	{
-		bUseControllerRotationYaw = true;
-		GetCharacterMovement()->bOrientRotationToMovement = false;
-	}
-	else
-	{
-		bUseControllerRotationYaw = false;
-		if (bIsRunning)
-		{
-			GetCharacterMovement()->bOrientRotationToMovement = true;
-		}
-		else
-		{
-			GetCharacterMovement()->bOrientRotationToMovement = false;
-			if (GetVelocity().SizeSquared() > 100.0f)
-			{
-				FRotator TargetRot = FRotator(0.f, GetControlRotation().Yaw, 0.f);
-				FRotator CurrentRot = GetActorRotation();
-				FRotator NewRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaTime, 5.0f);
-				SetActorRotation(NewRot);
-			}
-		}
-	}
+	UpdateBodyRotation(DeltaTime);
 
+#if !UE_BUILD_SHIPPING // 디버깅용 빌드에서 제외
 	if (GEngine)
 	{
 		if (StatusComp)
@@ -173,13 +151,12 @@ void APrototypeCharacter::Tick(float DeltaTime)
 			GEngine->AddOnScreenDebugMessage(2, 0.0f, FColor::Yellow, AmmoMsg);
 		}
 	}
-
+#endif
 	if (CustomCameraComp)
 	{
 		CustomCameraComp->UpdateCamera(DeltaTime);
 	}
-
-	if(APlayerController * PC = Cast<APlayerController>(GetController()))
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		if (ULocalPlayer* LP = PC->GetLocalPlayer())
 		{
@@ -445,7 +422,10 @@ void APrototypeCharacter::StopFire(const FInputActionValue& Value)
 
 void APrototypeCharacter::Reload(const FInputActionValue& Value)
 {
-	if (CombatComp) CombatComp->Reload();
+	if (CombatComp)
+	{
+		CombatComp->Reload();
+	}
 }
 
 void APrototypeCharacter::ToggleFlashLight(const FInputActionValue& Value)
@@ -517,6 +497,8 @@ void APrototypeCharacter::SelectWeapon2(const FInputActionValue& Value)
 
 	// 무기 교체 
 	CombatComp->ChangeWeapon(2, AnimInst);
+
+	
 
 	if (FlashLightComp)
 	{
@@ -813,6 +795,35 @@ void APrototypeCharacter::PlayDeathReaction(const FVector& ToAttackerDir)
 	{
 		// 재생할 몽타주가 없다면 즉시 OnDeath
 		OnDeath();
+	}
+}
+
+void APrototypeCharacter::UpdateBodyRotation(float DeltaTime)
+{
+	// 캐릭터 몸체 회전 (비조준 / 조준)
+	if (CombatComp && CombatComp->IsAiming())
+	{
+		bUseControllerRotationYaw = true;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+	}
+	else
+	{
+		bUseControllerRotationYaw = false;
+		if (bIsRunning)
+		{
+			GetCharacterMovement()->bOrientRotationToMovement = true;
+		}
+		else
+		{
+			GetCharacterMovement()->bOrientRotationToMovement = false;
+			if (GetVelocity().SizeSquared() > 100.0f)
+			{
+				FRotator TargetRot = FRotator(0.f, GetControlRotation().Yaw, 0.f);
+				FRotator CurrentRot = GetActorRotation();
+				FRotator NewRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaTime, 5.0f);
+				SetActorRotation(NewRot);
+			}
+		}
 	}
 }
 

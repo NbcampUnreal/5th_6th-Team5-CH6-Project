@@ -48,32 +48,23 @@ public:
     // 재장전 시작 (상태 변경)
     void StartReload();
 
-    // [중요] 애니메이션 팀에게 알려줄 함수 (탄약 채우기)
-    UFUNCTION(BlueprintCallable)
-    void FinishReload();
-
-    UFUNCTION(BlueprintCallable)
-    void HideMagazine();
-
-    UFUNCTION(BlueprintCallable)
-    void ShowMagazine();
+    UFUNCTION(BlueprintCallable) void FinishReload();
+    UFUNCTION(BlueprintCallable) void HideMagazine();
+    UFUNCTION(BlueprintCallable) void ShowMagazine();
 
     void PlayDryFireSound();
-
     void PlayReloadSound();
+
+    void FireEffectsOnly();
 #pragma endregion
 
 #pragma region 상태 확인 (Getters & State Checks)
     // 탄약이 남아있는지 확인
     bool HasAmmo() const { return CurrentAmmo > 0; }
-
     bool IsFullAmmo() const { return CurrentAmmo >= MaxCapacity; }
-
     // 현재 재장전 중인가?
     bool IsReloading() const { return bIsReloading; }
-
     bool IsAutomatic() const { return bIsAutomatic; }
-
     float GetFireRate() const { return FireRate; }
 
     UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
@@ -205,8 +196,14 @@ private:
     UPROPERTY()
     APawn* WeaponInstigator;
 
-    FVector LaserHitLocation;
 #pragma endregion
+
+private:
+    // 최적화 => 매 프레임 Cast를 피하기 위한 캐싱 변수
+    UPROPERTY()
+    TObjectPtr<class APrototypeCharacter> CachedOwnerCharacter;
+
+    FVector LaserHitLocation;
 
     // 반동 데이터 Getter 함수 
 public:

@@ -134,13 +134,6 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	ELocomotionDirection CurrentDir = ELocomotionDirection::Forward;
 
-	// ★ 원본에 있던 Distance Matching용 변수 복구
-	UPROPERTY(BlueprintReadWrite, Category = "Movement")
-	float DisplacementSinceLastUpdate;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	float StartDistance;
-
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	float OrientationWarpingAngle;
 

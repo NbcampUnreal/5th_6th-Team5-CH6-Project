@@ -15,6 +15,12 @@ void UPlayerCameraComponent::Initialize(USpringArmComponent* InBoom, UCameraComp
     MainCamera = InCamera;
     CameraData = InData;
 
+    // 초기화 시점에 컴포넌트 캐싱
+    if (OwnerCharacter)
+    {
+        CachedCombatComp = OwnerCharacter->FindComponentByClass<UPlayerCombatComponent>();
+    }
+
     if (CameraBoom)
     {
         OriginalSocketOffset = CameraBoom->SocketOffset;
@@ -24,10 +30,9 @@ void UPlayerCameraComponent::Initialize(USpringArmComponent* InBoom, UCameraComp
 
 void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
 {
-    if (!OwnerCharacter || !CameraBoom || !MainCamera || !CameraData) return;
+    if (!OwnerCharacter || !CameraBoom || !MainCamera || !CameraData || !CachedCombatComp) return;
 
-    UPlayerCombatComponent* Combat = OwnerCharacter->FindComponentByClass<UPlayerCombatComponent>();
-    if (!Combat) return;
+    UPlayerCombatComponent* Combat = CachedCombatComp;
 
     float Speed = OwnerCharacter->GetVelocity().Size();
 

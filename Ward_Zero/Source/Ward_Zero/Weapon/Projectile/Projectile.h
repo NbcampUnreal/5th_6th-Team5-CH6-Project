@@ -20,6 +20,14 @@ class WARD_ZERO_API AProjectile : public AActor
 public:
 	AProjectile();
 
+	void SetProjectileActive(bool bActive);
+	bool IsProjectileActive() const { return bIsActive; }
+
+protected:
+	bool bIsActive = false;
+
+	FTimerHandle DeactivateTimer;
+
 protected:
 	// 컴포넌트
 	UPROPERTY(VisibleAnywhere, Category = "Projectile")

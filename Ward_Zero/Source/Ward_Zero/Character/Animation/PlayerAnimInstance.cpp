@@ -25,7 +25,14 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	Velocity = Character->GetVelocity();
 	Acceleration = MovementComp->GetCurrentAcceleration();
-	UpdateMovementCalculations(DeltaSeconds);
+	if (Velocity.SizeSquared() < 1.0f)
+	{
+		GroundSpeed = 0.0f;
+		bHasVelocity = false;
+	}
+	else {
+		UpdateMovementCalculations(DeltaSeconds);
+	}
 
 	if (IPlayerAnimInterface* AnimInterface = Cast<IPlayerAnimInterface>(TryGetPawnOwner()))
 	{
@@ -79,7 +86,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	// Pistol IK 조건  
 	bool bPistolIKCondition = bIsPistolEquipped && !bIsSMGEquipped
 		&& !bIsEquipping && !bIsReloading && !bIsInteracting
-		&& !bIsUseFlashLight;
+		&& (!bIsUseFlashLight || bIsRunning);
 
 	PistolIKAlpha = FMath::FInterpTo(PistolIKAlpha, bPistolIKCondition ? 1.0f : 0.0f, DeltaSeconds, 15.0f);
 

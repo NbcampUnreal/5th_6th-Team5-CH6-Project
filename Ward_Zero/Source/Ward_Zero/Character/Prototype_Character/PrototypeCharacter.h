@@ -138,6 +138,8 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Camera")
 	float AimLookSensitivity = 0.5f;
 
+	void UpdateBodyRotation(float DeltaTime); // 캐릭터 몸체 회전 함수 
+
 public:
 	bool bHasKeyCard = false;
 
