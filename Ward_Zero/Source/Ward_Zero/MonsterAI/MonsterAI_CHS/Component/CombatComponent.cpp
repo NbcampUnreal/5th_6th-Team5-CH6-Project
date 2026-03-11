@@ -262,7 +262,10 @@ void UCombatComponent::ProcessDamageLogic(float Damage, EHitPart HitPart, const 
 		}
 	}else
 	{
-		StatusComp->ApplyDamage(Damage,false);
+		if (StatusComp->ApplyDamage(Damage,false) <= 0.0f)
+		{
+			OnDeath();
+		}
 		if (StatusComp->GetIsRecoveringCC() && StatusComp->GetIsKnockdownSuperArmor())
 		{
 			return;
