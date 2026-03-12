@@ -46,10 +46,10 @@ void UOptionsWidget::NativeConstruct()
 
 void UOptionsWidget::OnMasterVolumeChanged(float Value)
 {
-	// SoundMix 없이 전체 볼륨 직접 조절
-	if (GEngine)
+	// 게임 월드의 오디오 디바이스에서 전체 볼륨 조절
+	if (UWorld* World = GetWorld())
 	{
-		FAudioDeviceHandle AudioDevice = GEngine->GetMainAudioDevice();
+		FAudioDeviceHandle AudioDevice = World->GetAudioDevice();
 		if (AudioDevice.IsValid())
 		{
 			AudioDevice->SetTransientPrimaryVolume(Value);
