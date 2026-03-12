@@ -39,4 +39,9 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual bool CanBeInteracted_Implementation() const override;
 	virtual void OnIneracted_Implementation(APrototypeCharacter* Character) override;
+	virtual void OnIneractionRangeEntered_Implementation() override;
+	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
+	virtual EInteractionType GetInteractionType_Implementation() const override;
+	virtual bool SetBCanInteract(bool IsCanInteract) override;
+	virtual bool GetBCanInteract() const override;
 };

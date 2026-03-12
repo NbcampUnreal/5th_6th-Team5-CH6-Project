@@ -48,6 +48,29 @@ void AGimmick_Lever::OnIneracted_Implementation(APrototypeCharacter* Character)
 	}
 }
 
+void AGimmick_Lever::OnIneractionRangeEntered_Implementation()
+{
+}
+
+void AGimmick_Lever::HandleInteraction_Implementation(APrototypeCharacter* Character)
+{
+}
+
+EInteractionType AGimmick_Lever::GetInteractionType_Implementation() const
+{
+	return EInteractionType();
+}
+
+bool AGimmick_Lever::SetBCanInteract(bool IsCanInteract)
+{
+	return false;
+}
+
+bool AGimmick_Lever::GetBCanInteract() const
+{
+	return false;
+}
+
 bool AGimmick_Lever::CanBeInteracted_Implementation() const
 {
 	return true;
