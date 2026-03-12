@@ -258,7 +258,6 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 		GetCharacterMovement()->MaxWalkSpeed = MovementData->RunSpeed;
 		bUseControllerRotationYaw = false;
 		GetCharacterMovement()->bOrientRotationToMovement = true;
-		CameraBoom->CameraLagSpeed = 10.0f;
 
 		FlashLightComp->UpdateFlashlight(0.0f);//달릴 때는 손전등 소켓 갱신 
 	}
@@ -276,7 +275,6 @@ void APrototypeCharacter::EndRunning(const FInputActionValue& Value)
 	bIsRunning = false;
 	GetCharacterMovement()->MaxWalkSpeed = MovementData->WalkSpeed;
 	GetCharacterMovement()->bOrientRotationToMovement = false; // Strafe 모드로 복구
-	CameraBoom->CameraLagSpeed = 15.0f;
 
 	FlashLightComp->UpdateFlashlight(0.0f); //달리기 종료 시 원래 소켓으로 복구
 }
