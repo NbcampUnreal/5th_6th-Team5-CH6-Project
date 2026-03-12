@@ -349,11 +349,6 @@ void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 		GetCharacterMovement()->bOrientRotationToMovement = false;
 		GetCharacterMovement()->MaxWalkSpeed = MovementData->WalkSpeed * 0.5f;
 
-		// 카메라 설정 
-		//CameraBoom->bInheritPitch = false;
-		CameraBoom->bEnableCameraLag = false;
-	/*	MainCamera->bUsePawnControlRotation = true;*/
-
 		// 컨트롤러 시야각 제한 및 크로스헤어 표시
 		if (APlayerController* PC = Cast<APlayerController>(GetController()))
 		{
@@ -380,10 +375,6 @@ void APrototypeCharacter::StopAiming(const FInputActionValue& Value)
 		float SafeSpeed = (MovementData->WalkSpeed > 0.0f) ? MovementData->WalkSpeed : 200.0f;
 		MoveComp->MaxWalkSpeed = SafeSpeed;
 	}
-
-	// 카메라 설정 복구
-	//CameraBoom->bInheritPitch = true;
-	CameraBoom->bEnableCameraLag = true;
 
 	if (MainCamera)
 	{
