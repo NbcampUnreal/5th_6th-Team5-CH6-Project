@@ -1,6 +1,7 @@
 #include "Gimmic_CY/SafeActor.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "AKeyCard.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 
 ASafeActor::ASafeActor()
@@ -16,8 +17,8 @@ ASafeActor::ASafeActor()
     Door = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Door"));
     Door->SetupAttachment(Pivot);
 
-    InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
-    InteractionBox->SetupAttachment(SafeBody);
+    //InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
+    //InteractionBox->SetupAttachment(SafeBody);
 
     SafeTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SafeTimeline"));
 
@@ -36,8 +37,17 @@ void ASafeActor::BeginPlay()
         SafeTimeline->AddInterpFloat(OpenCurve, SafeUpdateFunctionFloat);
     }
 
-    InteractionBox->OnComponentBeginOverlap.AddDynamic(this, &ASafeActor::OnBeginOverlap);
-    InteractionBox->OnComponentEndOverlap.AddDynamic(this, &ASafeActor::OnEndOverlap);
+    for (AActor* Item : Items)
+    {
+        IInteractionBase* interactionBaseItem = Cast<IInteractionBase>(Item);
+        if (interactionBaseItem)
+        {
+            interactionBaseItem->SetBCanInteract(false);            
+        }
+    }
+
+    //InteractionBox->OnComponentBeginOverlap.AddDynamic(this, &ASafeActor::OnBeginOverlap);
+    //InteractionBox->OnComponentEndOverlap.AddDynamic(this, &ASafeActor::OnEndOverlap);
 }
 
 void ASafeActor::UpdateSafeRotation(float Alpha)
@@ -63,6 +73,7 @@ void ASafeActor::OnIneractionRangeExited_Implementation()
 
 void ASafeActor::OnIneracted_Implementation(APrototypeCharacter* Character)
 {
+
     if (IInteractionBase::Execute_CanBeInteracted(this))
     {
         IInteractionBase::Execute_HandleInteraction(this, Character);
@@ -74,15 +85,20 @@ void ASafeActor::HandleInteraction_Implementation(APrototypeCharacter* Character
     if (!SafeTimeline)
         return;
 
-    if (bIsOpened)
-    {
-        SafeTimeline->Reverse();
-        bIsOpened = false;
-    }
-    else
+    if (!bIsOpened)
     {
         SafeTimeline->Play();
         bIsOpened = true;
+
+        for (AActor* Item : Items)
+        {
+            IInteractionBase* interactionBaseItem = Cast<IInteractionBase>(Item);
+            if (interactionBaseItem)
+            {
+                interactionBaseItem->SetBCanInteract(true);
+            }
+        }
+        SafeBody->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
     }
 }
 
@@ -99,6 +115,17 @@ void ASafeActor::OnEndOverlap(UPrimitiveComponent*, AActor* OtherActor,
     UPrimitiveComponent*, int32)
 {
     IInteractionBase::Execute_OnIneractionRangeExited(this);
+}
+
+bool ASafeActor::SetBCanInteract(bool IsCanInteract)
+{
+    bCanInteract = IsCanInteract;
+    return bCanInteract;
+}
+
+bool ASafeActor::GetBCanInteract() const
+{
+    return bCanInteract;
 }
 
 

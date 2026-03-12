@@ -38,6 +38,17 @@ EInteractionType ADocumentPickupActor::GetInteractionType_Implementation() const
 	return EInteractionType::Document;
 }
 
+bool ADocumentPickupActor::SetBCanInteract(bool IsCanInteract)
+{
+	bCanInteract = IsCanInteract;
+	return bCanInteract;
+}
+
+bool ADocumentPickupActor::GetBCanInteract() const
+{
+	return bCanInteract;
+}
+
 bool ADocumentPickupActor::CanBeInteracted_Implementation() const
 {
 	return bCanInteract && DocumentData != nullptr;

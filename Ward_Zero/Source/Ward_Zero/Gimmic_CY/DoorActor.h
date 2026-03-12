@@ -8,6 +8,8 @@
 
 class UStaticMeshComponent;
 class UBoxComponent;
+class UNavModifierComponent;
+class USceneComponent;
 
 UCLASS()
 class WARD_ZERO_API ADoorActor : public AActor, public IInteractionBase
@@ -24,16 +26,17 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 protected:
-	// Mesh
-	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* DoorFrame;
-
-	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* Door;
-
-	// Interaction Range
+	// Root Scene
 	UPROPERTY(VisibleAnywhere)
 	UBoxComponent* InteractionBox;
+
+	//Scene
+	UPROPERTY(VisibleAnywhere)
+	USceneComponent* Scene;
+
+	// Door Mesh
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* Door;
 
 	// Timeline
 	UPROPERTY(VisibleAnywhere)
@@ -55,6 +58,11 @@ protected:
 	// �� �⺻ ȸ���� ����
 	FRotator InitialRotation;
 
+	UPROPERTY(VisibleAnywhere)
+	UNavModifierComponent* NavModifier;
+
+	bool bCanInteract = true;
+
 	// ===== IGimmickInterface =====
 public:
 	virtual void OnIneractionRangeEntered_Implementation() override;
@@ -63,6 +71,9 @@ public:
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
 	virtual EInteractionType GetInteractionType_Implementation() const override;
+	virtual bool SetBCanInteract(bool IsCanInteract) override;
+	virtual bool GetBCanInteract() const override;
+
 private:
 	UFUNCTION()
 	void OnBeginOverlap(

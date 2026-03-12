@@ -32,7 +32,8 @@ public:
 	virtual void OnIneractionRangeEntered_Implementation() override {}
 	virtual void OnIneractionRangeExited_Implementation() override {}
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override {}
-
+	virtual bool SetBCanInteract(bool IsCanInteract) override;
+	virtual bool GetBCanInteract() const override;
 protected:
 	/** 라인트레이스 감지용 콜리전 박스 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

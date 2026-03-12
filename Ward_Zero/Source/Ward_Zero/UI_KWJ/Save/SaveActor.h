@@ -24,6 +24,8 @@ public:
 	virtual void OnIneractionRangeEntered_Implementation() override {}
 	virtual void OnIneractionRangeExited_Implementation() override {}
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override {}
+	virtual bool SetBCanInteract(bool IsCanInteract) override;
+	virtual bool GetBCanInteract() const override;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Save")

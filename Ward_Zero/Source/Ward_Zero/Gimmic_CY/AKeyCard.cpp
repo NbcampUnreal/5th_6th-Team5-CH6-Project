@@ -15,8 +15,8 @@ AAKeyCard::AAKeyCard()
 	KeyMesh->SetCollisionResponseToAllChannels(ECR_Block);
 	KeyMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 
-	InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
-	InteractionBox->SetupAttachment(KeyMesh);
+	//InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
+	//InteractionBox->SetupAttachment(KeyMesh);
 }
 
 void AAKeyCard::BeginPlay()
@@ -35,7 +35,7 @@ void AAKeyCard::OnIneracted_Implementation(APrototypeCharacter* Character)
 
 void AAKeyCard::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
-	if (!Character) return;
+	if (!Character || !bCanInteract) return;
 
 	// 플레이어에게 카드키 지급
 	Character->GiveKeyCard();
@@ -49,4 +49,16 @@ EInteractionType AAKeyCard::GetInteractionType_Implementation() const
 {
 	return EInteractionType::Key;
 }
+
+bool AAKeyCard::SetBCanInteract(bool IsCanInteract)
+{
+	bCanInteract = IsCanInteract;
+	return bCanInteract;
+}
+
+bool AAKeyCard::GetBCanInteract() const
+{	
+	return bCanInteract;
+}
+
 
