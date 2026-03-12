@@ -266,7 +266,6 @@ void APrototypeCharacter::EndRunning(const FInputActionValue& Value)
 	FlashLightComp->UpdateFlashlight(0.0f); //달리기 종료 시 원래 소켓으로 복구
 }
 
-
 void APrototypeCharacter::ToggleCrouch(const FInputActionValue& Value)
 {
 	if (bIsRunning || GetIsReloading()) return;
@@ -539,6 +538,8 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 		}
 	}*/
 
+	if (bIsRunning) return;
+
 	FVector NewLocation = GetActorLocation();
 	NewLocation.Z += 50.0f;
 
@@ -761,6 +762,11 @@ EPlayerHitDirection APrototypeCharacter::GetHitDirection(const FVector& ToAttack
 void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
 {
 	if (!AnimData || !CombatComp) return;
+
+	if (CombatComp->GetIsReloading())
+	{
+		CombatComp->CancelReload(GetMesh()->GetAnimInstance());
+	}
 
 	EPlayerHitDirection HitDir = GetHitDirection(ToAttackerDir);
 	bool bIsDrawn = CombatComp->IsWeaponDrawn();
