@@ -23,6 +23,7 @@
 #include "UI_KWJ/GameOver/GameOverSubsystem.h"
 #include "UI_KWJ/Save/SaveSubsystem.h"
 #include "UI_KWJ/WeaponUI/WeaponUISubsystem.h"
+#include "UI_KWJ/Health/HealthVignetteWidget.h"
 #include "Gimmic_CY/InteractionBase.h"
 
 APrototypeCharacter::APrototypeCharacter()
@@ -112,6 +113,20 @@ void APrototypeCharacter::BeginPlay()
 	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
 	{
 		if (UnarmedLayer) AnimInst->LinkAnimClassLayers(UnarmedLayer);
+	}
+	if (HealthVignetteClass)
+	{
+		APlayerController* VignettePC = Cast<APlayerController>(Controller);
+		if (VignettePC)
+		{
+			HealthVignetteWidget = CreateWidget<UHealthVignetteWidget>(VignettePC, HealthVignetteClass);
+			if (HealthVignetteWidget)
+			{
+				HealthVignetteWidget->AddToViewport(0);
+				StatusComp->OnHealthChanged.AddDynamic(
+					HealthVignetteWidget, &UHealthVignetteWidget::OnHealthChanged);
+			}
+		}
 	}
 }
 
@@ -335,9 +350,9 @@ void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 		GetCharacterMovement()->MaxWalkSpeed = MovementData->WalkSpeed * 0.5f;
 
 		// 카메라 설정 
-		CameraBoom->bInheritPitch = false;
+		//CameraBoom->bInheritPitch = false;
 		CameraBoom->bEnableCameraLag = false;
-		MainCamera->bUsePawnControlRotation = true;
+	/*	MainCamera->bUsePawnControlRotation = true;*/
 
 		// 컨트롤러 시야각 제한 및 크로스헤어 표시
 		if (APlayerController* PC = Cast<APlayerController>(GetController()))
@@ -367,11 +382,12 @@ void APrototypeCharacter::StopAiming(const FInputActionValue& Value)
 	}
 
 	// 카메라 설정 복구
-	CameraBoom->bInheritPitch = true;
+	//CameraBoom->bInheritPitch = true;
+	CameraBoom->bEnableCameraLag = true;
 
 	if (MainCamera)
 	{
-		MainCamera->bUsePawnControlRotation = false;
+		//MainCamera->bUsePawnControlRotation = false;
 		MainCamera->SetRelativeRotation(FRotator::ZeroRotator);
 	}
 

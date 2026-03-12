@@ -36,6 +36,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera") class USpringArmComponent* CameraBoom;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera") class UCameraComponent* MainCamera;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UHealthVignetteWidget> HealthVignetteClass;
+
+	UPROPERTY()
+	UHealthVignetteWidget* HealthVignetteWidget;
 #pragma endregion
 
 #pragma region 데이터 에셋

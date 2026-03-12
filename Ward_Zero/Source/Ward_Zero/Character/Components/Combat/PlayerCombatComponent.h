@@ -160,4 +160,11 @@ private:
 
 	float RecoilInterpSpeed = 25.0f;
 	float RecoilRecoverySpeed = 5.0f;
+
+	private:
+		// 리펙토링  
+		void PlayFireEffects(UAnimMontage* FireMontage, UAnimInstance* AnimInst, TSubclassOf<UCameraShakeBase> CamShake);
+		void CalculateShotRecoil();
+		void ProcessHit(const FHitResult& Hit, const FVector& ShotDir);
+		void SpawnTracer(const FVector& Start, const FVector& End);
 };

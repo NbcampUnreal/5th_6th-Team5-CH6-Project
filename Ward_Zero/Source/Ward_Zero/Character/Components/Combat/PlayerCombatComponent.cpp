@@ -11,6 +11,10 @@
 #include "Weapon/Data/WeaponData.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Weapon/Projectile/Projectile.h"
+#include "Weapon/Data/ProjectileData.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "Character/Noise/NoiseFucLibrary/PlayerNoise.h"
 
 UPlayerCombatComponent::UPlayerCombatComponent() { PrimaryComponentTick.bCanEverTick = true; }
 
@@ -150,9 +154,9 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 		return;
 	}
 
-	// 애니메이션 재생
-	UAnimMontage* MontageToPlay = FireMontage ? FireMontage : ((CurrentWeaponIndex == 1) ? Pistol_FireMontage : SMG_FireMontage);
-	if (AnimInst && MontageToPlay) AnimInst->Montage_Play(MontageToPlay);
+	// 시각/청각/반동 연출
+	PlayFireEffects(FireMontage, AnimInst, CamShake);
+	CalculateShotRecoil();
 
 	// 카메라 쉐이크
 	if (CamShake) UGameplayStatics::PlayWorldCameraShake(GetWorld(), CamShake, PlayerCamera->GetComponentLocation(), 0.f, 500.f);
@@ -182,23 +186,29 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 	TargetRecoilRot.Yaw = FMath::Clamp(TargetRecoilRot.Yaw + RecoilYaw, -10.0f, 10.0f);
 
 	// 라인트레이스 (발사 시점에 딱 한 번만 수행하여 목표 지점 확정)
+	// 라인 트레이스 수행
 	FVector Start = PlayerCamera->GetComponentLocation();
 	FVector Dir = FMath::VRandCone(PlayerCamera->GetForwardVector(), FMath::DegreesToRadians(CurrentSpread));
+	FVector End = Start + (Dir * 10000.f);
+
 	FHitResult Hit;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
 	Params.AddIgnoredActor(EquippedWeapon);
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_GameTraceChannel2, Params);
 
-	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, Start + (Dir * 10000.f), ECC_GameTraceChannel2, Params);
+	// 총알이 최종적으로 도달해야 할 목표 지점 총알 투사체 방식 
+	FVector FinalHitTarget = bHit ? Hit.ImpactPoint : End;
 
-	FVector FinalHitTarget = bHit ? Hit.ImpactPoint : Hit.TraceEnd;
+	// 히트 결과 처리 및 궤적 생성 - 트레이서 방식 Test 
+	if (bHit)
+	{
+		ProcessHit(Hit, Dir);
+	}
+	SpawnTracer(EquippedWeapon->WeaponMesh->GetSocketLocation(TEXT("Muzzle")), FinalHitTarget);
 
-	// 무기 효과 재생 
-	EquippedWeapon->FireEffectsOnly();
-	EquippedWeapon->SpendRound();
-
-	// 오브젝트 풀에서 총알 활성화 (메모리 할당 0)
-	AProjectile* Proj = GetProjectileFromPool();
+	// 오브젝트 풀에서 총알 활성화 (메모리 할당 0) - 총알 투사체 방식 Test
+	/*AProjectile* Proj = GetProjectileFromPool();
 	if (Proj)
 	{
 		FVector MuzzleLoc = EquippedWeapon->WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
@@ -207,9 +217,10 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 		Proj->SetActorLocationAndRotation(MuzzleLoc, FireRot);
 		Proj->InitializeProjectile(EquippedWeapon->WeaponData->ProjectileData);
 		Proj->SetProjectileActive(true);
-	}
+	}*/
 
-	// 상태 업데이트
+	// 무기 데이터 업데이트
+	EquippedWeapon->SpendRound();
 	CurrentShotsFired++;
 	CurrentSpread = FMath::Clamp(CurrentSpread + 2.5f, 0.0f, 5.0f);
 }
@@ -325,6 +336,88 @@ void UPlayerCombatComponent::SetCameraPitchLimit(bool IsAiming)
 	}
 }
 
+void UPlayerCombatComponent::PlayFireEffects(UAnimMontage* FireMontage, UAnimInstance* AnimInst, TSubclassOf<UCameraShakeBase> CamShake)
+{
+	// 애니메이션
+	UAnimMontage* MontageToPlay = FireMontage ? FireMontage : ((CurrentWeaponIndex == 1) ? Pistol_FireMontage : SMG_FireMontage);
+	if (AnimInst && MontageToPlay) AnimInst->Montage_Play(MontageToPlay);
+
+	// 카메라 쉐이크
+	if (CamShake) UGameplayStatics::PlayWorldCameraShake(GetWorld(), CamShake, PlayerCamera->GetComponentLocation(), 0.f, 500.f);
+
+	// 무기 자체 이펙트 (총구 화염, 사운드 등)
+	EquippedWeapon->FireEffectsOnly();
+}
+
+void UPlayerCombatComponent::CalculateShotRecoil()
+{
+	float RecoilPitch = 0.0f;
+	float RecoilYaw = 0.0f;
+	float Intensity = EquippedWeapon->GetRecoilIntensity();
+
+	if (EquippedWeapon->RecoilCurve)
+	{
+		FVector CurveVal = EquippedWeapon->RecoilCurve->GetVectorValue((float)CurrentShotsFired);
+		RecoilPitch = CurveVal.Y * Intensity;
+		RecoilYaw = CurveVal.X * Intensity;
+	}
+	else if (EquippedWeapon->WeaponData)
+	{
+		float RandomVal = EquippedWeapon->WeaponData->HorizontalRecoilRandomness;
+		RecoilYaw += FMath::RandRange(-RandomVal, RandomVal);
+		RecoilPitch += FMath::RandRange(-RandomVal * 0.2f, RandomVal * 0.2f);
+	}
+
+	TargetRecoilRot.Pitch = FMath::Clamp(TargetRecoilRot.Pitch + RecoilPitch, -30.0f, 15.0f);
+	TargetRecoilRot.Yaw = FMath::Clamp(TargetRecoilRot.Yaw + RecoilYaw, -10.0f, 10.0f);
+}
+
+void UPlayerCombatComponent::ProcessHit(const FHitResult& Hit, const FVector& ShotDir)
+{
+	UProjectileData* ProjData = EquippedWeapon->WeaponData ? EquippedWeapon->WeaponData->ProjectileData : nullptr;
+	if (!ProjData) return;
+
+	EPhysicalSurface SurfaceType = UGameplayStatics::GetSurfaceType(Hit);
+
+	// VFX
+	UNiagaraSystem* Effect = ProjData->ImpactEffectMap.Contains(SurfaceType) ? ProjData->ImpactEffectMap[SurfaceType] : ProjData->ImpactEffectMap.FindRef(SurfaceType_Default);
+	if (Effect) UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Effect, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
+
+	// SFX
+	USoundBase* Sound = ProjData->ImpactSoundMap.Contains(SurfaceType) ? ProjData->ImpactSoundMap[SurfaceType] : ProjData->ImpactSoundMap.FindRef(SurfaceType_Default);
+	if (Sound) UGameplayStatics::PlaySoundAtLocation(this, Sound, Hit.ImpactPoint);
+
+	// Damage
+	UGameplayStatics::ApplyPointDamage(Hit.GetActor(), ProjData->Damage, ShotDir, Hit, Cast<APawn>(GetOwner())->GetController(), GetOwner(), ProjData->DamageTypeClass);
+
+	// AI Noise
+	UPlayerNoise::ReportNoise(GetWorld(), Cast<APawn>(GetOwner()), Hit.ImpactPoint, ProjData->ImpactNoiseLoudness, ProjData->ImpactNoiseRange, ProjData->ImpactNoiseTag);
+
+	DrawDebugSphere(GetWorld(),Hit.ImpactPoint,10.0f,12,FColor::Red,false,2.0f,0,1.5f);
+}
+
+void UPlayerCombatComponent::SpawnTracer(const FVector& Start, const FVector& End)
+{
+	{
+		// Attached를 사용하여 총구에 고정
+		UNiagaraComponent* Tracer = UNiagaraFunctionLibrary::SpawnSystemAttached(
+			EquippedWeapon->WeaponData->ProjectileData->TracerEffect,
+			EquippedWeapon->WeaponMesh,
+			TEXT("Muzzle"),              
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::SnapToTarget,
+			true
+		);
+
+		if (Tracer)
+		{
+			// 나이아가라 시스템 내부의 변수(TracerEnd)에 목적지 좌표 전달
+			Tracer->SetVariableVec3(TEXT("TracerEnd"), End);
+		}
+	}
+}
+
 void UPlayerCombatComponent::StopFire()
 {
 	GetWorld()->GetTimerManager().ClearTimer(FireTimer);
@@ -357,6 +450,8 @@ void UPlayerCombatComponent::CalculateAimOffset()
 	// AimYaw와 Pitch를 업데이트 (Clamp는 필요에 따라 조절)
 	AimYaw = Delta.Yaw;
 	AimPitch = Delta.Pitch;
+	GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red, FString::SanitizeFloat(AimPitch));
+	GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Blue, FString::SanitizeFloat(AimYaw));
 }
 
 void UPlayerCombatComponent::UpdateHandIK() { if (EquippedWeapon) HandIKTargetLocation = EquippedWeapon->GetLaserTargetLocation(); }

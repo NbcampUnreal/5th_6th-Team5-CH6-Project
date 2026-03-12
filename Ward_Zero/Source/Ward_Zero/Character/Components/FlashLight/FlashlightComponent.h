@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -56,7 +54,7 @@ public:
 	// 0(걷기/조준) ~ 1(달리기) 사이를 부드럽게 오가는 변수
 	float SprintInterpAlpha = 0.0f;
 
-	// 캐싱용 변수 - 매번 Cast 하지 않게 최적화 
-	UPROPERTY() 
+	// 캐싱용 변수 - 매번 Cast 하지 않게 최적화 
+	UPROPERTY()
 	TObjectPtr<class UPlayerCombatComponent> CachedCombatComp;
 };
