@@ -4,7 +4,9 @@
 #include "UI_KWJ/Save/WardSaveGame.h"
 #include "UI_KWJ/Save/SaveWidget.h"
 #include "UI_KWJ/GameOver/GameOverSubsystem.h"
+#include "UI_KWJ/Loading/LoadingScreenSubsystem.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
+#include "Components/CapsuleComponent.h"
 #include "Character/Components/Status/PlayerStatusComponent.h"
 #include "Character/Components/Combat/PlayerCombatComponent.h"
 #include "Weapon/Weapon.h"
@@ -140,7 +142,15 @@ bool USaveSubsystem::LoadGame(const FString& SlotName)
 		}
 	}
 
+	// 로드 시에는 게임오버 복귀 불필요 → 플래그 리셋 후 SaveUI 닫기
+	bOpenedFromGameOver = false;
 	HideSaveUI();
+
+	// 로딩 화면 표시
+	if (ULoadingScreenSubsystem* LoadingSys = GetLocalPlayer()->GetSubsystem<ULoadingScreenSubsystem>())
+	{
+		LoadingSys->ShowLoading(FText::FromString(TEXT("Loading...")));
+	}
 
 	FName CurrentLevel = FName(*UGameplayStatics::GetCurrentLevelName(GetWorld()));
 	if (SaveData->CurrentLevelName != NAME_None && SaveData->CurrentLevelName != CurrentLevel)
@@ -158,6 +168,13 @@ bool USaveSubsystem::LoadGame(const FString& SlotName)
 	{
 		// 같은 레벨이면 바로 적용
 		ApplyGameState(SaveData);
+
+		// 로딩 화면 숨기기
+		if (ULoadingScreenSubsystem* LoadingSys = GetLocalPlayer()->GetSubsystem<ULoadingScreenSubsystem>())
+		{
+			LoadingSys->HideLoading();
+		}
+
 		UE_LOG(LogWard_Zero, Log, TEXT("세이브 로드 완료: %s"), *SlotName);
 	}
 
@@ -323,6 +340,22 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 
 	APrototypeCharacter* Character = Cast<APrototypeCharacter>(PC->GetPawn());
 	if (!Character) return;
+
+	// ── 사망 상태에서 부활 ──
+	// OnDeath()에서 DisableInput, 래그돌, 캡슐 콜리전 해제를 했으므로 전부 복원
+	Character->EnableInput(PC);
+	PC->SetInputMode(FInputModeGameOnly());
+	PC->SetShowMouseCursor(false);
+
+	// 래그돌 해제
+	Character->GetMesh()->SetSimulatePhysics(false);
+	Character->GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh"));
+	Character->GetMesh()->AttachToComponent(
+		Character->GetCapsuleComponent(),
+		FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+	// 캡슐 콜리전 복원
+	Character->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
 	// 위치 & 회전
 	Character->SetActorLocation(SaveData->PlayerLocation);

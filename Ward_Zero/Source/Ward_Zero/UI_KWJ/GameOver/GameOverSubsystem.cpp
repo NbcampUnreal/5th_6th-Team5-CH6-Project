@@ -8,6 +8,9 @@
 
 void UGameOverSubsystem::ShowGameOver()
 {
+	// 중복 호출 가드 — UIManager와 캐릭터 OnDeath() 양쪽에서 호출될 수 있음
+	if (IsGameOver()) return;
+
 	UGameOverWidget* Widget = GetOrCreateWidget();
 	if (Widget)
 	{

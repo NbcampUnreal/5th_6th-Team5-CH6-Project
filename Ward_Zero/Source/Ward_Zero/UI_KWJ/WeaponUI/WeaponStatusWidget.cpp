@@ -121,14 +121,9 @@ void UWeaponStatusWidget::UpdateAmmoDisplay(int32 CurrentAmmo, int32 MaxCapacity
 {
 	if (TXT_CurrentAmmo)
 	{
-		FString AmmoStr = FString::Printf(TEXT("%d / %d"), CurrentAmmo, MaxCapacity);
+		// 현재 탄약 / 전체 보유 탄약
+		FString AmmoStr = FString::Printf(TEXT("%d / %d"), CurrentAmmo, ReserveAmmo);
 		TXT_CurrentAmmo->SetText(FText::FromString(AmmoStr));
-	}
-
-	if (TXT_ReserveAmmo)
-	{
-		FString ReserveStr = FString::Printf(TEXT("%d"), ReserveAmmo);
-		TXT_ReserveAmmo->SetText(FText::FromString(ReserveStr));
 	}
 }
 

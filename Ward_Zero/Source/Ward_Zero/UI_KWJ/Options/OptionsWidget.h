@@ -20,6 +20,9 @@ class WARD_ZERO_API UOptionsWidget : public UUserWidget
 
 public:
 
+	/** 메인메뉴에서 열렸을 때 true — 닫아도 UI 모드 유지 */
+	bool bIsMainMenuMode = false;
+
 	virtual void NativeConstruct() override;
 
 protected:

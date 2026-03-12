@@ -34,13 +34,9 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UImage* IMG_SMG;
 
-	/** 현재 탄약 텍스트 (예: "12 / 12") */
+	/** 탄약 텍스트 (예: "12 / 30") — 현재 탄약 / 전체 보유 탄약 */
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* TXT_CurrentAmmo;
-
-	/** 예비 탄약 텍스트 (예: "30") */
-	UPROPERTY(meta = (BindWidgetOptional))
-	UTextBlock* TXT_ReserveAmmo;
 
 	// ══════════════════════════════════════════
 	//  공개 함수
