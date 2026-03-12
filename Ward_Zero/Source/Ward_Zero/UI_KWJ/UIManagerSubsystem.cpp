@@ -77,8 +77,20 @@ void UUIManagerSubsystem::BindToCharacter()
 	}
 
 	// ── HP 비네팅 바인딩 ──
-	if (!HealthVignetteWidget)
+	if (IsValid(HealthVignetteWidget))
 	{
+		// 위젯은 유효하지만 뷰포트에 없으면 재추가
+		if (!HealthVignetteWidget->IsInViewport())
+		{
+			HealthVignetteWidget->AddToViewport(0);
+			UE_LOG(LogWard_Zero, Log, TEXT("UIManager: HealthVignette 뷰포트 재추가"));
+		}
+	}
+	else
+	{
+		// 위젯이 무효 또는 null → 새로 생성
+		HealthVignetteWidget = nullptr;
+
 		TSubclassOf<UHealthVignetteWidget> VignetteClass = LoadClass<UHealthVignetteWidget>(
 			nullptr,
 			TEXT("/Game/UI/HP/WBP_HealthVignette.WBP_HealthVignette_C")
@@ -90,6 +102,7 @@ void UUIManagerSubsystem::BindToCharacter()
 			if (HealthVignetteWidget)
 			{
 				HealthVignetteWidget->AddToViewport(0);
+				UE_LOG(LogWard_Zero, Log, TEXT("UIManager: HealthVignette 새로 생성"));
 			}
 		}
 		else
