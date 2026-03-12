@@ -39,4 +39,10 @@ public:
 
 public:
 	UPROPERTY(EditAnywhere) float MinStaminaToSprint = 20.f;
+
+	UFUNCTION(BlueprintCallable)
+	void ReviveStatus(float HealthRatio = 1.0f);
+
+	UPROPERTY(EditAnywhere, Category = "Montage | Revival")
+	TObjectPtr<UAnimMontage> ReviveMontage;
 };

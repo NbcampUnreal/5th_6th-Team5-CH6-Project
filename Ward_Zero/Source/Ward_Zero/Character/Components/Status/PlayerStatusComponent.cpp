@@ -61,3 +61,12 @@ float UPlayerStatusComponent::ApplyDamage(float DamageAmount)
 
 	return ActualDamage;
 }
+
+void UPlayerStatusComponent::ReviveStatus(float HealthRatio)
+{
+	bIsDead = false;
+	CurrHealth = MaxHealth * HealthRatio;
+
+	// 체력 UI 갱신 
+	OnHealthChanged.Broadcast(CurrHealth, MaxHealth);
+}
