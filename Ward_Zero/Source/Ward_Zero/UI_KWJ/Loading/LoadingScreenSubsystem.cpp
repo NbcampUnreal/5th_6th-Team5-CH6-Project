@@ -2,128 +2,76 @@
 
 #include "UI_KWJ/Loading/LoadingScreenSubsystem.h"
 #include "UI_KWJ/Loading/LoadingWidget.h"
+#include "MoviePlayer.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/LocalPlayer.h"
+#include "Blueprint/UserWidget.h"
 #include "Ward_Zero.h"
-
-void ULoadingScreenSubsystem::Initialize(FSubsystemCollectionBase& Collection)
-{
-	Super::Initialize(Collection);
-
-	// 레벨 로드 완료 시 자동 숨기기
-	LevelLoadedHandle = FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(
-		this, &ULoadingScreenSubsystem::OnLevelLoaded);
-
-	UE_LOG(LogWard_Zero, Log, TEXT("LoadingScreenSubsystem 초기화 완료"));
-}
-
-void ULoadingScreenSubsystem::Deinitialize()
-{
-	FCoreUObjectDelegates::PostLoadMapWithWorld.Remove(LevelLoadedHandle);
-	Super::Deinitialize();
-}
 
 void ULoadingScreenSubsystem::ShowLoading(const FText& Message)
 {
-	UE_LOG(LogWard_Zero, Warning, TEXT("[Loading] ShowLoading 호출됨"));
+	if (bIsLoading) return;
 
-	ULoadingWidget* Widget = GetOrCreateWidget();
-	if (Widget)
+	IGameMoviePlayer* MoviePlayer = GetMoviePlayer();
+	if (!MoviePlayer) 
 	{
-		Widget->SetLoadingMessage(Message);
-		Widget->SetVisibility(ESlateVisibility::Visible);
-		UE_LOG(LogWard_Zero, Warning, TEXT("[Loading] 로딩 화면 표시 완료: %s"), *Message.ToString());
+		UE_LOG(LogWard_Zero, Error, TEXT("[Loading] MoviePlayer를 가져올 수 없습니다"));
+		return;
 	}
-	else
+
+	// 로딩 위젯 생성
+	TSubclassOf<ULoadingWidget> LoadingClass = LoadClass<ULoadingWidget>(
+		nullptr,
+		TEXT("/Game/UI/Loading/WBP_Loading.WBP_Loading_C")
+	);
+
+	if (!LoadingClass)
 	{
-		UE_LOG(LogWard_Zero, Error, TEXT("[Loading] 위젯 생성 실패 — 로딩 화면 안 나옴"));
+		UE_LOG(LogWard_Zero, Error, TEXT("[Loading] WBP_Loading를 찾을 수 없습니다"));
+		return;
 	}
+
+	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
+	if (!PC) return;
+
+	ULoadingWidget* LoadingWidget = CreateWidget<ULoadingWidget>(PC, LoadingClass);
+	if (!LoadingWidget)
+	{
+		UE_LOG(LogWard_Zero, Error, TEXT("[Loading] 위젯 생성 실패"));
+		return;
+	}
+
+	LoadingWidget->SetLoadingMessage(Message);
+
+	// MoviePlayer에 로딩 화면 등록
+	FLoadingScreenAttributes LoadingScreen;
+	LoadingScreen.WidgetLoadingScreen = LoadingWidget->TakeWidget(); // Slate 위젯으로 변환
+	LoadingScreen.bAutoCompleteWhenLoadingCompletes = true;          // 로딩 끝나면 자동 해제
+	LoadingScreen.bMoviesAreSkippable = false;                       // 스킵 불가
+	LoadingScreen.bWaitForManualStop = false;                        // 수동 정지 대기 안 함
+	LoadingScreen.MinimumLoadingScreenDisplayTime = 1.5f;            // 최소 1.5초 표시
+
+	MoviePlayer->SetupLoadingScreen(LoadingScreen);
+
+	bIsLoading = true;
+	UE_LOG(LogWard_Zero, Log, TEXT("[Loading] MoviePlayer 로딩 화면 설정 완료: %s"), *Message.ToString());
 }
 
 void ULoadingScreenSubsystem::HideLoading()
 {
-	if (LoadingWidget)
+	if (!bIsLoading) return;
+
+	IGameMoviePlayer* MoviePlayer = GetMoviePlayer();
+	if (MoviePlayer)
 	{
-		LoadingWidget->SetVisibility(ESlateVisibility::Collapsed);
-		UE_LOG(LogWard_Zero, Log, TEXT("로딩 화면 숨김"));
+		MoviePlayer->StopMovie();
 	}
+
+	bIsLoading = false;
+	UE_LOG(LogWard_Zero, Log, TEXT("[Loading] 로딩 화면 수동 해제"));
 }
 
 bool ULoadingScreenSubsystem::IsLoading() const
 {
-	return LoadingWidget && LoadingWidget->IsVisible();
-}
-
-void ULoadingScreenSubsystem::OnLevelLoaded(UWorld* LoadedWorld)
-{
-	if (!IsLoading()) return;
-
-	UE_LOG(LogWard_Zero, Warning, TEXT("[Loading] OnLevelLoaded → 1.5초 후 숨기기"));
-
-	// 렌더링 안정화 + 화면에 최소 표시 시간 확보
-	if (UWorld* World = GetWorld())
-	{
-		TWeakObjectPtr<ULoadingScreenSubsystem> WeakThis(this);
-		FTimerHandle HideTimer;
-		World->GetTimerManager().SetTimer(HideTimer, [WeakThis]()
-		{
-			if (ULoadingScreenSubsystem* StrongThis = WeakThis.Get())
-			{
-				StrongThis->HideLoading();
-			}
-		}, 1.5f, false);
-	}
-}
-
-ULoadingWidget* ULoadingScreenSubsystem::GetOrCreateWidget()
-{
-	UE_LOG(LogWard_Zero, Warning, TEXT("[Loading] GetOrCreateWidget 진입"));
-
-	if (IsValid(LoadingWidget))
-	{
-		if (!LoadingWidget->IsInViewport())
-		{
-			LoadingWidget->AddToViewport(999);
-			LoadingWidget->SetVisibility(ESlateVisibility::Collapsed);
-		}
-		UE_LOG(LogWard_Zero, Warning, TEXT("[Loading] 기존 위젯 재사용"));
-		return LoadingWidget;
-	}
-
-	if (!LoadingWidgetClass)
-	{
-		LoadingWidgetClass = LoadClass<ULoadingWidget>(
-			nullptr,
-			TEXT("/Game/UI/Loading/WBP_Loading.WBP_Loading_C")
-		);
-	}
-
-	if (!LoadingWidgetClass)
-	{
-		UE_LOG(LogWard_Zero, Error, TEXT("[Loading] WBP_Loading를 찾을 수 없습니다! 경로 확인 필요"));
-		return nullptr;
-	}
-
-	UE_LOG(LogWard_Zero, Warning, TEXT("[Loading] WBP_Loading 클래스 로드 성공"));
-
-	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
-	if (!PC)
-	{
-		UE_LOG(LogWard_Zero, Error, TEXT("[Loading] PlayerController가 null"));
-		return nullptr;
-	}
-
-	LoadingWidget = CreateWidget<ULoadingWidget>(PC, LoadingWidgetClass);
-	if (LoadingWidget)
-	{
-		LoadingWidget->AddToViewport(999);
-		LoadingWidget->SetVisibility(ESlateVisibility::Collapsed);
-		UE_LOG(LogWard_Zero, Warning, TEXT("[Loading] 위젯 생성 + AddToViewport 완료"));
-	}
-	else
-	{
-		UE_LOG(LogWard_Zero, Error, TEXT("[Loading] CreateWidget 실패"));
-	}
-
-	return LoadingWidget;
+	return bIsLoading;
 }

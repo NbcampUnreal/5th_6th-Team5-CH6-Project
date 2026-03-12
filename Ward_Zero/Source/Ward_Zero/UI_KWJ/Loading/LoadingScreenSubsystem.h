@@ -1,5 +1,6 @@
 // LoadingScreenSubsystem.h
-// 로딩 화면 — 맵 전환, 세이브 로드 시 표시
+// 로딩 화면 — Movie Player 시스템 사용
+// ServerTravel/OpenLevel 중에도 위젯이 살아남음
 
 #pragma once
 
@@ -16,14 +17,11 @@ class WARD_ZERO_API ULoadingScreenSubsystem : public ULocalPlayerSubsystem
 
 public:
 
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-	virtual void Deinitialize() override;
-
-	/** 로딩 화면 표시 */
+	/** 로딩 화면 표시 — ServerTravel/OpenLevel 직전에 호출 */
 	UFUNCTION(BlueprintCallable, Category = "Loading")
 	void ShowLoading(const FText& Message = INVTEXT("Loading..."));
 
-	/** 로딩 화면 숨기기 */
+	/** 로딩 화면 수동 숨기기 (같은 레벨 로드 시 사용) */
 	UFUNCTION(BlueprintCallable, Category = "Loading")
 	void HideLoading();
 
@@ -32,15 +30,5 @@ public:
 
 private:
 
-	UPROPERTY()
-	TSubclassOf<ULoadingWidget> LoadingWidgetClass;
-
-	UPROPERTY()
-	ULoadingWidget* LoadingWidget;
-
-	ULoadingWidget* GetOrCreateWidget();
-
-	/** 레벨 로드 완료 시 자동 숨기기 */
-	void OnLevelLoaded(UWorld* LoadedWorld);
-	FDelegateHandle LevelLoadedHandle;
+	bool bIsLoading = false;
 };
