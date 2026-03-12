@@ -107,7 +107,16 @@ void UMainMenuWidget::HideMenuAndPlay()
 		}
 	}
 
-	UGameplayStatics::OpenLevel(this, FName("/Game/Level/Maps/L_WardZero"));
+	// ServerTravel: LocalPlayer/Subsystem 유지 → 로딩 위젯도 유지됨
+	// 2초 대기 후 ServerTravel (로딩 화면 표시 시간 확보)
+	if (UWorld* W = GetWorld())
+	{
+		FTimerHandle TravelTimer;
+		W->GetTimerManager().SetTimer(TravelTimer, [W]()
+		{
+			W->ServerTravel("/Game/Level/Maps/L_WardZero", true);
+		}, 2.0f, false);
+	}
 }
 
 

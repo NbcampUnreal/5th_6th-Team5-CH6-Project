@@ -125,6 +125,10 @@ void UWeaponStatusWidget::UpdateAmmoDisplay(int32 CurrentAmmo, int32 MaxCapacity
 		FString AmmoStr = FString::Printf(TEXT("%d / %d"), CurrentAmmo, ReserveAmmo);
 		TXT_CurrentAmmo->SetText(FText::FromString(AmmoStr));
 	}
+	else
+	{
+		UE_LOG(LogWard_Zero, Warning, TEXT("[WeaponUI] TXT_CurrentAmmo가 null — WBP에서 이름 확인 필요"));
+	}
 }
 
 // ════════════════════════════════════════════════════════
