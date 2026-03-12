@@ -8,7 +8,6 @@
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Character/Components/Status/PlayerStatusComponent.h"
 #include "Character/Components/Combat/PlayerCombatComponent.h"
-#include "Components/CapsuleComponent.h"
 #include "Weapon/Weapon.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
@@ -341,20 +340,11 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 	APrototypeCharacter* Character = Cast<APrototypeCharacter>(PC->GetPawn());
 	if (!Character) return;
 
-	// ── 사망 상태에서 부활 ──
-	Character->EnableInput(PC);
-	PC->SetInputMode(FInputModeGameOnly());
-	PC->SetShowMouseCursor(false);
-
-	// 래그돌 해제
-	Character->GetMesh()->SetSimulatePhysics(false);
-	Character->GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh"));
-	Character->GetMesh()->AttachToComponent(
-		Character->GetCapsuleComponent(),
-		FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-
-	// 캡슐 콜리전 복원
-	Character->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	// 사망 상태면 캐릭터 Revive() 호출 (래그돌/입력/콜리전 복원은 캐릭터가 처리)
+	if (Character->StatusComp && Character->StatusComp->IsDead())
+	{
+		Character->Revive();
+	}
 
 	// 일시정지 해제 (게임오버에서 일시정지 중일 수 있음)
 	UGameplayStatics::SetGamePaused(World, false);
