@@ -46,8 +46,6 @@ APrototypeCharacter::APrototypeCharacter()
 	CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
 	CameraBoom->TargetArmLength = 180.0f;
 	CameraBoom->bUsePawnControlRotation = true;
-	CameraBoom->bEnableCameraLag = true;
-	CameraBoom->CameraLagSpeed = 15.0f;
 	CameraBoom->SocketOffset = FVector(0.0f, 35.0f, 10.0f);
 
 	MainCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("MainCamera"));
@@ -371,7 +369,6 @@ void APrototypeCharacter::StopAiming(const FInputActionValue& Value)
 
 	// 카메라 설정 복구
 	CameraBoom->bInheritPitch = true;
-	CameraBoom->bEnableCameraLag = true;
 
 	if (MainCamera)
 	{
@@ -552,18 +549,21 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
+	float SweepRadius = 45.0f;
+	FCollisionShape SphereShape = FCollisionShape::MakeSphere(SweepRadius);
+
+	bool bHit = GetWorld()->SweepSingleByChannel(
 		Hit,
 		Start,
 		End,
+		FQuat::Identity,
 		ECC_Visibility,
+		SphereShape,
 		Params
 	);
 
-	// ★ 디버그: 라인트레이스 시각화 (빨간 선 10초간 표시)
-	DrawDebugLine(GetWorld(), Start, End,
-		bHit ? FColor::Green : FColor::Red,
-		false, 10.0f, 0, 2.0f);
+	DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Green : FColor::Red, false, 5.0f, 0, 2.0f);
+	DrawDebugSphere(GetWorld(), End, SweepRadius, 16, bHit ? FColor::Green : FColor::Red, false, 5.0f);
 
 	if (!bHit)
 	{

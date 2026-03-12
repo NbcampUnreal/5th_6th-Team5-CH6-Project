@@ -174,7 +174,8 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 	{
 		float RandomVal = EquippedWeapon->WeaponData->HorizontalRecoilRandomness;
 		RecoilYaw += FMath::RandRange(-RandomVal, RandomVal);
-		RecoilPitch += FMath::RandRange(-RandomVal * 0.2f, RandomVal * 0.2f);
+
+		RecoilPitch += Intensity + FMath::RandRange(-RandomVal * 0.2f, RandomVal * 0.2f);
 	}
 
 	TargetRecoilRot.Pitch = FMath::Clamp(TargetRecoilRot.Pitch + RecoilPitch, -30.0f, 15.0f);
