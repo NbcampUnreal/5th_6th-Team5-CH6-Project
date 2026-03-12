@@ -6,6 +6,7 @@
 UQuickTurnComponent::UQuickTurnComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bStartWithTickEnabled = false;
 }
 
 void UQuickTurnComponent::StartQuickTurn180()
@@ -24,12 +25,14 @@ void UQuickTurnComponent::StartQuickTurn180()
 	TurnIndex = (Combat && Combat->IsPistolEquipped()) ? 6 : 2;
 
 	Owner->GetCharacterMovement()->StopMovementImmediately();
+	SetComponentTickEnabled(true);
 }
 
 void UQuickTurnComponent::StopQuickTurn()
 {
 	bIsQuickTurning = false;
 	TurnIndex = 0;
+	SetComponentTickEnabled(false);
 }
 
 void UQuickTurnComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

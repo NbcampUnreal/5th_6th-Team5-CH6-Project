@@ -19,33 +19,14 @@ UFlashlightComponent::UFlashlightComponent()
 void UFlashlightComponent::BeginPlay()
 {
 	Super::BeginPlay();
-    SetComponentTickInterval(0.1f);
+	SetComponentTickInterval(0.1f);
 
 	if (ACharacter* Owner = Cast<ACharacter>(GetOwner()))
 	{
-        // 컴포넌트 및 인터페이스 캐싱
-        CachedCombatComp = Owner->FindComponentByClass<UPlayerCombatComponent>();
+		// 컴포넌트 및 인터페이스 캐싱
+		CachedCombatComp = Owner->FindComponentByClass<UPlayerCombatComponent>();
 
-		// 1. 가슴 라이트(BodyRunLight) 동적 생성 및 설정
-		// (참고: 두 번째 인자는 언리얼 내부용 컴포넌트 이름입니다. 소켓 이름이 아니어도 됩니다.)
-		BodyRunLight = NewObject<USpotLightComponent>(Owner, TEXT("BodyRunLightComp"));
-		if (BodyRunLight)
-		{
-			BodyRunLight->RegisterComponent();
-			BodyRunLight->AttachToComponent(Owner->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("BodyLightSocket"));
-
-			// ★ 회전값만 월드 기준(Absolute)으로 설정하여 애니메이션의 흔들림을 무시합니다.
-			// 위치는 소켓을 따라가지만, 빛이 가리키는 방향은 캐릭터의 기본 방향을 유지합니다.
-			BodyRunLight->SetUsingAbsoluteRotation(true);
-
-			BodyRunLight->SetRelativeLocation(FVector::ZeroVector);
-			BodyRunLight->SetRelativeRotation(FRotator::ZeroRotator);
-
-			BodyRunLight->SetVisibility(false);
-			BodyRunLight->SetCastShadows(false);
-		}
-
-		// 실제 손전등 액터(FlashLightActor) 월드에 스폰 
+		// 실제 손전등 액터(FlashLightActor) 월드에 스폰 
 		if (FlashLightClass)
 		{
 			FActorSpawnParameters SpawnParams;
@@ -72,162 +53,179 @@ void UFlashlightComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 void UFlashlightComponent::SetFlashlightOff()
 {
 	bIsUseFlashlight = false;
-
 	UpdateFlashlight(0.0f);
 }
 
 void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 {
-    if (!CachedCombatComp || !BodyRunLight) return;
+	if (!CachedCombatComp || !FlashLightActor) return;
 
-    APrototypeCharacter* Player = Cast<APrototypeCharacter>(GetOwner());
-    if (!Player) return;
+	APrototypeCharacter* Player = Cast<APrototypeCharacter>(GetOwner());
+	if (!Player) return;
 
-    IPlayerAnimInterface* AnimIF = Cast<IPlayerAnimInterface>(Player);
-    if (!AnimIF) return;
+	IPlayerAnimInterface* AnimIF = Cast<IPlayerAnimInterface>(Player);
+	if (!AnimIF) return;
 
-    // 회전 및 초기화
-    BodyRunLight->SetWorldRotation(Player->GetActorRotation());
-    BodyRunLight->SetVisibility(false);
+	// FlashLight 엑터 내부 SpotLight와 StaticMesh 가져오기
+	USpotLightComponent* FlashLightSpot = FlashLightActor->FindComponentByClass<USpotLightComponent>();
+	UStaticMeshComponent* FlashLightMesh = FlashLightActor->FindComponentByClass<UStaticMeshComponent>();
+	if (!FlashLightSpot) return;
 
-    AWeapon* CurrentWeapon = Player->GetEquippedWeapon();
-    if (CachedCombatComp)
-    {
-        TArray<AWeapon*> AllWeapons;
-        if (CachedCombatComp->PistolWeapon) AllWeapons.Add(CachedCombatComp->PistolWeapon);
-        if (CachedCombatComp->SMGWeapon) AllWeapons.Add(CachedCombatComp->SMGWeapon);
-        for (AWeapon* Weapon : AllWeapons)
-        {
-            if (Weapon && Weapon->SMGSpotLight) Weapon->SMGSpotLight->SetVisibility(false);
-        }
-    }
+	AWeapon* CurrentWeapon = Player->GetEquippedWeapon();
 
-    // 전등 OFF 상태 (Ambient)
-    if (!bIsUseFlashlight)
-    {
-        if (FlashLightActor) FlashLightActor->SetActorHiddenInGame(true);
+	// SMG 라이트는 기본적으로 꺼둠
+	if (CurrentWeapon && CurrentWeapon->SMGSpotLight)
+	{
+		CurrentWeapon->SMGSpotLight->SetVisibility(false);
+	}
 
-        if (DefaultFlashlightData)
-        {
-            BodyRunLight->SetVisibility(true);
-            BodyRunLight->SetIntensity(DefaultFlashlightData->AmbientIntensity);
-            BodyRunLight->SetAttenuationRadius(DefaultFlashlightData->AmbientRadius);
-            BodyRunLight->SetOuterConeAngle(75.f); 
-        }
-        return; 
-    }
+	// 전등 OFF 상태 (Ambient 빛 제거)
+	if (!bIsUseFlashlight)
+	{
+		FlashLightActor->SetActorHiddenInGame(true);
+		FlashLightSpot->SetVisibility(false);
+		return;
+	}
 
-    // 손전등 ON 상태: 무기별 데이터 에셋 결정
-    UFlashLightData* TargetData = (CurrentWeapon && CurrentWeapon->WeaponData && CurrentWeapon->WeaponData->FlashlightSettings)
-        ? CurrentWeapon->WeaponData->FlashlightSettings : DefaultFlashlightData;
+	// 손전등 ON 상태: 무기별 데이터 에셋 결정
+	UFlashLightData* TargetData = (CurrentWeapon && CurrentWeapon->WeaponData && CurrentWeapon->WeaponData->FlashlightSettings)
+		? CurrentWeapon->WeaponData->FlashlightSettings : DefaultFlashlightData;
 
-    if (!TargetData) return;
+	if (!TargetData) return;
 
-    bool bIsRunning = AnimIF->GetIsRunning();
-    bool bIsUnarmed = !CachedCombatComp->IsWeaponDrawn();
+	bool bIsRunning = AnimIF->GetIsRunning();
+	bool bIsUnarmed = !CachedCombatComp->IsWeaponDrawn();
 
-    USpotLightComponent* ActiveSpot = nullptr;
-    float BaseIntensity = TargetData->Intensity;
-    float BaseOuterAngle = TargetData->OuterConeAngle;
+	USpotLightComponent* ActiveSpot = nullptr;
+	float BaseIntensity = TargetData->Intensity;
+	float BaseOuterAngle = TargetData->OuterConeAngle;
 
-    if (bIsRunning)
-    {
-        // [상황 A] 달리는 중
-        BodyRunLight->SetVisibility(true);
+	// 달리는 중
+	if (bIsRunning)
+	{
+		// 가슴 소켓으로 손전등 이동
+		FlashLightActor->AttachToComponent(Player->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("BodyLightSocket"));
 
-        BaseIntensity = TargetData->Intensity * TargetData->SprintIntensityMultiplier;
-        float SprintRadius = TargetData->AttenuationRadius * TargetData->SprintRadiusMultiplier;
+		// 액터 자체는 켜두어야 빛이 나옴, 대신 메쉬(모델링)만 투명하게 숨김
+		FlashLightActor->SetActorHiddenInGame(false);
+		if (FlashLightMesh) FlashLightMesh->SetVisibility(false);
 
-        BodyRunLight->SetIntensity(BaseIntensity);
-        BodyRunLight->SetAttenuationRadius(SprintRadius);
-        BodyRunLight->SetOuterConeAngle(BaseOuterAngle);
-        BodyRunLight->SetInnerConeAngle(BaseOuterAngle * TargetData->InnerConeRatio);
-        BodyRunLight->SetVolumetricScatteringIntensity(TargetData->VolumetricScatteringIntensity);
-        BodyRunLight->SetCastShadows(TargetData->bCastShadows);
+		// 빛 회전을 몸통 절대 회전값으로 고정 (뛰어도 안 흔들림)
+		FlashLightSpot->SetUsingAbsoluteRotation(true);
+		FlashLightSpot->SetWorldRotation(Player->GetActorRotation());
+		FlashLightSpot->SetVisibility(true);
 
-        ActiveSpot = BodyRunLight;
+		// 달리기 데이터 적용
+		FlashLightSpot->SetIntensity(BaseIntensity * TargetData->SprintIntensityMultiplier);
+		FlashLightSpot->SetAttenuationRadius(TargetData->AttenuationRadius * TargetData->SprintRadiusMultiplier);
+		FlashLightSpot->SetOuterConeAngle(BaseOuterAngle);
+		FlashLightSpot->SetInnerConeAngle(BaseOuterAngle * TargetData->InnerConeRatio);
+		FlashLightSpot->SetVolumetricScatteringIntensity(TargetData->VolumetricScatteringIntensity);
+		FlashLightSpot->SetCastShadows(TargetData->bCastShadows);
 
-        if (FlashLightActor)
-        {
-            FlashLightActor->SetActorHiddenInGame(!bIsUnarmed);
-            if (auto* Spot = FlashLightActor->FindComponentByClass<USpotLightComponent>()) Spot->SetVisibility(false);
-        }
-    }
-    else
-    {
-        // 걷기 또는 조준 시
-        if (AnimIF->GetIsSMGEquipped() && CurrentWeapon && CurrentWeapon->SMGSpotLight)
-        {
-            CurrentWeapon->SMGSpotLight->SetVisibility(true);
-            CurrentWeapon->SMGSpotLight->SetIntensity(BaseIntensity);
-            CurrentWeapon->SMGSpotLight->SetOuterConeAngle(BaseOuterAngle);
-            CurrentWeapon->SMGSpotLight->SetInnerConeAngle(BaseOuterAngle * TargetData->InnerConeRatio);
-            CurrentWeapon->SMGSpotLight->SetAttenuationRadius(TargetData->AttenuationRadius);
-            CurrentWeapon->SMGSpotLight->SetCastShadows(TargetData->bCastShadows);
+		ActiveSpot = FlashLightSpot;
+	}
+	// 걷기 또는 조준 시
+	else
+	{
+		// SMG를 들고 있을 때
+		if (AnimIF->GetIsSMGEquipped() && CurrentWeapon && CurrentWeapon->SMGSpotLight)
+		{
+			FlashLightActor->SetActorHiddenInGame(true);
+			FlashLightSpot->SetVisibility(false);
 
-            ActiveSpot = CurrentWeapon->SMGSpotLight;
-        }
-        else if (FlashLightActor)
-        {
-            bool bShouldHide = AnimIF->GetIsReloading() || AnimIF->IsEquipping();
-            if (!bShouldHide)
-            {
-                if (bIsUnarmed) bShouldHide = false;
-                FName SocketName = AnimIF->GetIsPistolEquipped() ? TEXT("FlashLightSocket_Pistol") : TEXT("FlashLightSocket_Normal");
-                FlashLightActor->AttachToComponent(Player->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
-                FlashLightActor->SetActorRelativeLocation(FVector::ZeroVector);
-                FlashLightActor->SetActorRelativeRotation(FRotator::ZeroRotator);
-                FlashLightActor->SetActorHiddenInGame(false);
+			// SMG 라이트 흔들림 무시 + 카메라 정면으로 위치 고정 
+			CurrentWeapon->SMGSpotLight->SetUsingAbsoluteRotation(true);
+			CurrentWeapon->SMGSpotLight->SetWorldRotation(Player->GetControlRotation());
 
-                FlashLightActor->InitializeLight(TargetData);
+			CurrentWeapon->SMGSpotLight->SetVisibility(true);
+			CurrentWeapon->SMGSpotLight->SetIntensity(BaseIntensity);
+			CurrentWeapon->SMGSpotLight->SetOuterConeAngle(BaseOuterAngle);
+			CurrentWeapon->SMGSpotLight->SetInnerConeAngle(BaseOuterAngle * TargetData->InnerConeRatio);
+			CurrentWeapon->SMGSpotLight->SetAttenuationRadius(TargetData->AttenuationRadius);
+			CurrentWeapon->SMGSpotLight->SetCastShadows(TargetData->bCastShadows);
 
-                if (auto* Spot = FlashLightActor->FindComponentByClass<USpotLightComponent>())
-                {
-                    Spot->SetVisibility(true);
-                    Spot->SetIntensity(BaseIntensity);
-                    Spot->SetInnerConeAngle(BaseOuterAngle * TargetData->InnerConeRatio);
-                    Spot->SetCastShadows(TargetData->bCastShadows);
+			ActiveSpot = CurrentWeapon->SMGSpotLight;
+		}
+		// 권총이거나 비무장일 때
+		else
+		{
+			bool bShouldHide = AnimIF->GetIsReloading() || AnimIF->IsEquipping();
+			if (bIsUnarmed) bShouldHide = false;
 
-                    ActiveSpot = Spot;
-                }
-            }
-        }
-    }
+			FName SocketName = AnimIF->GetIsPistolEquipped() ? TEXT("FlashLightSocket_Pistol") : TEXT("FlashLightSocket_Normal");
 
-    // 동적 초점(Dynamic Focus) 적용 
-    if (ActiveSpot && TargetData->bEnableDynamicFocus)
-    {
-        float FocusAlpha = CalculateFocusAlpha(ActiveSpot, TargetData->MaxFocusDistance);
+			// 손 소켓으로 이동
+			FlashLightActor->AttachToComponent(Player->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
+			FlashLightActor->SetActorRelativeLocation(FVector::ZeroVector);
+			FlashLightActor->SetActorRelativeRotation(FRotator::ZeroRotator);
 
-        float DynamicOuter = FMath::Lerp(TargetData->MinOuterConeAngle, BaseOuterAngle, FocusAlpha);
-        ActiveSpot->SetOuterConeAngle(DynamicOuter);
-        ActiveSpot->SetInnerConeAngle(DynamicOuter * TargetData->InnerConeRatio);
+			FlashLightActor->SetActorHiddenInGame(bShouldHide);
 
-        float DynamicIntensity = BaseIntensity * FMath::Lerp(TargetData->CloseRangeIntensityMultiplier, 1.0f, FocusAlpha);
-        ActiveSpot->SetIntensity(DynamicIntensity);
-    }
+			// 메쉬 다시 보이게 복구
+			if (FlashLightMesh) FlashLightMesh->SetVisibility(!bShouldHide);
+
+			// 빛(SpotLight)은 손목의 흔들림을 무시하도록 절대 회전 켜기
+			FlashLightSpot->SetUsingAbsoluteRotation(true);
+
+			// SpotLight를 플레이어의 시야(카메라/크로스헤어) 정면으로 고정
+			FlashLightSpot->SetWorldRotation(Player->GetControlRotation());
+
+			if (AFlashLight* DefaultActor = FlashLightActor->GetClass()->GetDefaultObject<AFlashLight>())
+			{
+				if (USpotLightComponent* DefaultSpot = DefaultActor->FindComponentByClass<USpotLightComponent>())
+				{
+					FlashLightSpot->SetRelativeLocation(DefaultSpot->GetRelativeLocation());
+				}
+			}
+
+			FlashLightSpot->SetVisibility(!bShouldHide);
+
+			if (!bShouldHide)
+			{
+				FlashLightSpot->SetIntensity(BaseIntensity);
+				FlashLightSpot->SetInnerConeAngle(BaseOuterAngle * TargetData->InnerConeRatio);
+				FlashLightSpot->SetCastShadows(TargetData->bCastShadows);
+			}
+
+			ActiveSpot = bShouldHide ? nullptr : FlashLightSpot;
+		}
+	}
+
+	// 동적 초점(Dynamic Focus) 적용 
+	if (ActiveSpot && TargetData->bEnableDynamicFocus)
+	{
+		float FocusAlpha = CalculateFocusAlpha(ActiveSpot, TargetData->MaxFocusDistance);
+
+		float DynamicOuter = FMath::Lerp(TargetData->MinOuterConeAngle, BaseOuterAngle, FocusAlpha);
+		ActiveSpot->SetOuterConeAngle(DynamicOuter);
+		ActiveSpot->SetInnerConeAngle(DynamicOuter * TargetData->InnerConeRatio);
+
+		float DynamicIntensity = BaseIntensity * FMath::Lerp(TargetData->CloseRangeIntensityMultiplier, 1.0f, FocusAlpha);
+		ActiveSpot->SetIntensity(DynamicIntensity);
+	}
 }
 
 float UFlashlightComponent::CalculateFocusAlpha(USpotLightComponent* Light, float MaxDist)
 {
-    if (!Light) return 1.0f;
+	if (!Light) return 1.0f;
 
-    FHitResult Hit;
-    FVector Start = Light->GetComponentLocation();
-    FVector End = Start + (Light->GetForwardVector() * MaxDist);
+	FHitResult Hit;
+	FVector Start = Light->GetComponentLocation();
+	FVector End = Start + (Light->GetForwardVector() * MaxDist);
 
-    FCollisionQueryParams Params;
-    Params.AddIgnoredActor(GetOwner());
-    if (FlashLightActor) Params.AddIgnoredActor(FlashLightActor);
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(GetOwner());
+	if (FlashLightActor) Params.AddIgnoredActor(FlashLightActor);
 
-    // 라인 트레이스로 벽까지의 거리 측정
-    if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
-    {
-        // 0(벽에 붙음) ~ 1(멀리 있음) 사이의 값 반환
-        return FMath::Clamp(Hit.Distance / MaxDist, 0.0f, 1.0f);
-    }
+	// 라인 트레이스로 벽까지의 거리 측정
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+	{
+		// 0(벽에 붙음) ~ 1(멀리 있음) 사이의 값 반환
+		return FMath::Clamp(Hit.Distance / MaxDist, 0.0f, 1.0f);
+	}
 
-    return 1.0f;
+	return 1.0f;
 }
 
 void UFlashlightComponent::ToggleFlashlight()
@@ -237,17 +235,12 @@ void UFlashlightComponent::ToggleFlashlight()
 
 	bIsUseFlashlight = !bIsUseFlashlight;
 
-	if (Player->GetCurrentWeaponIndex() == 0) // 0이 Unarmed라고 가정 (혹은 !Player->GetIsWeaponDrawn())
+	if (Player->GetCurrentWeaponIndex() == 0) 
 	{
 		if (bIsUseFlashlight && RaiseLightMontage)
 			Player->PlayAnimMontage(RaiseLightMontage);
 		else if (!bIsUseFlashlight && LowerLightMontage)
 			Player->PlayAnimMontage(LowerLightMontage);
-	}
-	else
-	{
-		// 무기를 들고 있을 때는 몽타주를 재생하지 않습니다.
-		// 대신 필요하다면 여기서 소리만 재생하거나 즉시 상태 업데이트를 수행합니다.
 	}
 	UpdateFlashlight(0.0f);
 }

@@ -135,12 +135,25 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
         {
             float Freq = CameraData->BobFrequency;
             float Amp = CameraData->BobAmplitude;
+            float SpeedFactor = 1.0f;
 
-            if (OwnerCharacter->bIsCrouched) { Freq *= 0.8f; Amp *= 0.5f; }
+            if (OwnerCharacter->bIsCrouched) { Freq *= 0.8f; Amp *= 0.5f; SpeedFactor = Speed / 150.f; }
+            else if (OwnerCharacter->GetIsRunning())
+            {
+                Freq *= CameraData->RunFrequencyAmplify;
+                Amp *= CameraData->RunAmplitudeAmplify;
+                SpeedFactor = 1.0f;
+            }
+            else
+            {
+                SpeedFactor = Speed / 150.f;
+            }
 
-            BobTime += DeltaTime * (Speed / 150.f) * Freq;
+            BobTime += DeltaTime * SpeedFactor * Freq;
             TargetSocketOffset.Z += FMath::Sin(BobTime) * Amp;
-            TargetSocketOffset.Y += FMath::Cos(BobTime * 0.5f) * CameraData->BobHorizontalAmplitude;
+
+            float HorizontalAmp = CameraData->BobHorizontalAmplitude * (OwnerCharacter->GetIsRunning() ? 1.5f : 1.0f);
+            TargetSocketOffset.Y += FMath::Cos(BobTime * 0.5f) * HorizontalAmp;
         }
         else { BobTime = FMath::FInterpTo(BobTime, 0.0f, DeltaTime, 5.0f); }
     }

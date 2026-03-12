@@ -1,4 +1,4 @@
-// InteractionComponent.cpp
+﻿// InteractionComponent.cpp
 
 #include "Character/Components/Interaction/InteractionComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
@@ -73,7 +73,10 @@ void UInteractionComponent::PerformTrace()
 
 	AActor* HitActor = nullptr;
 
-	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, TraceChannel, Params))
+	FCollisionShape SphereShape = FCollisionShape::MakeSphere(InteractionRadius);
+
+	// FQuat::Identity는 회전값이 없다는 뜻입니다. (공 모양이므로 회전이 의미 없음)
+	if (GetWorld()->SweepSingleByChannel(Hit, Start, End, FQuat::Identity, TraceChannel, SphereShape, Params))
 	{
 		AActor* Actor = Hit.GetActor();
 		if (Actor && IsInteractable(Actor))

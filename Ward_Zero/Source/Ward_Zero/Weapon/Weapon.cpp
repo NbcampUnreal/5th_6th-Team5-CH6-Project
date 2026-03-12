@@ -22,6 +22,7 @@
 AWeapon::AWeapon()
 {
     PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bStartWithTickEnabled = false;
 
     WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
     SetRootComponent(WeaponMesh);
@@ -234,6 +235,18 @@ void AWeapon::SetIsReloading(bool reload)
 {
     bIsReloading = reload;
     return;
+}
+
+void AWeapon::EnableLaserSight(bool bEnable)
+{
+    // 조준 상태에 따라 무기의 틱(LineTrace 연산) 키고 끄기.
+    SetActorTickEnabled(bEnable);
+
+    // 틱을 껐을 때(조준 해제 시), 레이저 파티클이 남아있는 경우 끄기 
+    if (!bEnable && LaserSightComponent)
+    {
+        LaserSightComponent->SetVisibility(false);
+    }
 }
 
 UCurveVector* AWeapon::GetRecoilCurve() const

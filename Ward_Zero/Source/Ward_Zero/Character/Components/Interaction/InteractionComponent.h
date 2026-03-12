@@ -1,4 +1,4 @@
-// InteractionComponent.h
+﻿// InteractionComponent.h
 // 라인 트레이스 기반 상호작용 감지 + E키 프롬프트 UI
 // 캐릭터에 부착하여 매 틱 전방 트레이스, 상호작용 가능 액터 감지 시 위젯 표시
 
@@ -42,6 +42,9 @@ protected:
 	/** 상호작용 가능 최대 거리 */
 	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
 	float InteractionRange = 250.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
+	float InteractionRadius = 30.0f;
 
 	/** 트레이스 채널 */
 	UPROPERTY(EditDefaultsOnly, Category = "Interaction")

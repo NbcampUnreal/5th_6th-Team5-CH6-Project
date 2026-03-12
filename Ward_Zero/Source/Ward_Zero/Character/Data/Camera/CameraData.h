@@ -41,6 +41,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Bobbing") float BobFrequency = 12.0f;
 	UPROPERTY(EditAnywhere, Category = "Bobbing") float BobAmplitude = 2.0f;
 	UPROPERTY(EditAnywhere, Category = "Bobbing") float BobHorizontalAmplitude = 1.0f;
+	UPROPERTY(EditAnywhere, Category = "Bobbing") float RunFrequencyAmplify = 1.3f;
+	UPROPERTY(EditAnywhere, Category = "Bobbing") float RunAmplitudeAmplify = 1.5f;
+
 
 	// 숨쉬기/조준 Sway 설정
 	UPROPERTY(EditAnywhere, Category = "Sway") float BreathSwayIntensity = 0.6f;

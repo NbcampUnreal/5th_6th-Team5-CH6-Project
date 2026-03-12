@@ -23,6 +23,7 @@
 #include "UI_KWJ/GameOver/GameOverSubsystem.h"
 #include "UI_KWJ/Save/SaveSubsystem.h"
 #include "UI_KWJ/WeaponUI/WeaponUISubsystem.h"
+#include "UI_KWJ/Health/HealthVignetteWidget.h"
 #include "Gimmic_CY/InteractionBase.h"
 
 APrototypeCharacter::APrototypeCharacter()
@@ -46,8 +47,6 @@ APrototypeCharacter::APrototypeCharacter()
 	CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
 	CameraBoom->TargetArmLength = 180.0f;
 	CameraBoom->bUsePawnControlRotation = true;
-	CameraBoom->bEnableCameraLag = true;
-	CameraBoom->CameraLagSpeed = 15.0f;
 	CameraBoom->SocketOffset = FVector(0.0f, 35.0f, 10.0f);
 
 	MainCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("MainCamera"));
@@ -115,6 +114,20 @@ void APrototypeCharacter::BeginPlay()
 	{
 		if (UnarmedLayer) AnimInst->LinkAnimClassLayers(UnarmedLayer);
 	}
+	if (HealthVignetteClass)
+	{
+		APlayerController* VignettePC = Cast<APlayerController>(Controller);
+		if (VignettePC)
+		{
+			HealthVignetteWidget = CreateWidget<UHealthVignetteWidget>(VignettePC, HealthVignetteClass);
+			if (HealthVignetteWidget)
+			{
+				HealthVignetteWidget->AddToViewport(0);
+				StatusComp->OnHealthChanged.AddDynamic(
+					HealthVignetteWidget, &UHealthVignetteWidget::OnHealthChanged);
+			}
+		}
+	}
 }
 
 void APrototypeCharacter::Tick(float DeltaTime)
@@ -127,12 +140,6 @@ void APrototypeCharacter::Tick(float DeltaTime)
 
 	// 퀵턴 처리 
 	if (QuickTurnComp && QuickTurnComp->IsQuickTurning()) return;
-
-	// 손전등 실시간 갱신
-	if (FlashLightComp && FlashLightComp->IsUsingFlashlight()) // 손전등 사용 중일때만 호출 
-	{
-		FlashLightComp->UpdateFlashlight(DeltaTime);
-	}
 
 	// 캐릭터 몸체 회전 (비조준 / 조준)
 	UpdateBodyRotation(DeltaTime);
@@ -200,10 +207,16 @@ void APrototypeCharacter::Move(const FInputActionValue& Value)
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	if (Controller == nullptr) return;
 
-	// 원본의 장전 중 이동 제한 로직 복구
+	if (bIsCrouched && GetIsReloading() && GetCurrentWeaponIndex() == 2)
+	{
+		return;
+	}
+
+	// 장전 중 이동 제한 
 	if (bIsCrouched && GetIsReloading()) return;
 
 	float SpeedModifier = 1.0f;
+
 	// 장전 중이면서 달리는 중이 아니면 속도 50% 감소
 	if (!bIsCrouched && GetIsReloading() && !bIsRunning)
 	{
@@ -234,7 +247,8 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 	if (CombatComp && CombatComp->IsAiming()) return;
 
 	if (StatusComp && !StatusComp->CanSprint()) return;
-	if (bIsCrouched && GetIsReloading()) return;
+	if (GetIsReloading() || IsEquipping()) return;
+
 	if (bIsRunning)
 	{
 		EndRunning(Value);
@@ -245,9 +259,8 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 		GetCharacterMovement()->MaxWalkSpeed = MovementData->RunSpeed;
 		bUseControllerRotationYaw = false;
 		GetCharacterMovement()->bOrientRotationToMovement = true;
-		CameraBoom->CameraLagSpeed = 10.0f;
 
-		FlashLightComp->UpdateFlashlight(0.0f);//달릴 때는 손전등 소켓 갱신 
+		FlashLightComp->UpdateFlashlight(0.0f);
 	}
 }
 
@@ -263,15 +276,13 @@ void APrototypeCharacter::EndRunning(const FInputActionValue& Value)
 	bIsRunning = false;
 	GetCharacterMovement()->MaxWalkSpeed = MovementData->WalkSpeed;
 	GetCharacterMovement()->bOrientRotationToMovement = false; // Strafe 모드로 복구
-	CameraBoom->CameraLagSpeed = 15.0f;
 
 	FlashLightComp->UpdateFlashlight(0.0f); //달리기 종료 시 원래 소켓으로 복구
 }
 
-
 void APrototypeCharacter::ToggleCrouch(const FInputActionValue& Value)
 {
-	if (bIsRunning || GetIsReloading()) return;
+	if (bIsRunning || GetIsReloading() || IsEquipping()) return;
 	bIsCrouched ? UnCrouch() : Crouch();
 }
 
@@ -337,11 +348,6 @@ void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 		GetCharacterMovement()->bOrientRotationToMovement = false;
 		GetCharacterMovement()->MaxWalkSpeed = MovementData->WalkSpeed * 0.5f;
 
-		// 카메라 설정 
-		CameraBoom->bInheritPitch = false;
-		CameraBoom->bEnableCameraLag = false;
-		MainCamera->bUsePawnControlRotation = true;
-
 		// 컨트롤러 시야각 제한 및 크로스헤어 표시
 		if (APlayerController* PC = Cast<APlayerController>(GetController()))
 		{
@@ -369,13 +375,9 @@ void APrototypeCharacter::StopAiming(const FInputActionValue& Value)
 		MoveComp->MaxWalkSpeed = SafeSpeed;
 	}
 
-	// 카메라 설정 복구
-	CameraBoom->bInheritPitch = true;
-	CameraBoom->bEnableCameraLag = true;
-
 	if (MainCamera)
 	{
-		MainCamera->bUsePawnControlRotation = false;
+		//MainCamera->bUsePawnControlRotation = false;
 		MainCamera->SetRelativeRotation(FRotator::ZeroRotator);
 	}
 
@@ -424,7 +426,16 @@ void APrototypeCharacter::Reload(const FInputActionValue& Value)
 {
 	if (CombatComp)
 	{
+		if (bIsRunning)
+		{
+			EndRunning(Value);
+		}
 		CombatComp->Reload();
+
+		if (bIsCrouched && GetCurrentWeaponIndex() == 2)
+		{
+			GetCharacterMovement()->StopMovementImmediately();
+		}
 	}
 }
 
@@ -542,6 +553,8 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 		}
 	}*/
 
+	if (bIsRunning) return;
+
 	FVector NewLocation = GetActorLocation();
 	NewLocation.Z += 50.0f;
 
@@ -552,18 +565,21 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
+	float SweepRadius = 45.0f;
+	FCollisionShape SphereShape = FCollisionShape::MakeSphere(SweepRadius);
+
+	bool bHit = GetWorld()->SweepSingleByChannel(
 		Hit,
 		Start,
 		End,
+		FQuat::Identity,
 		ECC_Visibility,
+		SphereShape,
 		Params
 	);
 
-	// ★ 디버그: 라인트레이스 시각화 (빨간 선 10초간 표시)
-	DrawDebugLine(GetWorld(), Start, End,
-		bHit ? FColor::Green : FColor::Red,
-		false, 10.0f, 0, 2.0f);
+	DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Green : FColor::Red, false, 5.0f, 0, 2.0f);
+	DrawDebugSphere(GetWorld(), End, SweepRadius, 16, bHit ? FColor::Green : FColor::Red, false, 5.0f);
 
 	if (!bHit)
 	{
@@ -762,6 +778,11 @@ void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
 {
 	if (!AnimData || !CombatComp) return;
 
+	if (CombatComp->GetIsReloading())
+	{
+		CombatComp->CancelReload(GetMesh()->GetAnimInstance());
+	}
+
 	EPlayerHitDirection HitDir = GetHitDirection(ToAttackerDir);
 	bool bIsDrawn = CombatComp->IsWeaponDrawn();
 	int32 WeaponIdx = CombatComp->GetCurrentWeaponIndex();
@@ -825,6 +846,85 @@ void APrototypeCharacter::UpdateBodyRotation(float DeltaTime)
 			}
 		}
 	}
+}
+
+void APrototypeCharacter::Revive()
+{
+	if (!StatusComp || !StatusComp->IsDead()) return;
+
+	StatusComp->ReviveStatus(1.0f); // 1.0 => 100% 체력 부활
+
+	// 만약 레그돌이면 레그돌 해제 
+	GetMesh()->SetSimulatePhysics(false);
+
+	// 콜리전 원상 복구 
+	GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh"));
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Player"));
+
+	// 레그돌 해제 시 메시 위치가 틀어질 경우 위치 재조정 
+	GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	GetMesh()->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, -90.0f), FRotator(0.0f, -90.0f, 0.0f));
+
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+	// 무기/조준/달리기 상태 변수 초기화 
+	bIsRunning = false;
+	if (CombatComp)
+	{
+		CombatComp->StopFire();
+		CombatComp->StopAiming();
+	}
+
+	// UI 모드를 게임 모드로 변경 (입력은 아직 안 켭니다!)
+	APlayerController* PC = Cast<APlayerController>(Controller);
+	if (PC)
+	{
+		PC->SetShowMouseCursor(false);
+
+		FInputModeGameOnly InputMode;
+		PC->SetInputMode(InputMode);
+
+		// GameOver UI 숨기기 
+		if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
+		{
+			if (UGameOverSubsystem* GameOverSystem = LocalPlayer->GetSubsystem<UGameOverSubsystem>())
+			{
+				GameOverSystem->HideGameOver();
+			}
+		}
+	}
+
+	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+	{
+		AnimInst->StopAllMontages(0.0f);
+	}
+
+	// 몽타주 재생 및 길이(시간) 가져오기
+	float MontageDuration = 0.0f;
+	if (StatusComp->ReviveMontage)
+	{
+		MontageDuration = PlayAnimMontage(StatusComp->ReviveMontage);
+	}
+
+	// 몽타주가 끝나고 나서 입력받게 세팅 
+	if (MontageDuration > 0.0f)
+	{
+		FTimerHandle ReviveInputTimer;
+		GetWorldTimerManager().SetTimer(ReviveInputTimer, [this]()
+			{
+				if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+				{
+					EnableInput(PlayerController);
+				}
+			}, MontageDuration, false); // 몽타주 길이만큼 딜레이
+	}
+	else
+	{
+		if (PC) EnableInput(PC);
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("플레이어가 부활했습니다!"));
+
 }
 
 // 인터페이스 함수 구현
