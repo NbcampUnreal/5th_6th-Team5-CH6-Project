@@ -21,7 +21,7 @@ public:
 
 	/** 로딩 화면 표시 */
 	UFUNCTION(BlueprintCallable, Category = "Loading")
-	void ShowLoading(const FText& Message = FText::FromString(TEXT("Loading...")));
+	void ShowLoading(const FText& Message = INVTEXT("Loading..."));
 
 	/** 로딩 화면 숨기기 */
 	UFUNCTION(BlueprintCallable, Category = "Loading")
