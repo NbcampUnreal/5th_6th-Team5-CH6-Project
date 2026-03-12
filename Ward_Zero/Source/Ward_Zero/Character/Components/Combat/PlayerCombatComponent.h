@@ -151,7 +151,7 @@ private:
 	UPROPERTY() UAnimInstance* CachedAnimInst;
 	TSubclassOf<UCameraShakeBase> CachedCamShake;
 
-	// DataAsset에서 받아올 수치들 (원본 기본값 유지)
+	// DataAsset에서 받아올 수치들 
 	float MaxSpread = 5.0f;
 	float MinSpread = 0.0f;
 	float SpreadShrinkRate = 3.0f;

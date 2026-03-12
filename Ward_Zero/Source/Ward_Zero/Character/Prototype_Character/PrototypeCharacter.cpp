@@ -141,12 +141,6 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	// 퀵턴 처리 
 	if (QuickTurnComp && QuickTurnComp->IsQuickTurning()) return;
 
-	// 손전등 실시간 갱신
-	if (FlashLightComp && FlashLightComp->IsUsingFlashlight()) // 손전등 사용 중일때만 호출 
-	{
-		FlashLightComp->UpdateFlashlight(DeltaTime);
-	}
-
 	// 캐릭터 몸체 회전 (비조준 / 조준)
 	UpdateBodyRotation(DeltaTime);
 
@@ -213,10 +207,16 @@ void APrototypeCharacter::Move(const FInputActionValue& Value)
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	if (Controller == nullptr) return;
 
-	// 원본의 장전 중 이동 제한 로직 복구
+	if (bIsCrouched && GetIsReloading() && GetCurrentWeaponIndex() == 2)
+	{
+		return;
+	}
+
+	// 장전 중 이동 제한 
 	if (bIsCrouched && GetIsReloading()) return;
 
 	float SpeedModifier = 1.0f;
+
 	// 장전 중이면서 달리는 중이 아니면 속도 50% 감소
 	if (!bIsCrouched && GetIsReloading() && !bIsRunning)
 	{
@@ -247,7 +247,8 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 	if (CombatComp && CombatComp->IsAiming()) return;
 
 	if (StatusComp && !StatusComp->CanSprint()) return;
-	if (bIsCrouched && GetIsReloading()) return;
+	if (GetIsReloading() || IsEquipping()) return;
+
 	if (bIsRunning)
 	{
 		EndRunning(Value);
@@ -259,7 +260,7 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 		bUseControllerRotationYaw = false;
 		GetCharacterMovement()->bOrientRotationToMovement = true;
 
-		FlashLightComp->UpdateFlashlight(0.0f);//달릴 때는 손전등 소켓 갱신 
+		FlashLightComp->UpdateFlashlight(0.0f);
 	}
 }
 
@@ -281,7 +282,7 @@ void APrototypeCharacter::EndRunning(const FInputActionValue& Value)
 
 void APrototypeCharacter::ToggleCrouch(const FInputActionValue& Value)
 {
-	if (bIsRunning || GetIsReloading()) return;
+	if (bIsRunning || GetIsReloading() || IsEquipping()) return;
 	bIsCrouched ? UnCrouch() : Crouch();
 }
 
@@ -425,7 +426,16 @@ void APrototypeCharacter::Reload(const FInputActionValue& Value)
 {
 	if (CombatComp)
 	{
+		if (bIsRunning)
+		{
+			EndRunning(Value);
+		}
 		CombatComp->Reload();
+
+		if (bIsCrouched && GetCurrentWeaponIndex() == 2)
+		{
+			GetCharacterMovement()->StopMovementImmediately();
+		}
 	}
 }
 

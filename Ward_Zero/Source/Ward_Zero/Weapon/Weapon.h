@@ -178,6 +178,10 @@ public:
 
     UPROPERTY(EditDefaultsOnly, Category = "Weapon|Effects|SFX")
     USoundBase* ReloadSound;
+
+    // 레이저 사이트 및 무기 틱 활성화/비활성화 함수
+    UFUNCTION(BlueprintCallable, Category = "Weapon|Effects")
+    void EnableLaserSight(bool bEnable);
 #pragma endregion
 
 public:

@@ -430,10 +430,23 @@ bool UPlayerCombatComponent::StartAiming()
 	if (!bIsWeaponDrawn || GetIsReloading()) return false;
 	bIsAiming = true;
 	CurrentSpread = MaxSpread;
+
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->EnableLaserSight(true);
+	}
 	return true;
 }
 
-void UPlayerCombatComponent::StopAiming() { bIsAiming = false; }
+void UPlayerCombatComponent::StopAiming() 
+{ 
+	bIsAiming = false; 
+
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->EnableLaserSight(false);
+	}
+}
 
 void UPlayerCombatComponent::CalculateAimOffset()
 {

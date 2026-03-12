@@ -10,58 +10,43 @@ class WARD_ZERO_API UFlashLightData : public UPrimaryDataAsset
     GENERATED_BODY()
 
 public:
-    // --- [Base Settings] 평상시/조준 시 기본 수치 ---
+    // 평상시(걷기/조준) 기본 손전등 수치 
     UPROPERTY(EditAnywhere, Category = "Base Settings")
-    float Intensity = 3000.f;
+    float Intensity = 3000.f;    // 밝기 
 
     UPROPERTY(EditAnywhere, Category = "Base Settings")
-    float OuterConeAngle = 35.f;
+    float OuterConeAngle = 35.f; // 원의 크기 
 
-    // Outer 대비 Inner 비율 (0.5면 절반이 쨍함)
     UPROPERTY(EditAnywhere, Category = "Base Settings", meta = (UIMin = "0.0", UIMax = "1.0"))
-    float InnerConeRatio = 0.6f;
+    float InnerConeRatio = 0.6f; // 중심부 비율 
 
     UPROPERTY(EditAnywhere, Category = "Base Settings")
-    float AttenuationRadius = 2500.f;
+    float AttenuationRadius = 2500.f; // 사거리 
 
-    // --- [Sprinting Settings] 달릴 때(가슴 라이트) 보정치 ---
-    // 가슴 소켓은 뒤에 있으므로 밝기 배율이 필요합니다 (기본 10.0 이상 권장)
+    // 달릴 때 (가슴 부착 시) 보정치 
     UPROPERTY(EditAnywhere, Category = "Sprinting Settings")
-    float SprintIntensityMultiplier = 15.0f;
+    float SprintIntensityMultiplier = 15.0f; // 달리기 밝기 배율 
 
     UPROPERTY(EditAnywhere, Category = "Sprinting Settings")
-    float SprintRadiusMultiplier = 1.5f;
+    float SprintRadiusMultiplier = 1.5f;     // 달리기 거리 배율 
 
-    // --- [Ambient Settings] 손전등이 꺼져 있을 때 최소 시야 ---
-    UPROPERTY(EditAnywhere, Category = "Ambient Settings")
-    float AmbientIntensity = 1000.f;
-
-    UPROPERTY(EditAnywhere, Category = "Ambient Settings")
-    float AmbientRadius = 500.f;
-
-    // --- [Visual & Shadow Settings] ---
-    UPROPERTY(EditAnywhere, Category = "Visual Settings")
+    // 그래픽 및 그림자 ---
+    UPROPERTY(EditAnywhere, Category = "Visual Settings") // 맵에서 포그 사용 시 빛의 선명함 여부 
     float VolumetricScatteringIntensity = 1.0f;
 
     UPROPERTY(EditAnywhere, Category = "Visual Settings")
-    bool bCastShadows = false;
+    bool bCastShadows = false; // 손전등 빛이 물체에 닿을 때 그림자 여부 
 
-    UPROPERTY(EditAnywhere, Category = "Material Settings")
-    float EmissiveIntensity = 50.f;
-
-    // --- [Dynamic Focus Settings] ---
+    // 벽에 다가갈 때 빛이 모이는 효과 
     UPROPERTY(EditAnywhere, Category = "Focus Settings")
-    bool bEnableDynamicFocus = true;
+    bool bEnableDynamicFocus = true; 
 
-    // 이 거리(cm)보다 가까워지면 초점을 맞추기 시작합니다.
     UPROPERTY(EditAnywhere, Category = "Focus Settings")
-    float MaxFocusDistance = 500.f;
+    float MaxFocusDistance = 500.f; // 초점 시작 거리 
 
-    // 벽에 완전히 붙었을 때의 최소 각도
     UPROPERTY(EditAnywhere, Category = "Focus Settings")
-    float MinOuterConeAngle = 12.f;
+    float MinOuterConeAngle = 12.f; // 근접 눈부심 배율 
 
-    // 가까워질 때 밝기 보정 배율 (가까울수록 더 눈부시게)
     UPROPERTY(EditAnywhere, Category = "Focus Settings")
     float CloseRangeIntensityMultiplier = 1.5f;
 };
