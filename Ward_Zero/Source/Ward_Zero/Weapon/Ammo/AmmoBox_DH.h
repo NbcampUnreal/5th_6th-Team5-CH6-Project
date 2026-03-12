@@ -58,5 +58,8 @@ public:
 	virtual void OnIneracted_Implementation(APrototypeCharacter* Character) override;
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override {}
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
+
+	virtual bool SetBCanInteract(bool IsCanInteract) override;
+	virtual bool GetBCanInteract() const override;
 #pragma endregion
 };

@@ -21,6 +21,16 @@ EInteractionType ASaveActor::GetInteractionType_Implementation() const
 	return EInteractionType::Save;
 }
 
+bool ASaveActor::SetBCanInteract(bool IsCanInteract)
+{
+	return false;
+}
+
+bool ASaveActor::GetBCanInteract() const
+{
+	return false;
+}
+
 void ASaveActor::OnIneracted_Implementation(APrototypeCharacter* Character)
 {
 	if (!Character) return;

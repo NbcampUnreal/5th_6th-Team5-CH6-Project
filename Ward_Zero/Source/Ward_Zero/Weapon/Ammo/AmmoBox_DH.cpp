@@ -12,8 +12,9 @@ AAmmoBox_DH::AAmmoBox_DH()
 
 	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
 	SetRootComponent(CollisionBox);
-	CollisionBox->SetBoxExtent(FVector(50.0f, 50.0f, 50.0f));
-	CollisionBox->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+	CollisionBox->SetBoxExtent(FVector(10.0f, 10.0f, 10.0f));
+	//CollisionBox->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+	CollisionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	MeshComp->SetupAttachment(RootComponent);
@@ -71,6 +72,17 @@ void AAmmoBox_DH::OnIneracted_Implementation(APrototypeCharacter* Character)
 	}
 }
 
+bool AAmmoBox_DH::SetBCanInteract(bool IsCanInteract)
+{
+	bCanInteract = IsCanInteract;
+	return bCanInteract;
+}
+
+bool AAmmoBox_DH::GetBCanInteract() const
+{
+	return bCanInteract;
+}
+
 void AAmmoBox_DH::OnIneractionRangeEntered_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Entered Ammo Range"));
@@ -91,6 +103,9 @@ void AAmmoBox_DH::OnIneractionRangeExited_Implementation()
 
 void AAmmoBox_DH::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (!bCanInteract)
+		return;
+
 	if (OtherActor && OtherActor->IsA(APrototypeCharacter::StaticClass()))
 	{
 		// 맞다면 동그라미를 켜는 함수를 실행!
@@ -104,6 +119,9 @@ void AAmmoBox_DH::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 
 void AAmmoBox_DH::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
+	if (!bCanInteract)
+		return;
+
 	if (OtherActor && OtherActor->IsA(APrototypeCharacter::StaticClass()))
 	{
 		// 맞다면 동그라미를 끄는 함수를 실행!

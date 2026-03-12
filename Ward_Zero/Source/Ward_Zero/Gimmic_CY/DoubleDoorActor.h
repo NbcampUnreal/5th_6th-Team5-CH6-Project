@@ -7,6 +7,7 @@
 #include "DoubleDoorActor.generated.h"
 
 class UBoxComponent;
+class UNavModifierComponent;
 
 UCLASS()
 class WARD_ZERO_API ADoubleDoorActor : public AActor, public IInteractionBase
@@ -53,6 +54,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bRequireKeyCard = true;
 
+	UPROPERTY(VisibleAnywhere)
+	UNavModifierComponent* NavModifier;
+
 public:	
 
 	virtual void Tick(float DeltaTime) override;
@@ -63,4 +67,6 @@ public:
 	virtual void OnIneracted_Implementation(APrototypeCharacter* Character) override;
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	virtual bool CanBeInteracted_Implementation() const override { return true; };
+	virtual bool SetBCanInteract(bool IsCanInteract) override;
+	virtual bool GetBCanInteract() const override;
 };

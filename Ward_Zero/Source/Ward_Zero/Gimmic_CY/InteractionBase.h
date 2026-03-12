@@ -46,4 +46,12 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent)
 	EInteractionType GetInteractionType() const;
+
+	virtual bool SetBCanInteract(bool IsCanInteract) = 0;
+
+	virtual bool GetBCanInteract() const  = 0;
+
+protected:
+
+	bool bCanInteract = true;
 };

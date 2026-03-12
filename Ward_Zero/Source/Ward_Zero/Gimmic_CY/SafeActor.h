@@ -68,13 +68,21 @@ protected:
     UPROPERTY()
     UUserWidget* ActiveWidget;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TArray<AActor*> Items;
+
     // ===== IGimmickInterface =====
 public:
     virtual void OnIneractionRangeEntered_Implementation() override;
     virtual void OnIneractionRangeExited_Implementation() override;
     virtual void OnIneracted_Implementation(APrototypeCharacter* Character) override;
     virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
-    virtual bool CanBeInteracted_Implementation() const override { return true; }
+    virtual bool CanBeInteracted_Implementation() const override { return !bIsOpened;}
+    virtual bool SetBCanInteract(bool IsCanInteract) override;
+    virtual bool GetBCanInteract() const override;
+
+protected:
+    bool bCanInteract;
 
 private:
     UFUNCTION()

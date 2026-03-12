@@ -1,6 +1,9 @@
 #include "Gimmic_CY/DoorActor.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "NavModifierComponent.h"
+#include "NavAreas/NavArea_Default.h"
+#include "NavAreas/NavArea_Null.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 
 // Sets default values
@@ -8,18 +11,18 @@ ADoorActor::ADoorActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	// Root
-	DoorFrame = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorFrame"));
-	RootComponent = DoorFrame;
+	// Scene Root
+	InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
+	RootComponent = InteractionBox;
 
 	Door = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Door"));
-	Door->SetupAttachment(DoorFrame);
-
-	//InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
-	//InteractionBox->SetupAttachment(DoorFrame);
-	//InteractionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	Door->SetupAttachment(InteractionBox);
+	Door->SetCollisionResponseToChannels(ECR_Block);
 
 	DoorTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("DoorTimeline"));
+
+	NavModifier = CreateDefaultSubobject<UNavModifierComponent>(TEXT("NavModifier"));
+	//NavModifier->SetupAttachment(Scene);
 }
 
 void ADoorActor::BeginPlay()
@@ -27,7 +30,7 @@ void ADoorActor::BeginPlay()
 	Super::BeginPlay();
 
 	InitialRotation = Door->GetRelativeRotation();
-
+	NavModifier->SetAreaClass(UNavArea_Null::StaticClass());
 	UpdateFunctionFloat.BindDynamic(this, &ADoorActor::UpdateTimelineComp);
 
 	if (DoorTimelineFloatCurve)
@@ -53,6 +56,7 @@ void ADoorActor::UpdateTimelineComp(float Output)
 
 	//FRotator NewRotation(0.f, Output, 0.f);
 	Door->SetRelativeRotation(NewRotation);
+
 }
 
 void ADoorActor::OnBeginOverlap(UPrimitiveComponent*, AActor* OtherActor,
@@ -91,8 +95,18 @@ void ADoorActor::OnIneracted_Implementation(APrototypeCharacter* Character)
 
 void ADoorActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
-	if (!DoorTimelineFloatCurve || !Character)
+	if (!DoorTimelineFloatCurve || !Character || !bCanInteract)
 		return;
+
+	bCanInteract = false;
+	Door->SetCollisionResponseToChannels(ECR_Ignore);
+
+	FTimerHandle InteractionTimer;
+	TWeakObjectPtr<ADoorActor> WeakThis(this);
+	GetWorld()->GetTimerManager().SetTimer(InteractionTimer, FTimerDelegate::CreateLambda([WeakThis]() {
+		WeakThis->bCanInteract = true;
+		WeakThis->Door->SetCollisionResponseToChannels(ECR_Block);
+		}), 1.0f, false);
 
 	// ===== �÷��̾� ���� ��� =====
 	FVector DoorLocation = GetActorLocation();
@@ -111,10 +125,14 @@ void ADoorActor::HandleInteraction_Implementation(APrototypeCharacter* Character
 	{
 		TargetYaw = (Dot >= 0.f) ? 90.f : -90.f;
 		DoorTimelineComp->Play();
+
+		NavModifier->SetAreaClass(UNavArea_Default::StaticClass()); // 통과 가능
 	}
 	else
 	{
 		DoorTimelineComp->Reverse();
+
+		NavModifier->SetAreaClass(UNavArea_Null::StaticClass()); // 다시 막힘
 	}
 
 	bIsOpen = !bIsOpen;
@@ -124,4 +142,15 @@ void ADoorActor::HandleInteraction_Implementation(APrototypeCharacter* Character
 EInteractionType ADoorActor::GetInteractionType_Implementation() const
 {
 	return EInteractionType::Door;
+}
+
+bool ADoorActor::SetBCanInteract(bool IsCanInteract)
+{
+	bCanInteract = IsCanInteract;
+	return bCanInteract;
+}
+
+bool ADoorActor::GetBCanInteract() const
+{
+	return bCanInteract;
 }

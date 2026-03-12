@@ -24,10 +24,9 @@ public:
 	// 카드키 메시
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* KeyMesh;
-
 	// Interaction Range
-	UPROPERTY(VisibleAnywhere)
-	UBoxComponent* InteractionBox;
+	//UPROPERTY(VisibleAnywhere)
+	//UBoxComponent* InteractionBox;
 
 	// 인터페이스 함수
 	virtual void OnIneracted_Implementation(APrototypeCharacter* Character) override;
@@ -36,4 +35,6 @@ public:
 
 	virtual EInteractionType GetInteractionType_Implementation() const override;
 
+	virtual bool SetBCanInteract(bool IsCanInteract) override;
+	virtual bool GetBCanInteract() const override;
 };

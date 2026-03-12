@@ -1,5 +1,8 @@
 #include "Gimmic_CY/DoubleDoorActor.h"
 #include "Components/BoxComponent.h"
+#include "NavModifierComponent.h"
+#include "NavAreas/NavArea_Default.h"
+#include "NavAreas/NavArea_Null.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 
 ADoubleDoorActor::ADoubleDoorActor()
@@ -15,10 +18,12 @@ ADoubleDoorActor::ADoubleDoorActor()
 	RightDoor = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RightDoor"));
 	RightDoor->SetupAttachment(Root);
 
-	InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
-	InteractionBox->SetupAttachment(Root);
+	//InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
+	//InteractionBox->SetupAttachment(Root);
 
 	DoorTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DoorTimeline"));
+
+	NavModifier = CreateDefaultSubobject<UNavModifierComponent>(TEXT("NavModifier"));
 }
 
 void ADoubleDoorActor::BeginPlay()
@@ -26,6 +31,7 @@ void ADoubleDoorActor::BeginPlay()
 	Super::BeginPlay();
 
 	TimelineUpdate.BindDynamic(this, &ADoubleDoorActor::UpdateDoor);
+	NavModifier->SetAreaClass(UNavArea_Null::StaticClass());
 
 	if (DoorCurve)
 	{
@@ -85,12 +91,27 @@ void ADoubleDoorActor::HandleInteraction_Implementation(APrototypeCharacter* Cha
 	if (bIsOpen)
 	{
 		DoorTimeline->Reverse();
+
+		NavModifier->SetAreaClass(UNavArea_Default::StaticClass()); // 통과 가능
 	}
 	else
 	{
 		DoorTimeline->Play();
+
+		NavModifier->SetAreaClass(UNavArea_Null::StaticClass()); // 다시 막힘
 	}
 
 	bIsOpen = !bIsOpen;
+}
+
+bool ADoubleDoorActor::SetBCanInteract(bool IsCanInteract)
+{
+	bCanInteract = IsCanInteract;
+	return bCanInteract;
+}
+
+bool ADoubleDoorActor::GetBCanInteract() const
+{
+	return bCanInteract;
 }
 

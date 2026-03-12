@@ -82,4 +82,15 @@ EInteractionType ASlidingDoorActor::GetInteractionType_Implementation() const
 	return EInteractionType::Door;
 }
 
+bool ASlidingDoorActor::SetBCanInteract(bool IsCanInteract)
+{
+	bCanInteract = IsCanInteract;
+	return bCanInteract;
+}
+
+bool ASlidingDoorActor::GetBCanInteract() const
+{
+	return bCanInteract;
+}
+
 
