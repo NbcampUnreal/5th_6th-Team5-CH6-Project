@@ -151,4 +151,8 @@ public:
 
 	bool HasKeyCard() const { return bHasKeyCard; }
 	void GiveKeyCard() { bHasKeyCard = true; }
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void Revive();
 };

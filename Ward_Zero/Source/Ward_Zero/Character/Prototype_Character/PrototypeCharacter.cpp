@@ -849,6 +849,85 @@ void APrototypeCharacter::UpdateBodyRotation(float DeltaTime)
 	}
 }
 
+void APrototypeCharacter::Revive()
+{
+	if (!StatusComp || !StatusComp->IsDead()) return;
+
+	StatusComp->ReviveStatus(1.0f); // 1.0 => 100% 체력 부활
+
+	// 만약 레그돌이면 레그돌 해제 
+	GetMesh()->SetSimulatePhysics(false);
+
+	// 콜리전 원상 복구 
+	GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh"));
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Player"));
+
+	// 레그돌 해제 시 메시 위치가 틀어질 경우 위치 재조정 
+	GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	GetMesh()->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, -90.0f), FRotator(0.0f, -90.0f, 0.0f));
+
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+	// 무기/조준/달리기 상태 변수 초기화 
+	bIsRunning = false;
+	if (CombatComp)
+	{
+		CombatComp->StopFire();
+		CombatComp->StopAiming();
+	}
+
+	// UI 모드를 게임 모드로 변경 (입력은 아직 안 켭니다!)
+	APlayerController* PC = Cast<APlayerController>(Controller);
+	if (PC)
+	{
+		PC->SetShowMouseCursor(false);
+
+		FInputModeGameOnly InputMode;
+		PC->SetInputMode(InputMode);
+
+		// GameOver UI 숨기기 
+		if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
+		{
+			if (UGameOverSubsystem* GameOverSystem = LocalPlayer->GetSubsystem<UGameOverSubsystem>())
+			{
+				GameOverSystem->HideGameOver();
+			}
+		}
+	}
+
+	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+	{
+		AnimInst->StopAllMontages(0.0f);
+	}
+
+	// 몽타주 재생 및 길이(시간) 가져오기
+	float MontageDuration = 0.0f;
+	if (StatusComp->ReviveMontage)
+	{
+		MontageDuration = PlayAnimMontage(StatusComp->ReviveMontage);
+	}
+
+	// 몽타주가 끝나고 나서 입력받게 세팅 
+	if (MontageDuration > 0.0f)
+	{
+		FTimerHandle ReviveInputTimer;
+		GetWorldTimerManager().SetTimer(ReviveInputTimer, [this]()
+			{
+				if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+				{
+					EnableInput(PlayerController);
+				}
+			}, MontageDuration, false); // 몽타주 길이만큼 딜레이
+	}
+	else
+	{
+		if (PC) EnableInput(PC);
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("플레이어가 부활했습니다!"));
+
+}
+
 // 인터페이스 함수 구현
 bool APrototypeCharacter::GetIsPistolEquipped() const { return CombatComp && CombatComp->IsPistolEquipped(); }
 bool APrototypeCharacter::GetIsGround() const { return GetCharacterMovement()->IsMovingOnGround(); }
