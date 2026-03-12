@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "UI_KWJ/Save/SaveSubsystem.h"
 #include "UI_KWJ/GameOver/GameOverSubsystem.h"
+#include "UI_KWJ/Loading/LoadingScreenSubsystem.h"
 #include "Ward_Zero.h"
 
 void UGameOverWidget::NativeOnInitialized()
@@ -107,11 +108,17 @@ void UGameOverWidget::OnLoadSaveClicked()
 
 void UGameOverWidget::OnReturnToTitleClicked()
 {
-	// ServerTravel: 같은 PIE 세션 내 월드 교체
-	// → LocalPlayer/Subsystem 유지되어 레벨 블루프린트 BeginPlay가 정상 실행됨
-	// OpenLevel은 새 PIE 세션을 만들어 BeginPlay 타이밍에 PC가 없어 메뉴가 안 뜸
 	if (UWorld* W = GetWorld())
 	{
+		// 로딩 화면 표시
+		if (ULocalPlayer* LP = GetOwningLocalPlayer())
+		{
+			if (ULoadingScreenSubsystem* LoadingSys = LP->GetSubsystem<ULoadingScreenSubsystem>())
+			{
+				LoadingSys->ShowLoading(FText::FromString(TEXT("Loading...")));
+			}
+		}
+
 		W->ServerTravel("/Game/UI/Demo", true);
 	}
 }

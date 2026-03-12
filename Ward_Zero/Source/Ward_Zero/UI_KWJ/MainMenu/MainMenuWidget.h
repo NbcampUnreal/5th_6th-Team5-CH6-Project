@@ -11,6 +11,8 @@ class UButton;
 class UTextBlock;
 class UImage;
 class UCanvasPanel;
+class UOptionsWidget;
+class USoundBase;
 
 UCLASS(BlueprintType, Blueprintable)
 class WARD_ZERO_API UMainMenuWidget : public UUserWidget
@@ -77,6 +79,37 @@ private:
 	UFUNCTION()
 	void OnQuitClicked();
 
+	// ── 버튼 호버 콜백 ──
+	UFUNCTION() void OnStartHovered();
+	UFUNCTION() void OnSettingsHovered();
+	UFUNCTION() void OnQuitHovered();
+	UFUNCTION() void OnStartUnhovered();
+	UFUNCTION() void OnSettingsUnhovered();
+	UFUNCTION() void OnQuitUnhovered();
+
 	/** 메뉴 숨기고 게임 입력 모드로 전환 */
 	void HideMenuAndPlay();
+
+	/** 사운드 재생 헬퍼 */
+	void PlayUISound(USoundBase* Sound);
+
+	/** 버튼 호버 비주얼 효과 */
+	void SetButtonHovered(UButton* Button, bool bHovered);
+
+	// ── 효과음 (WBP에서 할당) ──
+
+	/** 버튼 호버 시 효과음 */
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	USoundBase* HoverSound;
+
+	/** 버튼 클릭 시 효과음 */
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	USoundBase* ClickSound;
+
+	/** 옵션 위젯 생성/관리 */
+	UPROPERTY()
+	UOptionsWidget* OptionsWidget;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UOptionsWidget> OptionsWidgetClass;
 };

@@ -10,6 +10,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Sound/SoundMix.h"
 #include "Sound/SoundClass.h"
+#include "AudioDevice.h"
 #include "Ward_Zero.h"
 
 // 설정 저장 섹션/키
@@ -45,7 +46,15 @@ void UOptionsWidget::NativeConstruct()
 
 void UOptionsWidget::OnMasterVolumeChanged(float Value)
 {
-	ApplyVolume(MasterSoundClass, Value);
+	// 게임 월드의 오디오 디바이스에서 전체 볼륨 조절
+	if (UWorld* World = GetWorld())
+	{
+		FAudioDeviceHandle AudioDevice = World->GetAudioDevice();
+		if (AudioDevice.IsValid())
+		{
+			AudioDevice->SetTransientPrimaryVolume(Value);
+		}
+	}
 
 	if (TXT_MasterValue)
 	{
@@ -230,12 +239,16 @@ void UOptionsWidget::OnBackClicked()
 	SaveSettings();
 	SetVisibility(ESlateVisibility::Collapsed);
 
-	APlayerController* PC = GetOwningPlayer();
-	if (PC)
+	// 메인메뉴에서 열렸으면 UI 모드 유지 (메인메뉴가 아직 떠있으므로)
+	if (!bIsMainMenuMode)
 	{
-		FInputModeGameOnly InputMode;
-		PC->SetInputMode(InputMode);
-		PC->SetShowMouseCursor(false);
+		APlayerController* PC = GetOwningPlayer();
+		if (PC)
+		{
+			FInputModeGameOnly InputMode;
+			PC->SetInputMode(InputMode);
+			PC->SetShowMouseCursor(false);
+		}
 	}
 }
 

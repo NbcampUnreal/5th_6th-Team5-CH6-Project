@@ -34,7 +34,11 @@ void UWeaponUISubsystem::Deinitialize()
 void UWeaponUISubsystem::UpdateWeaponStatus()
 {
 	UWeaponStatusWidget* Widget = GetOrCreateWidget();
-	if (!Widget) return;
+	if (!Widget)
+	{
+		UE_LOG(LogWard_Zero, Warning, TEXT("[WeaponUI] UpdateWeaponStatus: Widget null"));
+		return;
+	}
 
 	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
 	if (!PC) return;
@@ -98,7 +102,22 @@ void UWeaponUISubsystem::SetWeaponUIVisible(bool bVisible)
 
 UWeaponStatusWidget* UWeaponUISubsystem::GetOrCreateWidget()
 {
-	if (WeaponWidget) return WeaponWidget;
+	// ServerTravel 후 위젯이 무효화될 수 있으므로 IsValid + IsInViewport 체크
+	if (IsValid(WeaponWidget))
+	{
+		if (!WeaponWidget->IsInViewport())
+		{
+			UE_LOG(LogWard_Zero, Warning, TEXT("[WeaponUI] 위젯 유효하지만 뷰포트에 없음 → 재추가"));
+			WeaponWidget->AddToViewport(50);
+			WeaponWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		return WeaponWidget;
+	}
+
+	UE_LOG(LogWard_Zero, Warning, TEXT("[WeaponUI] 위젯 무효 또는 null → 새로 생성"));
+
+	// 위젯이 없거나 무효 → 새로 생성
+	WeaponWidget = nullptr;
 
 	if (!WidgetClass)
 	{

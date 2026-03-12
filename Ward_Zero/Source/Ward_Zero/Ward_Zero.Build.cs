@@ -36,7 +36,8 @@ public class Ward_Zero : ModuleRules
             //UI
             "ImageWrapper", 
             "RenderCore", 
-            "SlateCore"
+            "SlateCore",
+            "MoviePlayer"
         });
 
         PrivateDependencyModuleNames.AddRange(new string[] { });

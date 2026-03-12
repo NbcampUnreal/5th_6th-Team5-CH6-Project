@@ -4,10 +4,17 @@
 #include "UI_KWJ/GameOver/GameOverWidget.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/LocalPlayer.h"
+#include "Kismet/GameplayStatics.h"
 #include "Ward_Zero.h"
 
 void UGameOverSubsystem::ShowGameOver()
 {
+	// 중복 호출 가드 — UIManager와 캐릭터 OnDeath() 양쪽에서 호출될 수 있음
+	if (IsGameOver()) return;
+
+	// 게임 일시정지 — 몬스터 공격/이동 멈춤
+	UGameplayStatics::SetGamePaused(GetWorld(), true);
+
 	UGameOverWidget* Widget = GetOrCreateWidget();
 	if (Widget)
 	{
@@ -33,6 +40,9 @@ void UGameOverSubsystem::HideGameOver()
 	{
 		GameOverWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
+
+	// 게임 일시정지 해제
+	UGameplayStatics::SetGamePaused(GetWorld(), false);
 
 	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
 	if (PC)
