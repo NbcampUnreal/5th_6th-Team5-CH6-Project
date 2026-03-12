@@ -6,9 +6,9 @@
 #include "UI_KWJ/GameOver/GameOverSubsystem.h"
 #include "UI_KWJ/Loading/LoadingScreenSubsystem.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
-#include "Components/CapsuleComponent.h"
 #include "Character/Components/Status/PlayerStatusComponent.h"
 #include "Character/Components/Combat/PlayerCombatComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Weapon/Weapon.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
@@ -342,7 +342,6 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 	if (!Character) return;
 
 	// ── 사망 상태에서 부활 ──
-	// OnDeath()에서 DisableInput, 래그돌, 캡슐 콜리전 해제를 했으므로 전부 복원
 	Character->EnableInput(PC);
 	PC->SetInputMode(FInputModeGameOnly());
 	PC->SetShowMouseCursor(false);
@@ -356,6 +355,9 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 
 	// 캡슐 콜리전 복원
 	Character->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+	// 일시정지 해제 (게임오버에서 일시정지 중일 수 있음)
+	UGameplayStatics::SetGamePaused(World, false);
 
 	// 위치 & 회전
 	Character->SetActorLocation(SaveData->PlayerLocation);
@@ -371,11 +373,12 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 		Status->CurrStamina = SaveData->CurrentStamina;
 		Status->MaxStamina = SaveData->MaxStamina;
 		Status->bIsExhausted = SaveData->bIsExhausted;
+
+		// HP 비네팅 즉시 갱신
+		Status->OnHealthChanged.Broadcast(Status->CurrHealth, Status->MaxHealth);
 	}
 
 	// TODO: 무기 장착 상태 & 탄약 복원
-	// 무기 시스템의 장착/해제가 블루프린트에서 처리될 수 있으므로
-	// 여기서는 로그만 남기고, 추후 CombatComponent에 SetAmmo 등 추가 시 연결
 	if (SaveData->bIsWeaponEquipped)
 	{
 		UE_LOG(LogWard_Zero, Log, TEXT("무기 복원 필요 — 탄약: %d/%d"),
