@@ -60,49 +60,44 @@ void UGameOverWidget::PlayFadeIn()
 
 void UGameOverWidget::OnLoadLastSaveClicked()
 {
-	// OnClicked 델리게이트 콜백 내부에서 바로 UI 상태 변경 시
-	// InvocationList 오염으로 Ensure 에러 발생 → 다음 틱으로 지연
-	if (UWorld* World = GetWorld())
+	UE_LOG(LogWard_Zero, Log, TEXT("GameOver: 마지막 세이브 불러오기 클릭"));
+
+	ULocalPlayer* LP = GetOwningLocalPlayer();
+	if (!LP) return;
+
+	// GameOver UI 닫기 (일시정지 해제 포함)
+	UGameOverSubsystem* GameOverSys = LP->GetSubsystem<UGameOverSubsystem>();
+	if (GameOverSys)
 	{
-		World->GetTimerManager().SetTimerForNextTick([this]()
-		{
-			if (!IsValid(this)) return;
+		GameOverSys->HideGameOver();
+	}
 
-			// GameOver UI 닫기
-			UGameOverSubsystem* GameOverSys = GetOwningLocalPlayer()->GetSubsystem<UGameOverSubsystem>();
-			if (GameOverSys)
-			{
-				GameOverSys->HideGameOver();
-			}
-
-			// 마지막 세이브 로드
-			USaveSubsystem* SaveSys = GetOwningLocalPlayer()->GetSubsystem<USaveSubsystem>();
-			if (SaveSys)
-			{
-				SaveSys->LoadLastSave();
-			}
-		});
+	// 마지막 세이브 로드
+	USaveSubsystem* SaveSys = LP->GetSubsystem<USaveSubsystem>();
+	if (SaveSys)
+	{
+		SaveSys->LoadLastSave();
 	}
 }
 
 void UGameOverWidget::OnLoadSaveClicked()
 {
-	if (UWorld* World = GetWorld())
+	UE_LOG(LogWard_Zero, Log, TEXT("GameOver: 불러오기 클릭"));
+
+	ULocalPlayer* LP = GetOwningLocalPlayer();
+	if (!LP) return;
+
+	// GameOver UI 숨기기 (SaveUI zOrder 150 < GameOver 300)
+	SetVisibility(ESlateVisibility::Collapsed);
+
+	// 일시정지 해제 (Save UI가 작동하려면 해제 필요)
+	UGameplayStatics::SetGamePaused(GetWorld(), false);
+
+	// Save UI 열기
+	USaveSubsystem* SaveSys = LP->GetSubsystem<USaveSubsystem>();
+	if (SaveSys)
 	{
-		World->GetTimerManager().SetTimerForNextTick([this]()
-		{
-			if (!IsValid(this)) return;
-
-			// GameOver UI 먼저 숨기기 (SaveUI zOrder 150 < GameOver 300)
-			SetVisibility(ESlateVisibility::Collapsed);
-
-			// Save UI 열기
-			USaveSubsystem* SaveSys = GetOwningLocalPlayer()->GetSubsystem<USaveSubsystem>();
-			if (SaveSys)
-			{
-				SaveSys->ShowSaveUI(true); // 게임 오버에서 열었음을 표시
-			}
-		});
+		SaveSys->ShowSaveUI(true);
 	}
 }
 

@@ -61,7 +61,7 @@ public:
 protected:
 
 	virtual void NativeConstruct() override;
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	virtual void NativeDestruct() override;
 
 private:
 
@@ -70,4 +70,8 @@ private:
 
 	/** 현재 투명도 */
 	float CurrentOpacity = 0.0f;
+
+	/** 보간 타이머 (NativeTick 대체) */
+	FTimerHandle InterpTimerHandle;
+	void UpdateOpacityInterp();
 };

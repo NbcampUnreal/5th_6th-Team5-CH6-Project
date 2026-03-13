@@ -20,7 +20,7 @@ public:
 	UGameClearWidget(const FObjectInitializer& ObjectInitializer)
 		: Super(ObjectInitializer)
 	{
-		bIsFocusable = true;
+		SetIsFocusable(true);
 	}
 
 	UFUNCTION(BlueprintCallable, Category = "GameClear")

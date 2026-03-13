@@ -18,19 +18,38 @@ void UHealthVignetteWidget::NativeConstruct()
 	TargetOpacity = 0.0f;
 }
 
-void UHealthVignetteWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+void UHealthVignetteWidget::NativeDestruct()
 {
-	Super::NativeTick(MyGeometry, InDeltaTime);
-
-	// 부드러운 전환
-	if (!FMath::IsNearlyEqual(CurrentOpacity, TargetOpacity, 0.001f))
+	if (UWorld* World = GetWorld())
 	{
-		CurrentOpacity = FMath::FInterpTo(CurrentOpacity, TargetOpacity, InDeltaTime, InterpSpeed);
+		World->GetTimerManager().ClearTimer(InterpTimerHandle);
+	}
+	Super::NativeDestruct();
+}
 
+void UHealthVignetteWidget::UpdateOpacityInterp()
+{
+	if (FMath::IsNearlyEqual(CurrentOpacity, TargetOpacity, 0.001f))
+	{
+		CurrentOpacity = TargetOpacity;
 		if (IMG_BloodVignette)
 		{
 			IMG_BloodVignette->SetRenderOpacity(CurrentOpacity);
 		}
+		// 보간 완료 → 타이머 정지
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(InterpTimerHandle);
+		}
+		return;
+	}
+
+	// 30Hz 기준 DeltaTime ≈ 0.033
+	CurrentOpacity = FMath::FInterpTo(CurrentOpacity, TargetOpacity, 0.033f, InterpSpeed);
+
+	if (IMG_BloodVignette)
+	{
+		IMG_BloodVignette->SetRenderOpacity(CurrentOpacity);
 	}
 }
 
@@ -41,19 +60,28 @@ void UHealthVignetteWidget::UpdateVignette(float HealthPercent)
 
 	if (HealthPercent >= VignetteStartThreshold)
 	{
-		// 체력이 임계값 이상이면 비네팅 없음
 		TargetOpacity = 0.0f;
 	}
 	else
 	{
-		// 임계값 이하: 체력이 낮을수록 비네팅 강해짐
-		// 0.75 → 0.0,  0.0 → MaxVignetteOpacity
 		float Ratio = 1.0f - (HealthPercent / VignetteStartThreshold);
-
-		// 비선형 커브 — 체력이 낮을수록 급격히 강해짐
 		Ratio = FMath::Pow(Ratio, 1.5f);
-
 		TargetOpacity = Ratio * MaxVignetteOpacity;
+	}
+
+	// 보간이 필요하면 타이머 시작 (30Hz)
+	if (!FMath::IsNearlyEqual(CurrentOpacity, TargetOpacity, 0.001f))
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (!World->GetTimerManager().IsTimerActive(InterpTimerHandle))
+			{
+				World->GetTimerManager().SetTimer(
+					InterpTimerHandle, this,
+					&UHealthVignetteWidget::UpdateOpacityInterp,
+					0.033f, true); // 30Hz 반복
+			}
+		}
 	}
 
 	UE_LOG(LogWard_Zero, Verbose, TEXT("HealthVignette: HP %.0f%% → Opacity %.2f"),

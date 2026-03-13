@@ -43,6 +43,13 @@ void ULoadingScreenSubsystem::ShowLoading(const FText& Message)
 
 	LoadingWidget->SetLoadingMessage(Message);
 
+	// ★ 핵심: 레벨 파괴 시 위젯이 날아가지 않도록 루트에 추가하여 GC(가비지 컬렉터)로부터 보호합니다.
+	LoadingWidget->AddToRoot();
+	
+	// 나중에 HideLoading()에서 RemoveFromRoot()를 해주기 위해 멤버 변수 어딘가에 저장해야 하지만, 
+	// 잠시 테스트용이므로 일단 MoviePlayer에 넘깁니다.
+	LoadingScreenWidget = LoadingWidget;
+
 	// MoviePlayer에 로딩 화면 등록
 	FLoadingScreenAttributes LoadingScreen;
 	LoadingScreen.WidgetLoadingScreen = LoadingWidget->TakeWidget(); // Slate 위젯으로 변환
@@ -67,6 +74,12 @@ void ULoadingScreenSubsystem::HideLoading()
 		MoviePlayer->StopMovie();
 	}
 
+	if (LoadingScreenWidget)
+	{
+		LoadingScreenWidget->RemoveFromRoot();
+		LoadingScreenWidget = nullptr;
+	}
+
 	bIsLoading = false;
 	UE_LOG(LogWard_Zero, Log, TEXT("[Loading] 로딩 화면 수동 해제"));
 }
@@ -74,4 +87,17 @@ void ULoadingScreenSubsystem::HideLoading()
 bool ULoadingScreenSubsystem::IsLoading() const
 {
 	return bIsLoading;
+}
+
+void ULoadingScreenSubsystem::Deinitialize()
+{
+	// 에디터 플레이(PIE) 강제 종료 혹은 서브시스템 소멸 시에도
+	// AddToRoot() 되었던 위젯을 확실히 해제하여 메모리 누수 및 GC 크래시 방지
+	if (LoadingScreenWidget)
+	{
+		LoadingScreenWidget->RemoveFromRoot();
+		LoadingScreenWidget = nullptr;
+	}
+
+	Super::Deinitialize();
 }
