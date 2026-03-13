@@ -128,6 +128,7 @@ void ADoorActor::HandleInteraction_Implementation(APrototypeCharacter* Character
 		TargetYaw = (Dot >= 0.f) ? 90.f : -90.f;
 
 		NavModifier->SetAreaClass(UNavArea_Default::StaticClass()); // 통과 가능
+		DoorTimelineComp->Play();
 	}
 	else
 	{

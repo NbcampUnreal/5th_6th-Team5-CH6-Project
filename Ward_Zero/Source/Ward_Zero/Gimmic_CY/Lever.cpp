@@ -1,8 +1,8 @@
+#include "Gimmic_CY/Lever.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Gimmic_CY/InteractionBase.h"
 #include "DoorActor.h"
-#include "Gimmic_CY/Lever.h"
 
 ALever::ALever()
 {
