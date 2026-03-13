@@ -38,6 +38,10 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Door;
 
+	// Lamp Mesh
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* Lamp;
+
 	// Timeline
 	UPROPERTY(VisibleAnywhere)
 	UTimelineComponent* DoorTimelineComp;
@@ -90,4 +94,14 @@ private:
 		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex);
+
+public: 
+	void OpenDoor();
+	void CloseDoor();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void ChangeColorLampRed();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void ChangeColorLampGreen();
 };

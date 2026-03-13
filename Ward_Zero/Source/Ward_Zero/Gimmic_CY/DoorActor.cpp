@@ -19,6 +19,9 @@ ADoorActor::ADoorActor()
 	Door->SetupAttachment(InteractionBox);
 	Door->SetCollisionResponseToChannels(ECR_Block);
 
+	Lamp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Lamp"));
+	Lamp->SetupAttachment(InteractionBox);
+
 	DoorTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("DoorTimeline"));
 
 	NavModifier = CreateDefaultSubobject<UNavModifierComponent>(TEXT("NavModifier"));
@@ -77,12 +80,11 @@ void ADoorActor::OnEndOverlap(UPrimitiveComponent*, AActor* OtherActor,
 void ADoorActor::OnIneractionRangeEntered_Implementation()
 {
 	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, "I am an ineractable");
-	// ���� ǥ�� ��
 }
 
 void ADoorActor::OnIneractionRangeExited_Implementation()
 {
-	// ���� ���� ��
+
 }
 
 void ADoorActor::OnIneracted_Implementation(APrototypeCharacter* Character)
@@ -99,13 +101,13 @@ void ADoorActor::HandleInteraction_Implementation(APrototypeCharacter* Character
 		return;
 
 	bCanInteract = false;
-	Door->SetCollisionResponseToChannels(ECR_Ignore);
+	Door->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 
 	FTimerHandle InteractionTimer;
 	TWeakObjectPtr<ADoorActor> WeakThis(this);
 	GetWorld()->GetTimerManager().SetTimer(InteractionTimer, FTimerDelegate::CreateLambda([WeakThis]() {
 		WeakThis->bCanInteract = true;
-		WeakThis->Door->SetCollisionResponseToChannels(ECR_Block);
+		WeakThis->Door->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 		}), 1.0f, false);
 
 	// ===== �÷��̾� ���� ��� =====
@@ -124,7 +126,6 @@ void ADoorActor::HandleInteraction_Implementation(APrototypeCharacter* Character
 	if (!bIsOpen)
 	{
 		TargetYaw = (Dot >= 0.f) ? 90.f : -90.f;
-		DoorTimelineComp->Play();
 
 		NavModifier->SetAreaClass(UNavArea_Default::StaticClass()); // 통과 가능
 	}
@@ -147,10 +148,54 @@ EInteractionType ADoorActor::GetInteractionType_Implementation() const
 bool ADoorActor::SetBCanInteract(bool IsCanInteract)
 {
 	bCanInteract = IsCanInteract;
+	if (bCanInteract)
+	{
+		ChangeColorLampGreen_Implementation();
+	}
+	else
+	{
+		ChangeColorLampRed_Implementation();
+	}
+
 	return bCanInteract;
 }
 
 bool ADoorActor::GetBCanInteract() const
 {
 	return bCanInteract;
+}
+
+void ADoorActor::OpenDoor()
+{
+	if (bIsOpen)
+		return;
+	else
+	{
+		TargetYaw = 90.f;
+		DoorTimelineComp->Play();
+		NavModifier->SetAreaClass(UNavArea_Default::StaticClass()); // 통과 가능
+		bIsOpen = true;
+	}
+}
+
+void ADoorActor::CloseDoor()
+{
+	if (!bIsOpen)
+		return;
+	else
+	{
+		DoorTimelineComp->Reverse();
+		NavModifier->SetAreaClass(UNavArea_Null::StaticClass()); // 다시 막힘
+		bIsOpen = false;
+	}
+}
+
+void ADoorActor::ChangeColorLampRed_Implementation()
+{
+
+}
+
+void ADoorActor::ChangeColorLampGreen_Implementation()
+{
+
 }
