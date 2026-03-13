@@ -100,6 +100,7 @@ public:
 	virtual bool IsFiring() const override;
 	virtual float GetCurrSpread() const override;
 	virtual UPlayerCombatComponent* GetCombatComp() const override;
+	virtual bool GetbIsWeaponDrawn() const override; 
 #pragma endregion
 
 	void Move(const FInputActionValue& Value);

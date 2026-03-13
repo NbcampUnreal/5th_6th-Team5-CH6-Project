@@ -945,6 +945,10 @@ float APrototypeCharacter::GetAimYaw() const { return CombatComp ? CombatComp->G
 bool APrototypeCharacter::IsFiring() const { return CombatComp && CombatComp->IsFiring(); }
 float APrototypeCharacter::GetCurrSpread() const { return CombatComp ? CombatComp->CurrentSpread : 0.0f; }
 UPlayerCombatComponent* APrototypeCharacter::GetCombatComp() const { return CombatComp ? CombatComp : nullptr; }
+bool APrototypeCharacter::GetbIsWeaponDrawn() const
+{
+	return CombatComp ? CombatComp->IsWeaponDrawn() : false;
+}
 bool APrototypeCharacter::IsEquipping() const
 {
 	if (UAnimInstance* AI = GetMesh()->GetAnimInstance())

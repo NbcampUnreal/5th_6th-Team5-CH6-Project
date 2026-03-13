@@ -97,6 +97,12 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Animation")
 	bool bIsInteracting;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	bool bIsInjured;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	bool bIsWeaponDrawn;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	float AimPitch;
 

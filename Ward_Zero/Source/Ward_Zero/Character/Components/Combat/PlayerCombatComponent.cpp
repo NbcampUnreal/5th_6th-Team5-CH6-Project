@@ -195,6 +195,8 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
 	Params.AddIgnoredActor(EquippedWeapon);
+	Params.bReturnPhysicalMaterial = true;
+
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_GameTraceChannel2, Params);
 
 	// 총알이 최종적으로 도달해야 할 목표 지점 총알 투사체 방식 
@@ -206,6 +208,11 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 		ProcessHit(Hit, Dir);
 	}
 	SpawnTracer(EquippedWeapon->WeaponMesh->GetSocketLocation(TEXT("Muzzle")), FinalHitTarget);
+
+	if (Hit.PhysMaterial.IsValid())
+	{
+		UE_LOG(LogTemp, Log, TEXT("Hit Physical Material Found: %s"), *Hit.PhysMaterial->GetName());
+	}
 
 	// 오브젝트 풀에서 총알 활성화 (메모리 할당 0) - 총알 투사체 방식 Test
 	/*AProjectile* Proj = GetProjectileFromPool();
@@ -463,8 +470,6 @@ void UPlayerCombatComponent::CalculateAimOffset()
 	// AimYaw와 Pitch를 업데이트 (Clamp는 필요에 따라 조절)
 	AimYaw = Delta.Yaw;
 	AimPitch = Delta.Pitch;
-	GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red, FString::SanitizeFloat(AimPitch));
-	GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Blue, FString::SanitizeFloat(AimYaw));
 }
 
 void UPlayerCombatComponent::UpdateHandIK() { if (EquippedWeapon) HandIKTargetLocation = EquippedWeapon->GetLaserTargetLocation(); }

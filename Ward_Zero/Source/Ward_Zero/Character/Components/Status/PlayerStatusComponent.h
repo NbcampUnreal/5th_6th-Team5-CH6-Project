@@ -45,4 +45,11 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Montage | Revival")
 	TObjectPtr<UAnimMontage> ReviveMontage;
+
+public:
+	// 부상 판정 기준 (30%)
+	UPROPERTY(EditAnywhere, Category = "Status")
+	float InjuryThreshold = 0.3f;
+
+	bool IsInjured() const { return (CurrHealth / MaxHealth) <= InjuryThreshold; }
 };
