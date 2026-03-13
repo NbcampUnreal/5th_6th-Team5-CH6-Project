@@ -25,6 +25,7 @@
 #include "UI_KWJ/WeaponUI/WeaponUISubsystem.h"
 #include "UI_KWJ/Health/HealthVignetteWidget.h"
 #include "Gimmic_CY/InteractionBase.h"
+#include "Engine/OverlapResult.h"
 
 APrototypeCharacter::APrototypeCharacter()
 {
@@ -162,16 +163,6 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	if (CustomCameraComp)
 	{
 		CustomCameraComp->UpdateCamera(DeltaTime);
-	}
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-	{
-		if (ULocalPlayer* LP = PC->GetLocalPlayer())
-		{
-			if (UWeaponUISubsystem* WeaponUI = LP->GetSubsystem<UWeaponUISubsystem>())
-			{
-				WeaponUI->UpdateWeaponStatus();
-			}
-		}
 	}
 }
 #pragma region Input Biding
@@ -559,84 +550,93 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 	NewLocation.Z += 50.0f;
 
 	FVector Start = NewLocation;
-	FVector End = Start + this->GetActorForwardVector() * 100.f;
+	FVector End = Start + this->GetActorForwardVector() * 80.f;
 
-	FHitResult Hit;
+	TArray<FOverlapResult> OverlapResults;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 
-	float SweepRadius = 45.0f;
-	FCollisionShape SphereShape = FCollisionShape::MakeSphere(SweepRadius);
+	float SphereRadius = 45.0f;
+	FCollisionShape SphereShape = FCollisionShape::MakeSphere(SphereRadius);
 
-	bool bHit = GetWorld()->SweepSingleByChannel(
-		Hit,
-		Start,
-		End,
+	bool bOverlap = GetWorld()->OverlapMultiByChannel(
+		OverlapResults,
+		End,               // 구체의 중심 위치
 		FQuat::Identity,
 		ECC_Visibility,
 		SphereShape,
 		Params
 	);
 
-	DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Green : FColor::Red, false, 5.0f, 0, 2.0f);
-	DrawDebugSphere(GetWorld(), End, SweepRadius, 16, bHit ? FColor::Green : FColor::Red, false, 5.0f);
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 5.0f, 0, 1.0f);
+	DrawDebugSphere(GetWorld(), End, SphereRadius, 16, bOverlap ? FColor::Green : FColor::Red, false, 5.0f);
 
-	if (!bHit)
+	if (!bOverlap || OverlapResults.Num() == 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Interact] 라인트레이스 히트 없음"));
+		UE_LOG(LogTemp, Warning, TEXT("구체 내에 겹친 오브젝트가 없음"));
 		return;
 	}
 
-	AActor* HitActor = Hit.GetActor();
+	AActor* ClosestInteractableActor = nullptr;
+	float MinDistanceSquared = MAX_FLT;
+	FVector PlayerLoc = GetActorLocation();
 
-	if (!HitActor)
+	for (const FOverlapResult& Overlap : OverlapResults)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Interact] HitActor가 null"));
-		return;
-	}
+		AActor* OverlapActor = Overlap.GetActor();
+		if (!OverlapActor) continue;
 
-	UE_LOG(LogTemp, Warning, TEXT("[Interact] 히트 액터: %s (클래스: %s)"),
-		*HitActor->GetName(), *HitActor->GetClass()->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("현재 확인된 타겟: %s"), *OverlapActor->GetActorNameOrLabel());
 
-	if (HitActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[Interact] → InteractionBase 인터페이스 있음"));
+		bool bIsValidInteractable = false;
 
-		bool bCan = IInteractionBase::Execute_CanBeInteracted(HitActor);
-		UE_LOG(LogTemp, Warning, TEXT("[Interact] → CanBeInteracted: %s"), bCan ? TEXT("TRUE") : TEXT("FALSE"));
-
-		if (bCan)
+		if (OverlapActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
 		{
-			EInteractionType Type = IInteractionBase::Execute_GetInteractionType(HitActor);
-			UE_LOG(LogTemp, Warning, TEXT("[Interact] → InteractionType: %d"), static_cast<int32>(Type));
+			if (IInteractionBase::Execute_CanBeInteracted(OverlapActor))
+			{
+				bIsValidInteractable = true;
+			}
+		}
+		else if (OverlapActor->ActorHasTag(TEXT("SavePoint")))
+		{
+			bIsValidInteractable = true;
+		}
 
-			// 문일 때만 몽타주 재생
+		if (bIsValidInteractable)
+		{
+			float DistSquared = FVector::DistSquared(PlayerLoc, OverlapActor->GetActorLocation());
+			if (DistSquared < MinDistanceSquared)
+			{
+				MinDistanceSquared = DistSquared;
+				ClosestInteractableActor = OverlapActor;
+			}
+		}
+	}
+
+	if (ClosestInteractableActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("최종 선택된 상호작용 타겟: %s"), *ClosestInteractableActor->GetActorNameOrLabel());
+
+		if (ClosestInteractableActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+		{
+			EInteractionType Type = IInteractionBase::Execute_GetInteractionType(ClosestInteractableActor);
+
 			if (Type == EInteractionType::Door)
 			{
-				PendingDoorActor = HitActor;
+				PendingDoorActor = ClosestInteractableActor;
 				if (AnimData && AnimData->OpenDoorMontage)
 				{
 					PlayAnimMontage(AnimData->OpenDoorMontage);
 				}
 			}
-
-			// 모든 타입 공통: 상호작용 실행
-			IInteractionBase::Execute_OnIneracted(HitActor, this);
+			IInteractionBase::Execute_OnIneracted(ClosestInteractableActor, this);
 		}
-	}
-	// 2순위: 태그 방식 — 세이브 포인트
-	else if (HitActor->ActorHasTag(TEXT("SavePoint")))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[Interact] → SavePoint 태그 감지: %s"), *HitActor->GetName());
-
-		APlayerController* PC = Cast<APlayerController>(GetController());
-		if (PC)
+		else if (ClosestInteractableActor->ActorHasTag(TEXT("SavePoint")))
 		{
-			ULocalPlayer* LP = PC->GetLocalPlayer();
-			if (LP)
+			APlayerController* PC = Cast<APlayerController>(GetController());
+			if (PC && PC->GetLocalPlayer())
 			{
-				USaveSubsystem* SaveSub = LP->GetSubsystem<USaveSubsystem>();
-				if (SaveSub)
+				if (USaveSubsystem* SaveSub = PC->GetLocalPlayer()->GetSubsystem<USaveSubsystem>())
 				{
 					SaveSub->ShowSaveUI();
 				}
@@ -645,9 +645,8 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Interact] → InteractionBase 인터페이스 없음, 태그도 없음"));
+		UE_LOG(LogTemp, Warning, TEXT("구체 내에 일반 물체만 있고, 상호작용 가능한 물체는 없음."));
 	}
-
 }
 void APrototypeCharacter::PerformQuickTurn180()
 {
@@ -687,22 +686,6 @@ void APrototypeCharacter::OnDeath()
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
 	GetMesh()->SetSimulatePhysics(true);
-
-	// 게임 오버 UI 호출 타이머
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, [this]()
-		{
-			if (APlayerController* PC = Cast<APlayerController>(Controller))
-			{
-				if (ULocalPlayer* LP = PC->GetLocalPlayer())
-				{
-					if (UGameOverSubsystem* GameOverSys = LP->GetSubsystem<UGameOverSubsystem>())
-					{
-						GameOverSys->ShowGameOver();
-					}
-				}
-			}
-		}, 2.0f, false);
 }
 
 float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -945,6 +928,10 @@ float APrototypeCharacter::GetAimYaw() const { return CombatComp ? CombatComp->G
 bool APrototypeCharacter::IsFiring() const { return CombatComp && CombatComp->IsFiring(); }
 float APrototypeCharacter::GetCurrSpread() const { return CombatComp ? CombatComp->CurrentSpread : 0.0f; }
 UPlayerCombatComponent* APrototypeCharacter::GetCombatComp() const { return CombatComp ? CombatComp : nullptr; }
+bool APrototypeCharacter::GetbIsWeaponDrawn() const
+{
+	return CombatComp ? CombatComp->IsWeaponDrawn() : false;
+}
 bool APrototypeCharacter::IsEquipping() const
 {
 	if (UAnimInstance* AI = GetMesh()->GetAnimInstance())
