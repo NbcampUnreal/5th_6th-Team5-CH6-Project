@@ -1,8 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 // WeaponUISubsystem.h
-// ÃÑ±â »óÅÂ UI ¼­ºê½Ã½ºÅÛ
-// ¹«±â ±³Ã¼ / ¹ß»ç / ÀçÀåÀü ½Ã À§Á¬ °»½Å
 
 #pragma once
 
@@ -22,19 +18,15 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
-	/** ¸Å Æ½ Åº¾à Á¤º¸ °»½Å (Ä³¸¯ÅÍ Tick¿¡¼­ È£Ãâ) */
-	UFUNCTION(BlueprintCallable, Category = "WeaponUI")
-	void UpdateWeaponStatus();
-
-	/** ¹«±â ±³Ã¼ ½Ã È£Ãâ */
+	/** ë¬´ê¸° êµì²´ ì‹œ í˜¸ì¶œ â€” íƒ„ì•½ í´ë§ ì‹œì‘ */
 	UFUNCTION(BlueprintCallable, Category = "WeaponUI")
 	void NotifyWeaponChanged(int32 NewWeaponIndex, bool bIsDrawn);
 
-	/** ¹«±â Áı¾î³Ö±â ½Ã È£Ãâ */
+	/** ë¬´ê¸° ì§‘ì–´ë„£ê¸° ì‹œ í˜¸ì¶œ â€” íƒ„ì•½ í´ë§ ì¤‘ì§€ */
 	UFUNCTION(BlueprintCallable, Category = "WeaponUI")
 	void NotifyWeaponHolstered();
 
-	/** À§Á¬ Ç¥½Ã/¼û±è */
+	/** ìœ„ì ¯ í‘œì‹œ/ìˆ¨ê¸°ê¸° */
 	UFUNCTION(BlueprintCallable, Category = "WeaponUI")
 	void SetWeaponUIVisible(bool bVisible);
 
@@ -47,4 +39,10 @@ private:
 	UWeaponStatusWidget* WeaponWidget = nullptr;
 
 	UWeaponStatusWidget* GetOrCreateWidget();
+
+	/** íƒ„ì•½ ê°±ì‹  í´ë§ (10Hz â€” ìºë¦­í„° Tick ëŒ€ì²´) */
+	FTimerHandle AmmoUpdateTimerHandle;
+	void PollAmmoUpdate();
+	void StartAmmoPolling();
+	void StopAmmoPolling();
 };

@@ -1,4 +1,3 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
 // WeaponUISubsystem.cpp
 
 #include "UI_KWJ/WeaponUI/WeaponUISubsystem.h"
@@ -19,6 +18,8 @@ void UWeaponUISubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UWeaponUISubsystem::Deinitialize()
 {
+	StopAmmoPolling();
+
 	if (WeaponWidget)
 	{
 		WeaponWidget->RemoveFromParent();
@@ -28,17 +29,35 @@ void UWeaponUISubsystem::Deinitialize()
 }
 
 // ════════════════════════════════════════════════════════
-//  매 틱 탄약 갱신
+//  탄약 폴링 (캐릭터 Tick 대체 — 10Hz)
 // ════════════════════════════════════════════════════════
 
-void UWeaponUISubsystem::UpdateWeaponStatus()
+void UWeaponUISubsystem::StartAmmoPolling()
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (!World->GetTimerManager().IsTimerActive(AmmoUpdateTimerHandle))
+		{
+			World->GetTimerManager().SetTimer(
+				AmmoUpdateTimerHandle, this,
+				&UWeaponUISubsystem::PollAmmoUpdate,
+				0.1f, true); // 10Hz
+		}
+	}
+}
+
+void UWeaponUISubsystem::StopAmmoPolling()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(AmmoUpdateTimerHandle);
+	}
+}
+
+void UWeaponUISubsystem::PollAmmoUpdate()
 {
 	UWeaponStatusWidget* Widget = GetOrCreateWidget();
-	if (!Widget)
-	{
-		UE_LOG(LogWard_Zero, Warning, TEXT("[WeaponUI] UpdateWeaponStatus: Widget null"));
-		return;
-	}
+	if (!Widget) return;
 
 	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
 	if (!PC) return;
@@ -62,6 +81,7 @@ void UWeaponUISubsystem::UpdateWeaponStatus()
 	else
 	{
 		Widget->SetWeaponUIVisible(false);
+		StopAmmoPolling();
 	}
 }
 
@@ -76,6 +96,15 @@ void UWeaponUISubsystem::NotifyWeaponChanged(int32 NewWeaponIndex, bool bIsDrawn
 	{
 		Widget->OnWeaponChanged(NewWeaponIndex, bIsDrawn);
 	}
+
+	if (bIsDrawn)
+	{
+		StartAmmoPolling();
+	}
+	else
+	{
+		StopAmmoPolling();
+	}
 }
 
 void UWeaponUISubsystem::NotifyWeaponHolstered()
@@ -85,6 +114,7 @@ void UWeaponUISubsystem::NotifyWeaponHolstered()
 	{
 		Widget->OnWeaponHolstered();
 	}
+	StopAmmoPolling();
 }
 
 void UWeaponUISubsystem::SetWeaponUIVisible(bool bVisible)
@@ -102,21 +132,16 @@ void UWeaponUISubsystem::SetWeaponUIVisible(bool bVisible)
 
 UWeaponStatusWidget* UWeaponUISubsystem::GetOrCreateWidget()
 {
-	// ServerTravel 후 위젯이 무효화될 수 있으므로 IsValid + IsInViewport 체크
 	if (IsValid(WeaponWidget))
 	{
 		if (!WeaponWidget->IsInViewport())
 		{
-			UE_LOG(LogWard_Zero, Warning, TEXT("[WeaponUI] 위젯 유효하지만 뷰포트에 없음 → 재추가"));
 			WeaponWidget->AddToViewport(50);
 			WeaponWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}
 		return WeaponWidget;
 	}
 
-	UE_LOG(LogWard_Zero, Warning, TEXT("[WeaponUI] 위젯 무효 또는 null → 새로 생성"));
-
-	// 위젯이 없거나 무효 → 새로 생성
 	WeaponWidget = nullptr;
 
 	if (!WidgetClass)

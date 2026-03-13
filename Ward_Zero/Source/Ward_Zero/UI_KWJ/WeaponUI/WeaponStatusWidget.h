@@ -57,7 +57,7 @@ public:
 protected:
 
 	virtual void NativeConstruct() override;
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	virtual void NativeDestruct() override;
 
 private:
 
@@ -81,6 +81,11 @@ private:
 	// ── 하이라이트 타이머 ──
 	FTimerHandle HighlightTimerHandle;
 	void EndHighlight();
+
+	// ── 스케일 보간 타이머 (NativeTick 대체) ──
+	FTimerHandle ScaleInterpTimerHandle;
+	void UpdateScaleInterp();
+	void StartScaleInterp();
 
 	// ── 내부 함수 ──
 	void ApplyVisibility();

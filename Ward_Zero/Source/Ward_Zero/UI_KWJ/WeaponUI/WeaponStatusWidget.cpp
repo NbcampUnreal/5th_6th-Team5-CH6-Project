@@ -21,13 +21,35 @@ void UWeaponStatusWidget::NativeConstruct()
 	if (IMG_SMG) IMG_SMG->SetVisibility(ESlateVisibility::Collapsed);
 }
 
-void UWeaponStatusWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+void UWeaponStatusWidget::NativeDestruct()
 {
-	Super::NativeTick(MyGeometry, InDeltaTime);
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(ScaleInterpTimerHandle);
+		World->GetTimerManager().ClearTimer(HighlightTimerHandle);
+	}
+	Super::NativeDestruct();
+}
 
-	// 스케일 보간
-	PistolCurrentScale = FMath::FInterpTo(PistolCurrentScale, PistolTargetScale, InDeltaTime, ScaleInterpSpeed);
-	SMGCurrentScale = FMath::FInterpTo(SMGCurrentScale, SMGTargetScale, InDeltaTime, ScaleInterpSpeed);
+void UWeaponStatusWidget::StartScaleInterp()
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (!World->GetTimerManager().IsTimerActive(ScaleInterpTimerHandle))
+		{
+			World->GetTimerManager().SetTimer(
+				ScaleInterpTimerHandle, this,
+				&UWeaponStatusWidget::UpdateScaleInterp,
+				0.033f, true); // 30Hz
+		}
+	}
+}
+
+void UWeaponStatusWidget::UpdateScaleInterp()
+{
+	const float DT = 0.033f;
+	PistolCurrentScale = FMath::FInterpTo(PistolCurrentScale, PistolTargetScale, DT, ScaleInterpSpeed);
+	SMGCurrentScale = FMath::FInterpTo(SMGCurrentScale, SMGTargetScale, DT, ScaleInterpSpeed);
 
 	if (IMG_Pistol && IMG_Pistol->GetVisibility() != ESlateVisibility::Collapsed)
 	{
@@ -36,6 +58,17 @@ void UWeaponStatusWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaT
 	if (IMG_SMG && IMG_SMG->GetVisibility() != ESlateVisibility::Collapsed)
 	{
 		ApplyImageScale(IMG_SMG, SMGCurrentScale);
+	}
+
+	// 보간 완료되면 타이머 정지
+	bool bPistolDone = FMath::IsNearlyEqual(PistolCurrentScale, PistolTargetScale, 0.001f);
+	bool bSMGDone = FMath::IsNearlyEqual(SMGCurrentScale, SMGTargetScale, 0.001f);
+	if (bPistolDone && bSMGDone)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(ScaleInterpTimerHandle);
+		}
 	}
 }
 
@@ -68,6 +101,9 @@ void UWeaponStatusWidget::OnWeaponChanged(int32 NewWeaponIndex, bool bIsDrawn)
 		SMGTargetScale = HighlightScale;
 		SMGCurrentScale = ActiveScale;
 	}
+
+	// 스케일 보간 시작
+	StartScaleInterp();
 
 	// 하이라이트 타이머 리셋 & 시작
 	if (UWorld* World = GetWorld())
@@ -111,6 +147,7 @@ void UWeaponStatusWidget::EndHighlight()
 	{
 		SMGTargetScale = ActiveScale;
 	}
+	StartScaleInterp();
 }
 
 // ════════════════════════════════════════════════════════

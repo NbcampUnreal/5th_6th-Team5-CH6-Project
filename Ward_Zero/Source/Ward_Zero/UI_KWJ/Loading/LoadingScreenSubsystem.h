@@ -28,7 +28,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Loading")
 	bool IsLoading() const;
 
-private:
+	virtual void Deinitialize() override;
 
+private:
 	bool bIsLoading = false;
+
+	UPROPERTY(Transient)
+	TObjectPtr<ULoadingWidget> LoadingScreenWidget = nullptr;
 };
