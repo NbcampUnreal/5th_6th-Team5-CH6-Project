@@ -19,6 +19,9 @@ public:
     UPROPERTY(EditAnywhere, Category = "Speed")
     float RunSpeed = 450.f;
 
+    UPROPERTY(EditAnywhere, Category = "Speed")
+    float multiplySMGRunSpeed = 0.9;
+
     UPROPERTY(EditAnywhere, Category = "Movement")
     float CrouchMovementSpeed = 150.f;
 

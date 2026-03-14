@@ -112,6 +112,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
 	float PistolIKAlpha = 0.0f;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
+	FVector PistolJointTarget;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	bool bIsFiring;
 
@@ -161,7 +164,10 @@ public:
 	float FlashlightAlpha = 0.0f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Animation")
-	float FlashlightIKAlpha = 0.0f;
+	float FlashlightAimIKAlpha = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Animation")
+	float FlashlightRelaxIKAlpha = 0.0f;
 
 public:
 	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
@@ -176,6 +182,9 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
 	FTransform SMGHandIKTransform;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
+	FVector PistolFlashlightIKTargetLoc;
 
 
 
