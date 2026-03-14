@@ -166,6 +166,10 @@ bool ADoorActor::GetBCanInteract() const
 	return bCanInteract;
 }
 
+void ADoorActor::HiddenActor()
+{
+}
+
 void ADoorActor::OpenDoor()
 {
 	if (bIsOpen)

@@ -83,6 +83,10 @@ bool AAmmoBox_DH::GetBCanInteract() const
 	return bCanInteract;
 }
 
+void AAmmoBox_DH::HiddenActor()
+{
+}
+
 void AAmmoBox_DH::OnIneractionRangeEntered_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Entered Ammo Range"));

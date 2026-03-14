@@ -61,4 +61,8 @@ bool AAKeyCard::GetBCanInteract() const
 	return bCanInteract;
 }
 
+void AAKeyCard::HiddenActor()
+{
+}
+
 

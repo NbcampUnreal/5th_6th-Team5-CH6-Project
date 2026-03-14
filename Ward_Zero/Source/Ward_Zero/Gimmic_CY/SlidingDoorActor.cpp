@@ -93,4 +93,8 @@ bool ASlidingDoorActor::GetBCanInteract() const
 	return bCanInteract;
 }
 
+void ASlidingDoorActor::HiddenActor()
+{
+}
+
 
