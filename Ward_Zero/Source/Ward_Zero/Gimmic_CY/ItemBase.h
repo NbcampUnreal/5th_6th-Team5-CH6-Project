@@ -3,38 +3,31 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Gimmic_CY/InteractionBase.h"
-#include "AKeyCard.generated.h"
-
-class UStaticMeshComponent;
-class APrototypeCharacter;
-class UBoxComponent;
+#include "ItemBase.generated.h"
 
 UCLASS()
-class WARD_ZERO_API AAKeyCard : public AActor, public IInteractionBase
+class WARD_ZERO_API AItemBase : public AActor, public IInteractionBase
 {
 	GENERATED_BODY()
 	
 public:	
-	AAKeyCard();
+	AItemBase();
 
 protected:
 	virtual void BeginPlay() override;
 
 public:	
-	// 카드키 메시
-	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* KeyMesh;
-	// Interaction Range
-	//UPROPERTY(VisibleAnywhere)
-	//UBoxComponent* InteractionBox;
+	virtual void Tick(float DeltaTime) override;
 
-	// 인터페이스 함수
+
+	// ===== IGimmickInterface =====
+public:
+	virtual void OnIneractionRangeEntered_Implementation() override;
+	virtual void OnIneractionRangeExited_Implementation() override;
 	virtual void OnIneracted_Implementation(APrototypeCharacter* Character) override;
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
-
 	virtual EInteractionType GetInteractionType_Implementation() const override;
-
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
 	virtual void HiddenActor() override;

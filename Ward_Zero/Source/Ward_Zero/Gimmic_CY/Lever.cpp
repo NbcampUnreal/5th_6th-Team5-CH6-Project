@@ -83,7 +83,15 @@ void ALever::OnIneracted_Implementation(APrototypeCharacter* Character)
 
 void ALever::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
+	if (bCanInteract)
+	{
+		LeverOpenDoor();
+		LeverLockInteraction();
+		LeverCloseDoor();
+		LeverUnLockInteraction();
+	}
 
+	bCanInteract = false;
 }
 
 EInteractionType ALever::GetInteractionType_Implementation() const
@@ -99,6 +107,20 @@ bool ALever::SetBCanInteract(bool IsCanInteract)
 bool ALever::GetBCanInteract() const
 {
 	return false;
+}
+
+void ALever::HiddenActor()
+{
+}
+
+void ALever::ActivateLever()
+{
+	LeverOpenDoor();
+	LeverUnLockInteraction();
+	LeverCloseDoor();
+	LeverLockInteraction();
+
+	bCanInteract = false;
 }
 
 

@@ -1,21 +1,18 @@
-ï»¿// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
-#include "Gimmic_CY/InteractionBase.h"
-#include "AmmoBox_DH.generated.h"
+#include "Gimmic_CY/ItemBase.h"
+#include "AmmoBoxActor.generated.h"
 
 class UWidgetComponent;
 
 UCLASS()
-class WARD_ZERO_API AAmmoBox_DH : public AActor, public IInteractionBase
+class WARD_ZERO_API AAmmoBoxActor : public AItemBase
 {
 	GENERATED_BODY()
-
+	
 public:
-	AAmmoBox_DH();
+	AAmmoBoxActor();
 
 protected:
 	virtual void BeginPlay() override;
@@ -30,18 +27,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ammo Loot")
 	int32 AmmoAmount = 15;
 
-	// ì–´ë–¤ ë¬´ê¸°ì˜ ì´ì•Œì¸ì§€? (1: ê¶Œì´, 2: SMG)
+	// ¾î¶² ¹«±âÀÇ ÃÑ¾ËÀÎÁö? (1: ±ÇÃÑ, 2: SMG)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ammo Loot")
 	int32 TargetWeaponIndex = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
 	EInteractionType InteractType = EInteractionType::Ammo;
 
-	// [ì¶”ê°€!] ë©€ë¦¬ì„œ ë³´ì´ëŠ” ìƒì‹œ ë¹¨ê°„ ê¸°ë‘¥ (ì—ë””í„°ì—ì„œ ì›ê¸°ë‘¥ ì§€ì •)
+	// [Ãß°¡!] ¸Ö¸®¼­ º¸ÀÌ´Â »ó½Ã »¡°£ ±âµÕ (¿¡µğÅÍ¿¡¼­ ¿ø±âµÕ ÁöÁ¤)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* MarkerPillar;
 
-	// [ì¶”ê°€!] ê°€ê¹Œì´ ê°€ë©´ ëœ¨ëŠ” ìƒí˜¸ì‘ìš© ë™ê·¸ë¼ë¯¸ ìœ„ì ¯
+	// [Ãß°¡!] °¡±îÀÌ °¡¸é ¶ß´Â »óÈ£ÀÛ¿ë µ¿±×¶ó¹Ì À§Á¬
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UWidgetComponent* InteractWidget;
 
@@ -51,16 +48,14 @@ public:
 	UFUNCTION()
 	void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-#pragma region IInteractionBase ì¸í„°í˜ì´ìŠ¤ êµ¬í˜„
 	virtual void OnIneractionRangeEntered_Implementation() override;
 	virtual void OnIneractionRangeExited_Implementation() override;
 
 	virtual void OnIneracted_Implementation(APrototypeCharacter* Character) override;
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override {}
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
-
+	virtual EInteractionType GetInteractionType_Implementation() const override;
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
 	virtual void HiddenActor() override;
-#pragma endregion
 };

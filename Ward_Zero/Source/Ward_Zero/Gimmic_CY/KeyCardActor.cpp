@@ -1,10 +1,8 @@
-#include "Gimmic_CY/AKeyCard.h"
+#include "KeyCardActor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
-#include "Components/BoxComponent.h"
 
-// Sets default values
-AAKeyCard::AAKeyCard()
+AKeyCardActor::AKeyCardActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -14,18 +12,9 @@ AAKeyCard::AAKeyCard()
 	KeyMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	KeyMesh->SetCollisionResponseToAllChannels(ECR_Block);
 	KeyMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
-
-	//InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
-	//InteractionBox->SetupAttachment(KeyMesh);
 }
 
-void AAKeyCard::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
-void AAKeyCard::OnIneracted_Implementation(APrototypeCharacter* Character)
+void AKeyCardActor::OnIneracted_Implementation(APrototypeCharacter* Character)
 {
 	if (IInteractionBase::Execute_CanBeInteracted(this))
 	{
@@ -33,7 +22,7 @@ void AAKeyCard::OnIneracted_Implementation(APrototypeCharacter* Character)
 	}
 }
 
-void AAKeyCard::HandleInteraction_Implementation(APrototypeCharacter* Character)
+void AKeyCardActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
 	if (!Character || !bCanInteract) return;
 
@@ -45,24 +34,22 @@ void AAKeyCard::HandleInteraction_Implementation(APrototypeCharacter* Character)
 	Destroy();
 }
 
-EInteractionType AAKeyCard::GetInteractionType_Implementation() const
+EInteractionType AKeyCardActor::GetInteractionType_Implementation() const
 {
-	return EInteractionType::Key;
+    return EInteractionType::Key;
 }
 
-bool AAKeyCard::SetBCanInteract(bool IsCanInteract)
+bool AKeyCardActor::SetBCanInteract(bool IsCanInteract)
 {
 	bCanInteract = IsCanInteract;
 	return bCanInteract;
 }
 
-bool AAKeyCard::GetBCanInteract() const
-{	
+bool AKeyCardActor::GetBCanInteract() const
+{
 	return bCanInteract;
 }
 
-void AAKeyCard::HiddenActor()
+void AKeyCardActor::HiddenActor()
 {
 }
-
-

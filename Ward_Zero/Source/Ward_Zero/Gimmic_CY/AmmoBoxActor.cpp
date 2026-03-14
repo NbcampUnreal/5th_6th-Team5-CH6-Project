@@ -1,4 +1,4 @@
-ï»¿#include "AmmoBox_DH.h"
+#include "Gimmic_CY/AmmoBoxActor.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
@@ -6,7 +6,7 @@
 #include "Weapon/Weapon.h"
 #include "Components/WidgetComponent.h"
 
-AAmmoBox_DH::AAmmoBox_DH()
+AAmmoBoxActor::AAmmoBoxActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -33,7 +33,7 @@ AAmmoBox_DH::AAmmoBox_DH()
 	InteractWidget->SetDrawSize(FVector2D(50.0f, 50.0f));
 }
 
-void AAmmoBox_DH::BeginPlay()
+void AAmmoBoxActor::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -44,12 +44,12 @@ void AAmmoBox_DH::BeginPlay()
 
 	if (CollisionBox)
 	{
-		CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &AAmmoBox_DH::OnOverlapBegin);
-		CollisionBox->OnComponentEndOverlap.AddDynamic(this, &AAmmoBox_DH::OnOverlapEnd);
+		CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &AAmmoBoxActor::OnOverlapBegin);
+		CollisionBox->OnComponentEndOverlap.AddDynamic(this, &AAmmoBoxActor::OnOverlapEnd);
 	}
 }
 
-void AAmmoBox_DH::OnIneracted_Implementation(APrototypeCharacter* Character)
+void AAmmoBoxActor::OnIneracted_Implementation(APrototypeCharacter* Character)
 {
 	if (!Character) return;
 
@@ -72,22 +72,27 @@ void AAmmoBox_DH::OnIneracted_Implementation(APrototypeCharacter* Character)
 	}
 }
 
-bool AAmmoBox_DH::SetBCanInteract(bool IsCanInteract)
+EInteractionType AAmmoBoxActor::GetInteractionType_Implementation() const
+{
+	return EInteractionType::Ammo;
+}
+
+bool AAmmoBoxActor::SetBCanInteract(bool IsCanInteract)
 {
 	bCanInteract = IsCanInteract;
 	return bCanInteract;
 }
 
-bool AAmmoBox_DH::GetBCanInteract() const
+bool AAmmoBoxActor::GetBCanInteract() const
 {
 	return bCanInteract;
 }
 
-void AAmmoBox_DH::HiddenActor()
+void AAmmoBoxActor::HiddenActor()
 {
 }
 
-void AAmmoBox_DH::OnIneractionRangeEntered_Implementation()
+void AAmmoBoxActor::OnIneractionRangeEntered_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Entered Ammo Range"));
 	if (InteractWidget)
@@ -96,7 +101,7 @@ void AAmmoBox_DH::OnIneractionRangeEntered_Implementation()
 	}
 }
 
-void AAmmoBox_DH::OnIneractionRangeExited_Implementation()
+void AAmmoBoxActor::OnIneractionRangeExited_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Exited Ammo Range"));
 	if (InteractWidget)
@@ -105,14 +110,14 @@ void AAmmoBox_DH::OnIneractionRangeExited_Implementation()
 	}
 }
 
-void AAmmoBox_DH::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AAmmoBoxActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (!bCanInteract)
 		return;
 
 	if (OtherActor && OtherActor->IsA(APrototypeCharacter::StaticClass()))
 	{
-		// ë§ë‹¤ë©´ ë™ê·¸ë¼ë¯¸ë¥¼ ì¼œëŠ” í•¨ìˆ˜ë¥¼ ì‹¤í–‰!
+		// ¸Â´Ù¸é µ¿±×¶ó¹Ì¸¦ ÄÑ´Â ÇÔ¼ö¸¦ ½ÇÇà!
 		//OnIneractionRangeEntered();
 		if (Cast<APrototypeCharacter>(OtherActor))
 		{
@@ -121,14 +126,14 @@ void AAmmoBox_DH::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 	}
 }
 
-void AAmmoBox_DH::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void AAmmoBoxActor::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (!bCanInteract)
 		return;
 
 	if (OtherActor && OtherActor->IsA(APrototypeCharacter::StaticClass()))
 	{
-		// ë§ë‹¤ë©´ ë™ê·¸ë¼ë¯¸ë¥¼ ë„ëŠ” í•¨ìˆ˜ë¥¼ ì‹¤í–‰!
+		// ¸Â´Ù¸é µ¿±×¶ó¹Ì¸¦ ²ô´Â ÇÔ¼ö¸¦ ½ÇÇà!
 		//OnIneractionRangeExited();
 		IInteractionBase::Execute_OnIneractionRangeExited(this);
 	}

@@ -71,6 +71,10 @@ bool AGimmick_Lever::GetBCanInteract() const
 	return false;
 }
 
+void AGimmick_Lever::HiddenActor()
+{
+}
+
 bool AGimmick_Lever::CanBeInteracted_Implementation() const
 {
 	return true;
