@@ -445,6 +445,8 @@ bool UPlayerCombatComponent::StartAiming()
 	bIsAiming = true;
 	CurrentSpread = MaxSpread;
 
+	HandleWeaponAttachment(true);
+
 	if (EquippedWeapon)
 	{
 		EquippedWeapon->EnableLaserSight(true);
@@ -455,6 +457,8 @@ bool UPlayerCombatComponent::StartAiming()
 void UPlayerCombatComponent::StopAiming() 
 { 
 	bIsAiming = false; 
+
+	HandleWeaponAttachment(true);
 
 	if (EquippedWeapon)
 	{
@@ -593,9 +597,19 @@ void UPlayerCombatComponent::HandleWeaponAttachment(bool bToHand)
 
 	if (bToHand)
 	{
-		FName HandSocket = (CurrentWeaponIndex == 1) ? TEXT("WeaponSocket") : TEXT("SMG_Socket");
-		EquippedWeapon->AttachToComponent(OwnerChar->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, HandSocket);
-		EquippedWeapon->SetActorHiddenInGame(false);
+		FName TargetSocketName;
+
+        if (CurrentWeaponIndex == 1) // 권총(Pistol)인 경우
+        {
+            TargetSocketName = bIsAiming ? TEXT("WeaponSocket") : TEXT("PistolRelaxSocket");
+        }
+        else // SMG인 경우
+        {
+            TargetSocketName = TEXT("SMG_Socket");
+        }
+
+        EquippedWeapon->AttachToComponent(OwnerChar->GetMesh(), 
+            FAttachmentTransformRules::SnapToTargetNotIncludingScale, TargetSocketName);
 	}
 	else
 	{

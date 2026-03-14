@@ -101,6 +101,7 @@ public:
 	virtual float GetCurrSpread() const override;
 	virtual UPlayerCombatComponent* GetCombatComp() const override;
 	virtual bool GetbIsWeaponDrawn() const override; 
+	virtual bool GetIsInjured() const override;
 #pragma endregion
 
 	void Move(const FInputActionValue& Value);

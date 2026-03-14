@@ -6,6 +6,8 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerDied);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, float, Current, float, Max);
+// 탄약 변경 델리게이트 (현재 탄수, 최대 탄창 용량, 예비 탄수)
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAmmoChanged, int32, Current, int32, Max, int32, Reserve);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class WARD_ZERO_API UPlayerStatusComponent : public UActorComponent
@@ -26,6 +28,14 @@ public:
 
 	UPROPERTY(BlueprintAssignable) FOnPlayerDied OnPlayerDied;
 	UPROPERTY(BlueprintAssignable) FOnHealthChanged OnHealthChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Events|Ammo")
+	FOnAmmoChanged OnPistolAmmoChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Events|Ammo")
+	FOnAmmoChanged OnSMGAmmoChanged;
+
+	void UpdateAmmoUI(int32 WeaponIndex, int32 Current, int32 Max, int32 Reserve);
 
 	UPROPERTY(EditAnywhere) float MaxHealth = 100.f;
 	UPROPERTY(EditAnywhere) float MaxStamina = 100.f;

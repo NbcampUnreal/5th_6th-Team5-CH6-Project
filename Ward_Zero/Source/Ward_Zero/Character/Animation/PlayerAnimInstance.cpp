@@ -51,7 +51,8 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		AimYaw = AnimInterface->GetAimYaw();
 		CurrSpread = AnimInterface->GetCurrSpread();
 		CombatComp = AnimInterface->GetCombatComp();
-
+		bIsWeaponDrawn = AnimInterface->GetbIsWeaponDrawn();
+		bIsInjured = AnimInterface->GetIsInjured();
 		USkeletalMeshComponent* TempMesh = AnimInterface->GetEquippedWeaponMesh();
 		WeaponMesh = IsValid(TempMesh) ? TempMesh : nullptr;
 
@@ -90,6 +91,13 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	PistolIKAlpha = FMath::FInterpTo(PistolIKAlpha, bPistolIKCondition ? 1.0f : 0.0f, DeltaSeconds, 15.0f);
 
+	if (bIsPistolEquipped)
+	{
+		// Relax / ADS 팔꿈치 각도 
+		FVector TargetJointPos = bIsAiming ? FVector(0.f, -20.f, 0.f) : FVector(0.f, -280.f, -150.f);
+		PistolJointTarget = FMath::VInterpTo(PistolJointTarget, TargetJointPos, DeltaSeconds, 15.0f);
+	}
+
 	// SMG IK 조건 
 	bool bIKCondition =
 		bIsSMGEquipped &&
@@ -114,12 +122,16 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	float TargetAlpha = (bIsUseFlashLight && !bIsSMGEquipped) ? 1.0f : 0.0f;
 	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetAlpha, DeltaSeconds, 5.0f);
 
-	//Pistol FlashLight IK Alpha
 	bool bFlashlightIKCondition = bIsUseFlashLight && bIsPistolEquipped && !bIsSMGEquipped
-		&& !bIsRunning && (GroundSpeed <= 250.f)
-		&& !bIsEquipping && !bIsReloading && !bIsInteracting;
+		&& !bIsRunning && !bIsEquipping && !bIsReloading && !bIsInteracting;
 
-	FlashlightIKAlpha = FMath::FInterpTo(FlashlightIKAlpha, bFlashlightIKCondition ? 1.0f : 0.0f, DeltaSeconds, 20.0f);
+	//Pistol FlashLight IK Alpha
+	bool bFlashlightAimCondition = bFlashlightIKCondition && bIsAiming;
+	FlashlightAimIKAlpha = FMath::FInterpTo(FlashlightAimIKAlpha, bFlashlightAimCondition ? 1.0f : 0.0f, DeltaSeconds, 20.0f);
+
+	// 2. 비조준(Relax) 상태일 때의 전용 알파
+	bool bFlashlightRelaxCondition = bFlashlightIKCondition && !bIsAiming;
+	FlashlightRelaxIKAlpha = FMath::FInterpTo(FlashlightRelaxIKAlpha, bFlashlightRelaxCondition ? 1.0f : 0.0f, DeltaSeconds, 20.0f);;
 }
 
 void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
