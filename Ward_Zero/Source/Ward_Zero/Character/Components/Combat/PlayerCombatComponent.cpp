@@ -110,6 +110,13 @@ void UPlayerCombatComponent::StartFire(UAnimMontage* InFireMontage, UAnimInstanc
 {
 	if (!bIsWeaponDrawn || !EquippedWeapon || EquippedWeapon->IsReloading() || !bIsAiming) return;
 
+	float CurrentTime = GetWorld()->GetTimeSeconds();
+	if (CurrentTime - LastFireTime < EquippedWeapon->GetFireRate())
+	{
+		return;
+	}
+	LastFireTime = CurrentTime;
+
 	bIsFiring = true;
 	CurrentShotsFired = 0;
 

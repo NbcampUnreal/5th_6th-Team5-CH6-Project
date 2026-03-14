@@ -132,6 +132,7 @@ public:
 private:
 	UPROPERTY() UCameraComponent* PlayerCamera;
 
+
 	int32 CurrentWeaponIndex = 1;
 	bool bIsWeaponDrawn = false;
 	bool bIsAiming = false;
@@ -147,6 +148,10 @@ private:
 	FRotator LastRecoilRot = FRotator::ZeroRotator;
 
 	FTimerHandle FireTimer;
+
+	// 총 쏜 이후 다음 발사까지의 시간 간격을 제어하는 타이머
+	float LastFireTime = 0.0f;
+
 	UPROPERTY() UAnimMontage* CachedFireMontage;
 	UPROPERTY() UAnimInstance* CachedAnimInst;
 	TSubclassOf<UCameraShakeBase> CachedCamShake;
