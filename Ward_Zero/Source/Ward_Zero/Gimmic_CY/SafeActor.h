@@ -80,6 +80,7 @@ public:
     virtual bool CanBeInteracted_Implementation() const override { return !bIsOpened;}
     virtual bool SetBCanInteract(bool IsCanInteract) override;
     virtual bool GetBCanInteract() const override;
+    virtual void HiddenActor() override;
 
 protected:
     bool bCanInteract;

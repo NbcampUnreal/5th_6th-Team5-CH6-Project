@@ -115,3 +115,7 @@ bool ADoubleDoorActor::GetBCanInteract() const
 	return bCanInteract;
 }
 
+void ADoubleDoorActor::HiddenActor()
+{
+}
+

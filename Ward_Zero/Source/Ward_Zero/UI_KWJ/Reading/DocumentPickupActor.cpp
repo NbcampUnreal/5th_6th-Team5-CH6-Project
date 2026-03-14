@@ -49,6 +49,10 @@ bool ADocumentPickupActor::GetBCanInteract() const
 	return bCanInteract;
 }
 
+void ADocumentPickupActor::HiddenActor()
+{
+}
+
 bool ADocumentPickupActor::CanBeInteracted_Implementation() const
 {
 	return bCanInteract && DocumentData != nullptr;

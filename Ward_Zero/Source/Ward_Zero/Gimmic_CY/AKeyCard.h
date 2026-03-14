@@ -37,4 +37,5 @@ public:
 
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
+	virtual void HiddenActor() override;
 };

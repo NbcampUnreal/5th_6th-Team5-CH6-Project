@@ -447,6 +447,8 @@ void APrototypeCharacter::SelectWeapon1(const FInputActionValue& Value)
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
 	if (!AnimInst) return;
 
+	GetCharacterMovement()->MaxWalkSpeed *= MovementData->multiplySMGRunSpeed;
+
 	// 이미 권총을 들고 있는 상태라면 무기 집어넣기 (토글)
 	if (CombatComp->GetCurrentWeaponIndex() == 1 && CombatComp->IsWeaponDrawn())
 	{
@@ -489,6 +491,8 @@ void APrototypeCharacter::SelectWeapon2(const FInputActionValue& Value)
 
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
 	if (!AnimInst) return;
+
+	GetCharacterMovement()->MaxWalkSpeed = MovementData->WalkSpeed * 0.9f;
 
 	// 이미 SMG를 들고 있는 상태라면 무기 집어넣기 
 	if (CombatComp->GetCurrentWeaponIndex() == 2 && CombatComp->IsWeaponDrawn())
@@ -909,7 +913,7 @@ void APrototypeCharacter::Revive()
 	UE_LOG(LogTemp, Warning, TEXT("플레이어가 부활했습니다!"));
 
 }
-
+#pragma region 인터페이스 구현 
 // 인터페이스 함수 구현
 bool APrototypeCharacter::GetIsPistolEquipped() const { return CombatComp && CombatComp->IsPistolEquipped(); }
 bool APrototypeCharacter::GetIsGround() const { return GetCharacterMovement()->IsMovingOnGround(); }
@@ -932,6 +936,7 @@ bool APrototypeCharacter::GetbIsWeaponDrawn() const
 {
 	return CombatComp ? CombatComp->IsWeaponDrawn() : false;
 }
+bool APrototypeCharacter::GetIsInjured() const { return StatusComp ? StatusComp->IsInjured() : false; }
 bool APrototypeCharacter::IsEquipping() const
 {
 	if (UAnimInstance* AI = GetMesh()->GetAnimInstance())
@@ -950,3 +955,4 @@ USkeletalMeshComponent* APrototypeCharacter::GetEquippedWeaponMesh()
 	}
 	return nullptr;
 }
+#pragma endregion

@@ -128,4 +128,8 @@ bool ASafeActor::GetBCanInteract() const
     return bCanInteract;
 }
 
+void ASafeActor::HiddenActor()
+{
+}
+
 

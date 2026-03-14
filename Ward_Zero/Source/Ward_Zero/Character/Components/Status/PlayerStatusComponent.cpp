@@ -62,6 +62,18 @@ float UPlayerStatusComponent::ApplyDamage(float DamageAmount)
 	return ActualDamage;
 }
 
+void UPlayerStatusComponent::UpdateAmmoUI(int32 WeaponIndex, int32 Current, int32 Max, int32 Reserve)
+{
+	if (WeaponIndex == 1) // Pistol
+	{
+		OnPistolAmmoChanged.Broadcast(Current, Max, Reserve);
+	}
+	else if (WeaponIndex == 2) // SMG
+	{
+		OnSMGAmmoChanged.Broadcast(Current, Max, Reserve);
+	}
+}
+
 void UPlayerStatusComponent::ReviveStatus(float HealthRatio)
 {
 	bIsDead = false;

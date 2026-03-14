@@ -39,4 +39,5 @@ public:
     virtual float GetCurrSpread() const = 0;
     virtual UPlayerCombatComponent* GetCombatComp() const = 0;
     virtual bool GetbIsWeaponDrawn() const = 0;
+    virtual bool GetIsInjured() const = 0;
 };

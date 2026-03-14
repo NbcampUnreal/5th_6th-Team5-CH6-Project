@@ -46,6 +46,7 @@ public:
 	virtual EInteractionType GetInteractionType_Implementation() const override;
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
+	virtual void HiddenActor() override;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -59,4 +60,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<AActor*> UnInteractionActors;
+	
+public:
+
+	void ActivateLever();
 };

@@ -17,6 +17,7 @@
 #include "Perception/AISense_Hearing.h"
 #include "Character/Noise/NoiseFucLibrary/PlayerNoise.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
+#include "Character/Components/Status/PlayerStatusComponent.h"
 //#include "DrawDebugHelpers.h"
 
 AWeapon::AWeapon()
@@ -152,6 +153,14 @@ void AWeapon::SpendRound()
 {
     CurrentAmmo = FMath::Clamp(CurrentAmmo - 1, 0, MaxCapacity);
     UE_LOG(LogTemp, Warning, TEXT("Ammo: %d / %d"), CurrentAmmo, MaxCapacity);
+    if (APrototypeCharacter* OwnerChar = Cast<APrototypeCharacter>(GetOwner()))
+    {
+        if (UPlayerStatusComponent* Status = OwnerChar->StatusComp)
+        {
+            int32 Idx = (WeaponData->GetFName().ToString().Contains(TEXT("Pistol"))) ? 1 : 2;
+            Status->UpdateAmmoUI(Idx, CurrentAmmo, MaxCapacity, ReserveAmmo);
+        }
+    }
 }
 
 void AWeapon::StartReload()
@@ -178,6 +187,16 @@ void AWeapon::FinishReload()
     }
 
     ShowMagazine();
+
+    if (APrototypeCharacter* OwnerChar = Cast<APrototypeCharacter>(GetOwner()))
+    {
+        if (UPlayerStatusComponent* Status = OwnerChar->StatusComp)
+        {
+            int32 Idx = (WeaponData->GetFName().ToString().Contains(TEXT("Pistol"))) ? 1 : 2;
+            Status->UpdateAmmoUI(Idx, CurrentAmmo, MaxCapacity, ReserveAmmo);
+        }
+    }
+
     UE_LOG(LogTemp, Warning, TEXT("Reload Finished! Ammo: %d, Reserve: %d"), CurrentAmmo, ReserveAmmo);
 }
 
@@ -337,4 +356,13 @@ void AWeapon::AddAmmo(int32 Amount)
     }
 
     UE_LOG(LogTemp, Warning, TEXT("Ammo Added! Current Reserve: %d"), ReserveAmmo);
+
+    if (APrototypeCharacter* OwnerChar = Cast<APrototypeCharacter>(GetOwner()))
+    {
+        if (UPlayerStatusComponent* Status = OwnerChar->StatusComp)
+        {
+            int32 Idx = (WeaponData->GetFName().ToString().Contains(TEXT("Pistol"))) ? 1 : 2;
+            Status->UpdateAmmoUI(Idx, CurrentAmmo, MaxCapacity, ReserveAmmo);
+        }
+    }
 }

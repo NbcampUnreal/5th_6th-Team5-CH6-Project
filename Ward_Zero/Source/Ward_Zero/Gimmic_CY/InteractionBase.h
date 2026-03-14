@@ -51,6 +51,8 @@ public:
 
 	virtual bool GetBCanInteract() const  = 0;
 
+	virtual void HiddenActor() = 0;
+
 protected:
 
 	bool bCanInteract = true;
