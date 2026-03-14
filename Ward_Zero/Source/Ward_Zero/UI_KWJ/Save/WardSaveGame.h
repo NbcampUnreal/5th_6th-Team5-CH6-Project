@@ -74,6 +74,27 @@ public:
 	FName CurrentLevelName;
 
 	// ══════════════════════════════════════════
+	//  파트 진행도 — 각 파트 클리어 여부
+	//  레벨 디자이너가 파트별 트리거를 만들면
+	//  로드 시 이 값에 따라 트리거 on/off
+	// ══════════════════════════════════════════
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Progress")
+	bool bPart1Cleared = false;
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Progress")
+	bool bPart2Cleared = false;
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Progress")
+	bool bPart3Cleared = false;
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Progress")
+	bool bPart4Cleared = false;
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Progress")
+	bool bPart5Cleared = false;
+
+	// ══════════════════════════════════════════
 	//  메타 정보
 	// ══════════════════════════════════════════
 
