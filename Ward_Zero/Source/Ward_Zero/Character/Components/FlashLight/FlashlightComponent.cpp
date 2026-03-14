@@ -200,7 +200,16 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 			bool bShouldHide = (AnimIF->GetIsReloading() || AnimIF->IsEquipping()) && !bIsUnarmed;
 			if (bIsUnarmed) bShouldHide = false;
 
-			FName SocketName = AnimIF->GetIsPistolEquipped() ? TEXT("FlashLightSocket_Pistol") : TEXT("FlashLightSocket_Normal");
+			FName SocketName;
+			if (AnimIF->GetIsPistolEquipped())
+			{
+				SocketName = AnimIF->GetIsAiming() ? TEXT("FlashLightSocket_Pistol") : TEXT("RelaxFlashLightSocket");
+			}
+			else
+			{
+				// 비무장(Unarmed)일 때
+				SocketName = TEXT("FlashLightSocket_Normal");
+			}
 
 			// 손 소켓으로 이동
 			FlashLightActor->AttachToComponent(Player->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);

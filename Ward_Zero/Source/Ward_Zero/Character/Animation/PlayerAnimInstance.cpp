@@ -91,8 +91,12 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	PistolIKAlpha = FMath::FInterpTo(PistolIKAlpha, bPistolIKCondition ? 1.0f : 0.0f, DeltaSeconds, 15.0f);
 
-	if (bIsPistolEquipped)
+	if (bIsPistolEquipped && WeaponMesh)
 	{
+		FName TargetSocketName = bIsAiming ? FName("FlashLightIKSocket") : FName("RelaxFlashLightIK_Socket");
+
+		PistolFlashlightIKTargetLoc = WeaponMesh->GetSocketLocation(TargetSocketName);
+
 		// Relax / ADS 팔꿈치 각도 
 		FVector TargetJointPos = bIsAiming ? FVector(0.f, -20.f, 0.f) : FVector(0.f, -280.f, -150.f);
 		PistolJointTarget = FMath::VInterpTo(PistolJointTarget, TargetJointPos, DeltaSeconds, 15.0f);
@@ -129,7 +133,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bool bFlashlightAimCondition = bFlashlightIKCondition && bIsAiming;
 	FlashlightAimIKAlpha = FMath::FInterpTo(FlashlightAimIKAlpha, bFlashlightAimCondition ? 1.0f : 0.0f, DeltaSeconds, 20.0f);
 
-	// 2. 비조준(Relax) 상태일 때의 전용 알파
+	// 비조준(Relax) 상태일 때의 전용 알파
 	bool bFlashlightRelaxCondition = bFlashlightIKCondition && !bIsAiming;
 	FlashlightRelaxIKAlpha = FMath::FInterpTo(FlashlightRelaxIKAlpha, bFlashlightRelaxCondition ? 1.0f : 0.0f, DeltaSeconds, 20.0f);;
 }
