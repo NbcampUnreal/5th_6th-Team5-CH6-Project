@@ -1,7 +1,7 @@
 #include "Gimmic_CY/SafeActor.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "AKeyCard.h"
+#include "KeyCardActor.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 
 ASafeActor::ASafeActor()

@@ -1,24 +1,23 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "ItemBase.h"
+#include "UI_KWJ/Save/WardSaveGame.h"
 
-// Sets default values
 AItemBase::AItemBase()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
+	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+	RootComponent = Mesh;
+
+	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	Mesh->SetCollisionResponseToAllChannels(ECR_Block);
+	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 }
 
-// Called when the game starts or when spawned
 void AItemBase::BeginPlay()
 {
-	Super::BeginPlay();
-	
+	Super::BeginPlay();	
 }
 
-// Called every frame
 void AItemBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -35,10 +34,18 @@ void AItemBase::OnIneractionRangeExited_Implementation()
 
 void AItemBase::OnIneracted_Implementation(APrototypeCharacter* Character)
 {
+	if (IInteractionBase::Execute_CanBeInteracted(this))
+	{
+		IInteractionBase::Execute_HandleInteraction(this, Character);
+	}
 }
 
 void AItemBase::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
+	bCollected = true;
+
+	HiddenActor();
+	///GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Blue, "HiidenActor");
 }
 
 EInteractionType AItemBase::GetInteractionType_Implementation() const
@@ -48,15 +55,51 @@ EInteractionType AItemBase::GetInteractionType_Implementation() const
 
 bool AItemBase::SetBCanInteract(bool IsCanInteract)
 {
-	return false;
+	bCanInteract = IsCanInteract;
+	return bCanInteract;
 }
 
 bool AItemBase::GetBCanInteract() const
 {
-	return false;
+	return bCanInteract;
 }
 
 void AItemBase::HiddenActor()
 {
+	Mesh->SetVisibility(false);
+	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Blue, "SetVisibility(false)");
+}
+
+void AItemBase::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	if (!ActorID.IsValid())
+	{
+		ActorID = FGuid::NewGuid();
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Item ID: %s"), *ActorID.ToString());
+}
+
+FGuid AItemBase::GetActorID() const
+{
+	return ActorID;
+}
+
+void AItemBase::SaveActorState(UWardSaveGame* SaveData)
+{
+	if (bCollected)
+	{
+		SaveData->CollectedItems.Add(ActorID);
+	}
+}
+
+void AItemBase::LoadActorState(UWardSaveGame* SaveData)
+{
+	if (SaveData->CollectedItems.Contains(ActorID))
+	{
+		Destroy();
+	}
 }
 

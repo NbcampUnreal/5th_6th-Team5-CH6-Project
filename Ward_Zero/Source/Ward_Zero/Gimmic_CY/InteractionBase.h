@@ -4,6 +4,8 @@
 #include "UObject/Interface.h"
 #include "InteractionBase.generated.h"
 
+class UWardSaveGame;
+
 UENUM(BlueprintType)
 enum class EInteractionType : uint8
 {

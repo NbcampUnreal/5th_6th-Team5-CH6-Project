@@ -3,10 +3,13 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Gimmic_CY/InteractionBase.h"
+#include "SaveInterface.h"
 #include "ItemBase.generated.h"
 
+class UStaticMeshComponent;
+
 UCLASS()
-class WARD_ZERO_API AItemBase : public AActor, public IInteractionBase
+class WARD_ZERO_API AItemBase : public AActor, public IInteractionBase, public ISaveInterface
 {
 	GENERATED_BODY()
 	
@@ -31,4 +34,22 @@ public:
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
 	virtual void HiddenActor() override;
+	virtual void OnConstruction(const FTransform& Transform) override;
+
+	// ===== SaveInterface =====
+	virtual FGuid GetActorID() const override;
+	virtual void SaveActorState(class UWardSaveGame* SaveData) override;
+	virtual void LoadActorState(class UWardSaveGame* SaveData) override;
+
+
+protected:
+	UPROPERTY(EditInstanceOnly)
+	FGuid ActorID;
+
+	UPROPERTY()
+	bool bCollected = false;
+
+	// 카드키 메시
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* Mesh;
 };

@@ -1,10 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Gimmic_CY/ItemBase.h"
+#include "ItemBase.h"
 #include "AmmoBoxActor.generated.h"
 
 class UWidgetComponent;
+class UStaticMeshComponent;
 
 UCLASS()
 class WARD_ZERO_API AAmmoBoxActor : public AItemBase
@@ -21,8 +22,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UBoxComponent* CollisionBox;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class UStaticMeshComponent* MeshComp;
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	//class UStaticMeshComponent* MeshComp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ammo Loot")
 	int32 AmmoAmount = 15;
@@ -50,12 +51,8 @@ public:
 
 	virtual void OnIneractionRangeEntered_Implementation() override;
 	virtual void OnIneractionRangeExited_Implementation() override;
-
-	virtual void OnIneracted_Implementation(APrototypeCharacter* Character) override;
-	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override {}
+	//virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
 	virtual EInteractionType GetInteractionType_Implementation() const override;
-	virtual bool SetBCanInteract(bool IsCanInteract) override;
-	virtual bool GetBCanInteract() const override;
-	virtual void HiddenActor() override;
+	//virtual void HiddenActor() override;
 };
