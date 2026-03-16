@@ -10,11 +10,9 @@ AItemBase::AItemBase()
 	CollisionBox->SetupAttachment(RootComponent);
 	CollisionBox->SetBoxExtent(FVector(10.0f, 10.0f, 10.0f));
 	SetRootComponent(CollisionBox);
-	//CollisionBox->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
-	CollisionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+	CollisionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	//RootComponent = Mesh;
 	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	Mesh->SetCollisionResponseToAllChannels(ECR_Block);
 	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
@@ -50,9 +48,14 @@ void AItemBase::OnIneracted_Implementation(APrototypeCharacter* Character)
 
 void AItemBase::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
+	if (!bCanInteract)
+		return;
+
 	bCollected = true;
 
 	HiddenActor();
+
+	bCanInteract = false;
 	///GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Blue, "HiidenActor");
 }
 
@@ -74,7 +77,9 @@ bool AItemBase::GetBCanInteract() const
 
 void AItemBase::HiddenActor()
 {
+	CollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Mesh->SetVisibility(false);
+	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Blue, "SetVisibility(false)");
 }
 
@@ -121,5 +126,10 @@ void AItemBase::LoadActorState(UWardSaveGame* SaveData)
 	//{
 	//	Destroy();
 	//}
+}
+
+FVector AItemBase::GetInteractionTargetLocation_Implementation() const
+{
+	return GetActorLocation();
 }
 

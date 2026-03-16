@@ -32,6 +32,10 @@ AAmmoBoxActor::AAmmoBoxActor()
 	//InteractWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 70.0f));
 	//InteractWidget->SetWidgetSpace(EWidgetSpace::Screen);
 	//InteractWidget->SetDrawSize(FVector2D(50.0f, 50.0f));
+
+	PickUpPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickUpPoint"));
+	PickUpPoint->SetupAttachment(Mesh);
+	PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
 }
 
 void AAmmoBoxActor::BeginPlay()
@@ -129,4 +133,13 @@ void AAmmoBoxActor::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActo
 	//	//OnIneractionRangeExited();
 	//	IInteractionBase::Execute_OnIneractionRangeExited(this);
 	//}
+}
+
+FVector AAmmoBoxActor::GetInteractionTargetLocation_Implementation() const
+{
+	if (PickUpPoint)
+	{
+		return PickUpPoint->GetComponentLocation();
+	}
+	return GetActorLocation();
 }

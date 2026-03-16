@@ -55,4 +55,9 @@ public:
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
 	virtual EInteractionType GetInteractionType_Implementation() const override;
 	//virtual void HiddenActor() override;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USceneComponent> PickUpPoint;
+
+	FVector GetInteractionTargetLocation_Implementation() const;
 };
