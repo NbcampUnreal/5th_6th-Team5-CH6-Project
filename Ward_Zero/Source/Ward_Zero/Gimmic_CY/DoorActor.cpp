@@ -26,6 +26,10 @@ ADoorActor::ADoorActor()
 
 	NavModifier = CreateDefaultSubobject<UNavModifierComponent>(TEXT("NavModifier"));
 	//NavModifier->SetupAttachment(Scene);
+
+	PickUpPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickUpPoint"));
+	PickUpPoint->SetupAttachment(Door);
+	PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
 }
 
 void ADoorActor::BeginPlay()
@@ -203,4 +207,8 @@ void ADoorActor::ChangeColorLampRed_Implementation()
 void ADoorActor::ChangeColorLampGreen_Implementation()
 {
 
+}
+
+FVector ADoorActor::GetInteractionTargetLocation_Implementation() const {
+	return PickUpPoint->GetComponentLocation();
 }

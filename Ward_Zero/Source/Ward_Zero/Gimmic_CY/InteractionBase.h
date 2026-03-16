@@ -4,6 +4,8 @@
 #include "UObject/Interface.h"
 #include "InteractionBase.generated.h"
 
+class UWardSaveGame;
+
 UENUM(BlueprintType)
 enum class EInteractionType : uint8
 {
@@ -12,7 +14,8 @@ enum class EInteractionType : uint8
 	Ammo,
 	Document,  
 	Save,
-	Key
+	Key,
+	Heal
 };
 
 UINTERFACE(MinimalAPI)
@@ -52,6 +55,9 @@ public:
 	virtual bool GetBCanInteract() const  = 0;
 
 	virtual void HiddenActor() = 0;
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
+	FVector GetInteractionTargetLocation() const;
 
 protected:
 

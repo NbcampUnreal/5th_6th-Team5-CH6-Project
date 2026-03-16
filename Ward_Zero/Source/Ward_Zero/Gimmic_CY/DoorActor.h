@@ -79,6 +79,11 @@ public:
 	virtual bool GetBCanInteract() const override;
 	virtual void HiddenActor() override;
 
+	UPROPERTY(VisibleAnywhere)
+	USceneComponent* PickUpPoint;
+
+	FVector GetInteractionTargetLocation_Implementation() const;
+
 private:
 	UFUNCTION()
 	void OnBeginOverlap(
