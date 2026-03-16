@@ -82,3 +82,21 @@ void UPlayerStatusComponent::ReviveStatus(float HealthRatio)
 	// 체력 UI 갱신 
 	OnHealthChanged.Broadcast(CurrHealth, MaxHealth);
 }
+
+void UPlayerStatusComponent::Heal(float Amount)
+{
+	if (bIsDead) return;
+
+	CurrHealth = FMath::Clamp(CurrHealth + Amount, 0.0f, MaxHealth);
+	OnHealthChanged.Broadcast(CurrHealth, MaxHealth);
+
+	UE_LOG(LogTemp, Log, TEXT("Healed! Current HP: %.1f"), CurrHealth);
+}
+
+bool UPlayerStatusComponent::AddHealingItem(int32 Amount)
+{
+	if (HealingItemCount >= MaxHealingItemCount) return false;
+
+	HealingItemCount = FMath::Clamp(HealingItemCount + Amount, 0, MaxHealingItemCount);
+	return true;
+}

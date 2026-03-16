@@ -73,8 +73,6 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 
 	AWeapon* CurrentWeapon = Player->GetEquippedWeapon();
 
-	// [수정] 모든 부착된 무기(등에 멘 무기 포함)의 라이트와 발광을 매 틱 초기화합니다.
-	// 이 과정이 없으면 무기 교체 시 이전에 켜졌던 SMG의 빛이 꺼지지 않고 남습니다.
 	TArray<AActor*> AttachedActors;
 	Player->GetAttachedActors(AttachedActors);
 	for (AActor* Actor : AttachedActors)
@@ -95,7 +93,7 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 		}
 	}
 
-	// [발광 제어값] 켰을 때 50, 껐을 때 0
+	// 발광 제어값 => 켰을 때 50, 껐을 때 0
 	float TargetEmissive = bIsUseFlashlight ? 50.0f : 0.0f;
 
 	// 전등 OFF 상태 처리
@@ -126,7 +124,7 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 	// 달리는 중
 	if (bIsRunning)
 	{
-		// [원본 유지] 달릴 때는 가슴/손 손전등을 사용하므로 SMG의 SpotLight는 끔 (위의 루프에서 이미 처리됨)
+		// 달릴 때는 가슴/손 손전등을 사용하므로 SMG의 SpotLight는 끔 
 
 		// Unarmed -> 왼손 소켓 / Weapon -> 가슴 소켓 
 		FName RunSocket = bIsUnarmed ? TEXT("FlashLightSocket_Normal") : TEXT("BodyLightSocket");
@@ -139,11 +137,11 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 		if (FlashLightMesh)
 		{
 			FlashLightMesh->SetVisibility(bIsUnarmed);
-			// [수정] 손전등 본체 발광 제어
+			// 손전등 본체 발광 제어
 			FlashLightMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), bIsUnarmed ? TargetEmissive : 0.0f);
 		}
 
-		// [추가] 달리기 중에도 현재 든 무기가 SMG라면 발광(Emissive)은 유지해줌
+		// 달리기 중에도 현재 든 무기가 SMG라면 발광(Emissive)은 유지해줌
 		if (AnimIF->GetIsSMGEquipped() && CurrentWeapon)
 		{
 			if (UMeshComponent* WeaponMesh = CurrentWeapon->FindComponentByClass<UMeshComponent>())
@@ -186,7 +184,7 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 			CurrentWeapon->SMGSpotLight->SetAttenuationRadius(TargetData->AttenuationRadius);
 			CurrentWeapon->SMGSpotLight->SetCastShadows(TargetData->bCastShadows);
 
-			// [추가] SMG 발광 On
+			// SMG 발광 On
 			if (UMeshComponent* WeaponMesh = CurrentWeapon->FindComponentByClass<UMeshComponent>())
 				WeaponMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), TargetEmissive);
 
@@ -195,57 +193,54 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 		// 권총이거나 비무장일 때
 		else
 		{
-			// [수정] SMG 라이트가 아닐 때 SMG 라이트를 끄는 로직은 상단 루프에서 처리됨
+			bool bIsPistol = AnimIF->GetIsPistolEquipped();
+			bool bIsAiming = AnimIF->GetIsAiming();
+			bool IsUnarmed = !CachedCombatComp->IsWeaponDrawn();
 
-			bool bShouldHide = (AnimIF->GetIsReloading() || AnimIF->IsEquipping()) && !bIsUnarmed;
-			if (bIsUnarmed) bShouldHide = false;
+			bool bShouldHide = (AnimIF->GetIsReloading() || AnimIF->IsEquipping()) && !IsUnarmed;
+			if (IsUnarmed) bShouldHide = false;
 
 			FName SocketName;
-			if (AnimIF->GetIsPistolEquipped())
+
+			if (bIsPistol && !bIsAiming)
 			{
-				SocketName = AnimIF->GetIsAiming() ? TEXT("FlashLightSocket_Pistol") : TEXT("RelaxFlashLightSocket");
+				// 어깨 소켓에 부착
+				SocketName = TEXT("BodyLightSocket");
+
+				// 어깨에 달 때는 손전등 모델(Mesh)을 숨깁니다 (몸 안에 파묻히는 것 방지)
+				if (FlashLightMesh) FlashLightMesh->SetVisibility(false);
+			}
+			else if (bIsPistol && bIsAiming)
+			{
+				// 조준 중일 때는 기존처럼 권총 손 소켓
+				SocketName = TEXT("FlashLightSocket_Pistol");
+				if (FlashLightMesh) FlashLightMesh->SetVisibility(!bShouldHide);
 			}
 			else
 			{
 				// 비무장(Unarmed)일 때
 				SocketName = TEXT("FlashLightSocket_Normal");
+				if (FlashLightMesh) FlashLightMesh->SetVisibility(!bShouldHide);
 			}
 
-			// 손 소켓으로 이동
 			FlashLightActor->AttachToComponent(Player->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
 			FlashLightActor->SetActorRelativeLocation(FVector::ZeroVector);
 			FlashLightActor->SetActorRelativeRotation(FRotator::ZeroRotator);
 
-			FlashLightActor->SetActorHiddenInGame(bShouldHide);
+			FlashLightActor->SetActorHiddenInGame(false); // 라이트는 나와야 하므로 액터는 켬
 
-			// 메쉬 다시 보이게 복구
-			if (FlashLightMesh)
-			{
-				FlashLightMesh->SetVisibility(!bShouldHide);
-				// [수정] 손전등 본체 발광 제어
-				FlashLightMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), bShouldHide ? 0.0f : TargetEmissive);
-			}
-
-			// 빛(SpotLight)은 손목의 흔들림을 무시하도록 절대 회전 켜기
+			// 빛 설정: 조준 시(Base) 설정을 그대로 적용
 			FlashLightSpot->SetUsingAbsoluteRotation(true);
-
-			// SpotLight를 플레이어의 시야(카메라/크로스헤어) 정면으로 고정
 			FlashLightSpot->SetWorldRotation(Player->GetControlRotation());
-
-			if (AFlashLight* DefaultActor = FlashLightActor->GetClass()->GetDefaultObject<AFlashLight>())
-			{
-				if (USpotLightComponent* DefaultSpot = DefaultActor->FindComponentByClass<USpotLightComponent>())
-				{
-					FlashLightSpot->SetRelativeLocation(DefaultSpot->GetRelativeLocation());
-				}
-			}
-
 			FlashLightSpot->SetVisibility(!bShouldHide);
 
 			if (!bShouldHide)
 			{
+				// 어깨에 달았을 때도 TargetData의 기본 Intensity와 Angle을 그대로 사용 (조준 시와 동일)
 				FlashLightSpot->SetIntensity(BaseIntensity);
+				FlashLightSpot->SetOuterConeAngle(BaseOuterAngle);
 				FlashLightSpot->SetInnerConeAngle(BaseOuterAngle * TargetData->InnerConeRatio);
+				FlashLightSpot->SetAttenuationRadius(TargetData->AttenuationRadius);
 				FlashLightSpot->SetCastShadows(TargetData->bCastShadows);
 			}
 

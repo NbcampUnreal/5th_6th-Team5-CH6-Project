@@ -147,6 +147,8 @@ void AWeapon::Fire(const FVector& HitTarget)
 
     // 탄약 소모
     SpendRound();
+    CurrentAmmo--; 
+    OnAmmoChanged.Broadcast(CurrentAmmo, ReserveAmmo);
 }
 
 void AWeapon::SpendRound()
@@ -185,6 +187,7 @@ void AWeapon::FinishReload()
         CurrentAmmo += AmmoToReload;
         ReserveAmmo -= AmmoToReload;
     }
+    OnAmmoChanged.Broadcast(CurrentAmmo, ReserveAmmo);
 
     ShowMagazine();
 
@@ -343,6 +346,8 @@ void AWeapon::ShowMagazine()
 void AWeapon::AddAmmo(int32 Amount)
 {
     ReserveAmmo += Amount;
+
+    OnAmmoChanged.Broadcast(CurrentAmmo, ReserveAmmo);
 
     // 탄창 주울 때 소리 
     if (WeaponData && WeaponData->PickupMagSound)

@@ -186,7 +186,14 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
 	FVector PistolFlashlightIKTargetLoc;
 
+public:
+	// 아이템의 월드 위치
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
+	FVector PickupTargetLocation;
 
+	// IK 적용 강도 (0.0 ~ 1.0)
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
+	float PickupIKAlpha = 0.0f;
 
 public:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
@@ -195,6 +202,21 @@ public:
 public:
 	UFUNCTION(BlueprintCallable, Category = "Animation")
 	void RequestLayerInertialBlend(float BlendTime = 0.2f);
+
+	UFUNCTION()
+	void AnimNotify_HealEffect();
+	UFUNCTION()
+	void AnimNotify_AttachItem();
+	UFUNCTION()
+	void AnimNotify_ConsumeItem();
+
+public:
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
+	FVector DynamicPickupJointTarget;
+
+	UPROPERTY(EditAnywhere, Category = "Animation|IK")
+	float JointInterpSpeed = 10.0f;
+
 private:
 	// Thread Safe 함수들 - 원본과 동일하게 유지
 	void UpdateMovementCalculations(float DeltaSeconds);

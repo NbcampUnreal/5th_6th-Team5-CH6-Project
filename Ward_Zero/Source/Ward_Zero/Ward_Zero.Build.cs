@@ -25,6 +25,7 @@ public class Ward_Zero : ModuleRules
             "NavigationSystem",
             "AnimGraphRuntime",
             "AnimationBlueprintLibrary",
+            "MotionWarping",
             
             
             //GAS
