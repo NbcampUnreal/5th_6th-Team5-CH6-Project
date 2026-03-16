@@ -67,7 +67,7 @@ void AAmmoBox_DH::OnIneracted_Implementation(APrototypeCharacter* Character)
 
 			UE_LOG(LogTemp, Warning, TEXT("Looted %d Ammo for Weapon %d"), AmmoAmount, TargetWeaponIndex);
 
-			Destroy();
+		/*	Destroy();*/
 		}
 	}
 }

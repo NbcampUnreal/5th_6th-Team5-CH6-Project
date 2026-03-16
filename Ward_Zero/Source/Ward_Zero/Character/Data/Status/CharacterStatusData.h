@@ -18,6 +18,10 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Stamina")
     float MaxStamina = 100.f;
+
     UPROPERTY(EditAnywhere, Category = "Stamina")
     float StaminaDrainRate = 10.f;
+
+    UPROPERTY(EditAnywhere, Category = "Heath|Heal")
+    float HealAmount = 30.0f;
 };

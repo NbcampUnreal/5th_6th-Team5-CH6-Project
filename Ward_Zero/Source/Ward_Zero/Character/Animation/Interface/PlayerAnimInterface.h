@@ -40,4 +40,5 @@ public:
     virtual UPlayerCombatComponent* GetCombatComp() const = 0;
     virtual bool GetbIsWeaponDrawn() const = 0;
     virtual bool GetIsInjured() const = 0;
+    virtual void ExecuteHealPoint() = 0;
 };

@@ -23,6 +23,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	Super::NativeUpdateAnimation(DeltaSeconds);
 	if (!Character || !MovementComp) return;
 
+	// 1. 기초 물리 값 계산
 	Velocity = Character->GetVelocity();
 	Acceleration = MovementComp->GetCurrentAcceleration();
 	if (Velocity.SizeSquared() < 1.0f)
@@ -34,6 +35,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		UpdateMovementCalculations(DeltaSeconds);
 	}
 
+	// 2. 인터페이스를 통한 상태 캐싱
 	if (IPlayerAnimInterface* AnimInterface = Cast<IPlayerAnimInterface>(TryGetPawnOwner()))
 	{
 		bIsRunning = AnimInterface->GetIsRunning();
@@ -53,6 +55,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		CombatComp = AnimInterface->GetCombatComp();
 		bIsWeaponDrawn = AnimInterface->GetbIsWeaponDrawn();
 		bIsInjured = AnimInterface->GetIsInjured();
+
 		USkeletalMeshComponent* TempMesh = AnimInterface->GetEquippedWeaponMesh();
 		WeaponMesh = IsValid(TempMesh) ? TempMesh : nullptr;
 
@@ -61,81 +64,63 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 		bIsSMGEquipped = AnimInterface->GetIsSMGEquipped();
 
-		if (bIsReloading)
-		{
-			AimPitch = FMath::FInterpTo(AimPitch, 0.0f, DeltaSeconds, 5.0f);
-		}
-		else
-		{
-			AimPitch = AnimInterface->GetAimPitch();
-		}
+		// 장전 중에는 AimPitch 보정
+		AimPitch = bIsReloading ? FMath::FInterpTo(AimPitch, 0.0f, DeltaSeconds, 5.0f) : AnimInterface->GetAimPitch();
 	}
 
-	float CurveValue = GetCurveValue(TEXT("HandIKLeftAlpha"));
-	bool bCanUseSMGIK = bIsSMGEquipped && !bIsQuickTurning;
+	bool bIsBusy = bIsRunning || bIsEquipping || bIsReloading || bIsInteracting;
+	bool bCanUseIK = !bIsQuickTurning && !bIsBusy;
 
-	if (bCanUseSMGIK)
-	{
-		float TargetAlpha = CurveValue;
+	// SMG IK 
+	float TargetSMGAlpha = (bIsSMGEquipped && bCanUseIK) ? GetCurveValue(TEXT("HandIKLeftAlpha")) : 0.0f;
+	SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, TargetSMGAlpha, DeltaSeconds, 15.0f);
 
-		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, TargetAlpha, DeltaSeconds, 15.0f);
-	}
-	else
-	{
-		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, 0.0f, DeltaSeconds, 20.0f);
-	}
-	// Pistol IK 조건  
-	bool bPistolIKCondition = bIsPistolEquipped && !bIsSMGEquipped
-		&& !bIsEquipping && !bIsReloading && !bIsInteracting
-		&& (!bIsUseFlashLight || bIsRunning);
+	// Pistol & Flashlight IK 
+	// Pistol Aiming FlashLight IK 
+	bool bFlashlightAimCondition = bIsUseFlashLight && bIsPistolEquipped && bIsAiming && !bIsSMGEquipped && !bIsBusy;
+	FlashlightAimIKAlpha = FMath::FInterpTo(FlashlightAimIKAlpha, bFlashlightAimCondition ? 1.0f : 0.0f, DeltaSeconds, 20.0f);
 
+	// Pistol IK 
+	bool bPistolIKCondition = bIsPistolEquipped && !bIsSMGEquipped && !bIsBusy && !bFlashlightAimCondition;
 	PistolIKAlpha = FMath::FInterpTo(PistolIKAlpha, bPistolIKCondition ? 1.0f : 0.0f, DeltaSeconds, 15.0f);
 
+	// Unarmed FlashLight IK
+	float TargetFlashAlpha = (bIsUseFlashLight && !bIsSMGEquipped && !bIsPistolEquipped) ? 1.0f : 0.0f;
+	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetFlashAlpha, DeltaSeconds, 5.0f);
+
+	// 권총 관절 및 소켓 위치 업데이트
 	if (bIsPistolEquipped && WeaponMesh)
 	{
 		FName TargetSocketName = bIsAiming ? FName("FlashLightIKSocket") : FName("RelaxFlashLightIK_Socket");
-
 		PistolFlashlightIKTargetLoc = WeaponMesh->GetSocketLocation(TargetSocketName);
 
-		// Relax / ADS 팔꿈치 각도 
 		FVector TargetJointPos = bIsAiming ? FVector(0.f, -20.f, 0.f) : FVector(0.f, -280.f, -150.f);
 		PistolJointTarget = FMath::VInterpTo(PistolJointTarget, TargetJointPos, DeltaSeconds, 15.0f);
 	}
 
-	// SMG IK 조건 
-	bool bIKCondition =
-		bIsSMGEquipped &&
-		!bIsReloading &&
-		!bIsEquipping &&
-		!bIsQuickTurning &&
-		!bIsInteracting;
-
-	float TargetSMGAlpha = bIKCondition ? 1.0f : 0.0f;
-
-	if (bIsEquipping || !bIsSMGEquipped)
+	// 아이템 픽업 IK 
+	if (APrototypeCharacter* Player = Cast<APrototypeCharacter>(TryGetPawnOwner()))
 	{
-		SMGHandIKAlpha = 0.0f;
+		PickupTargetLocation = Player->CurrentPickupLocation;
+
+		float PickupCurveValue = GetCurveValue(TEXT("PickupIK"));
+		PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, PickupCurveValue, DeltaSeconds, 15.0f);
+
+		if (PickupIKAlpha > 0.1f)
+		{
+			DrawDebugSphere(GetWorld(), PickupTargetLocation, 10.f, 12, FColor::Red, false, 0.f);
+
+			// 높이에 따른 Joint Target 계산
+			FVector NewJointTarget;
+			FVector LocalTargetPos = Player->GetActorTransform().InverseTransformPosition(PickupTargetLocation);
+
+			if (LocalTargetPos.Z < -50.0f) NewJointTarget = FVector(-20.0f, -60.0f, 40.0f);      // 무릎 아래
+			else if (LocalTargetPos.Z < 30.0f) NewJointTarget = FVector(-50.0f, -50.0f, 0.0f);   // 허리~가슴
+			else NewJointTarget = FVector(-40.0f, -40.0f, -30.0f);                              // 높음
+
+			DynamicPickupJointTarget = FMath::VInterpTo(DynamicPickupJointTarget, NewJointTarget, DeltaSeconds, JointInterpSpeed);
+		}
 	}
-	else
-	{
-		float InterpSpeed = bIKCondition ? 5.0f : 20.0f;
-		SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, TargetSMGAlpha, DeltaSeconds, InterpSpeed);
-	}
-
-	//Unarmed FlashLight IK Alpha
-	float TargetAlpha = (bIsUseFlashLight && !bIsSMGEquipped) ? 1.0f : 0.0f;
-	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetAlpha, DeltaSeconds, 5.0f);
-
-	bool bFlashlightIKCondition = bIsUseFlashLight && bIsPistolEquipped && !bIsSMGEquipped
-		&& !bIsRunning && !bIsEquipping && !bIsReloading && !bIsInteracting;
-
-	//Pistol FlashLight IK Alpha
-	bool bFlashlightAimCondition = bFlashlightIKCondition && bIsAiming;
-	FlashlightAimIKAlpha = FMath::FInterpTo(FlashlightAimIKAlpha, bFlashlightAimCondition ? 1.0f : 0.0f, DeltaSeconds, 20.0f);
-
-	// 비조준(Relax) 상태일 때의 전용 알파
-	bool bFlashlightRelaxCondition = bFlashlightIKCondition && !bIsAiming;
-	FlashlightRelaxIKAlpha = FMath::FInterpTo(FlashlightRelaxIKAlpha, bFlashlightRelaxCondition ? 1.0f : 0.0f, DeltaSeconds, 20.0f);;
 }
 
 void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
@@ -235,5 +220,30 @@ void UPlayerAnimInstance::RequestLayerInertialBlend(float BlendTime)
 	if (Requester)
 	{
 		Requester->RequestInertialization(Request);
+	}
+}
+
+void UPlayerAnimInstance::AnimNotify_HealEffect()
+{
+	if (IPlayerAnimInterface* AnimInterface = Cast<IPlayerAnimInterface>(TryGetPawnOwner()))
+	{
+		// 인터페이스를 통해 캐릭터의 회복 함수 호출
+		AnimInterface->ExecuteHealPoint();
+	}
+}
+
+void UPlayerAnimInstance::AnimNotify_AttachItem()
+{
+	if (APrototypeCharacter* Player = Cast<APrototypeCharacter>(TryGetPawnOwner()))
+	{
+		Player->AttachInteractingItem(); // 아까 만든 부착 함수 호출
+	}
+}
+
+void UPlayerAnimInstance::AnimNotify_ConsumeItem()
+{
+	if (APrototypeCharacter* Player = Cast<APrototypeCharacter>(TryGetPawnOwner()))
+	{
+		Player->ConsumeInteractingItem(); // 여기서 최종 Destroy()
 	}
 }

@@ -14,6 +14,8 @@ class UCurveVector;
 class AProjectile;
 class USpotLightComponent;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAmmoChanged, int32, CurrentAmmo, int32, ReserveAmmo);
+
 UCLASS()
 class WARD_ZERO_API AWeapon : public AActor
 {
@@ -33,6 +35,10 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Config")
     TObjectPtr<class UWeaponData> WeaponData;
 #pragma endregion 
+
+public:
+    UPROPERTY(BlueprintAssignable, Category = "Events")
+    FOnAmmoChanged OnAmmoChanged;
 
 public:
 #pragma region 전투 및 무기 조작 (Combat & Weapon Operations)
@@ -213,7 +219,6 @@ private:
 public:
     UCurveVector* GetRecoilCurve() const;
     float GetRecoilIntensity() const;
-    float GetRecoilRecoverySpeed() const;
     TSubclassOf<UCameraShakeBase> GetFireCameraShake() const;
 
 };

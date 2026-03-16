@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
@@ -56,9 +56,6 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Recoil")
     float RecoilIntensity = 1.0f;
-
-    UPROPERTY(EditAnywhere, Category = "Recoil")
-    float RecoilRecoverySpeed = 5.0f;
 
     UPROPERTY(EditAnywhere, Category = "Recoil")
     float HorizontalRecoilRandomness = 0.5f;

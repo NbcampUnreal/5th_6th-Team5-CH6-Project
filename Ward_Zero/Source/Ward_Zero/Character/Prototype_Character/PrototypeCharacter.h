@@ -24,6 +24,12 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Heal")
+	TSubclassOf<AActor> HealItemClass;
+
+	UPROPERTY()
+	AActor* CurrHealItem;
 public:
 #pragma region 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components") class UPlayerStatusComponent* StatusComp;
@@ -37,11 +43,16 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera") class USpringArmComponent* CameraBoom;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera") class UCameraComponent* MainCamera;
 
+
+
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UHealthVignetteWidget> HealthVignetteClass;
 
 	UPROPERTY()
 	UHealthVignetteWidget* HealthVignetteWidget;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UMotionWarpingComponent* MotionWarpingComp;
 #pragma endregion
 
 #pragma region 데이터 에셋
@@ -67,6 +78,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* FlashlightAction;
 	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* EquipSlot1Action;
 	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* EquipSlot2Action;
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* HealAction;
 #pragma endregion
 
 #pragma region 애니메이션 레이어
@@ -102,6 +114,7 @@ public:
 	virtual UPlayerCombatComponent* GetCombatComp() const override;
 	virtual bool GetbIsWeaponDrawn() const override; 
 	virtual bool GetIsInjured() const override;
+	virtual void ExecuteHealPoint() override;
 #pragma endregion
 
 	void Move(const FInputActionValue& Value);
@@ -157,4 +170,36 @@ public:
 public:
 	UFUNCTION(BlueprintCallable)
 	void Revive();
+
+	void StartHeal();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation")
+	void OnHealPoint();
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void SpawnHealItemVisual();
+
+	UFUNCTION(BlueprintCallable)
+	void DestroyHealItemVisual();
+
+	UFUNCTION(BlueprintCallable)
+	void PopHealItemCap();
+
+public:
+	UPROPERTY(BlueprintReadOnly, Category = "Interaction")
+	FVector CurrentPickupLocation;
+
+	// 애니메이션 데이터 에셋에 픽업 몽타주가 있다고 가정 (AnimData에 추가 필요)
+	void PlayPickupAnimation(AActor* TargetItem);
+
+	UPROPERTY()
+	AActor* CurrentInteractingItem; // 현재 줍고 있는 아이템 저장
+
+	// 노티파이에서 호출할 함수
+	UFUNCTION(BlueprintCallable)
+	void AttachInteractingItem();
+
+	UFUNCTION(BlueprintCallable)
+	void ConsumeInteractingItem();
 };

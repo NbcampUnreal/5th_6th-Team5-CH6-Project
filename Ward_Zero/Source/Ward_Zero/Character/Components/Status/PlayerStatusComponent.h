@@ -62,4 +62,18 @@ public:
 	float InjuryThreshold = 0.3f;
 
 	bool IsInjured() const { return (CurrHealth / MaxHealth) <= InjuryThreshold; }
+
+	UFUNCTION(BlueprintCallable)
+	void Heal(float Amount);
+
+public:
+	// 현재 보유 중인 회복약 개수
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
+	int32 HealingItemCount = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
+	int32 MaxHealingItemCount = 5;
+
+	// 회복약 습득 시 호출될 함수
+	bool AddHealingItem(int32 Amount);
 };

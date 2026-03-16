@@ -47,4 +47,13 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Montage|Interaction")
     TObjectPtr<UAnimMontage> OpenDoorMontage;
+
+    UPROPERTY(EditAnywhere, Category = "Montage|Action")
+    TObjectPtr<UAnimMontage> HealMontage;
+
+    UPROPERTY(EditAnywhere, Category = "Montage|Action")
+    TObjectPtr<UAnimMontage> PickupLowMontage;
+
+    UPROPERTY(EditAnywhere, Category = "Montage|Action")
+    TObjectPtr<UAnimMontage> PickupHighMontage;
 };
