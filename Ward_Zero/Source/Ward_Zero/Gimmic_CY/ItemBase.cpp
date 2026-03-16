@@ -89,17 +89,17 @@ FGuid AItemBase::GetActorID() const
 
 void AItemBase::SaveActorState(UWardSaveGame* SaveData)
 {
-	if (bCollected)
-	{
-		SaveData->CollectedItems.Add(ActorID);
-	}
+	//if (bCollected)
+	//{
+	//	SaveData->CollectedItems.Add(ActorID);
+	//}
 }
 
 void AItemBase::LoadActorState(UWardSaveGame* SaveData)
 {
-	if (SaveData->CollectedItems.Contains(ActorID))
-	{
-		Destroy();
-	}
+	//if (SaveData->CollectedItems.Contains(ActorID))
+	//{
+	//	Destroy();
+	//}
 }
 
