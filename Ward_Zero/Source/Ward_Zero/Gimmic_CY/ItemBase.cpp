@@ -1,16 +1,24 @@
 #include "ItemBase.h"
+#include "Components/BoxComponent.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
 
 AItemBase::AItemBase()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	RootComponent = Mesh;
+	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
+	CollisionBox->SetupAttachment(RootComponent);
+	CollisionBox->SetBoxExtent(FVector(10.0f, 10.0f, 10.0f));
+	SetRootComponent(CollisionBox);
+	//CollisionBox->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+	CollisionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 
+	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+	//RootComponent = Mesh;
 	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	Mesh->SetCollisionResponseToAllChannels(ECR_Block);
 	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	Mesh->SetupAttachment(CollisionBox);
 }
 
 void AItemBase::BeginPlay()

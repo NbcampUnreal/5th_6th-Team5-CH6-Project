@@ -19,8 +19,8 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class UBoxComponent* CollisionBox;
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	//class UBoxComponent* CollisionBox;
 
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	//class UStaticMeshComponent* MeshComp;
@@ -51,7 +51,7 @@ public:
 
 	virtual void OnIneractionRangeEntered_Implementation() override;
 	virtual void OnIneractionRangeExited_Implementation() override;
-	//virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
+	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
 	virtual EInteractionType GetInteractionType_Implementation() const override;
 	//virtual void HiddenActor() override;

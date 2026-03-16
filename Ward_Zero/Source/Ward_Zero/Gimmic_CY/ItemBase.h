@@ -7,6 +7,7 @@
 #include "ItemBase.generated.h"
 
 class UStaticMeshComponent;
+class UBoxComponent;
 
 UCLASS()
 class WARD_ZERO_API AItemBase : public AActor, public IInteractionBase, public ISaveInterface
@@ -49,7 +50,10 @@ protected:
 	UPROPERTY()
 	bool bCollected = false;
 
-	// 카드키 메시
+	// Mesh
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Mesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UBoxComponent* CollisionBox;
 };

@@ -50,28 +50,30 @@ void AAmmoBoxActor::BeginPlay()
 	}
 }
 
-//void AAmmoBoxActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
-//{
-//	if (!Character) return;
-//
-//	UPlayerCombatComponent* CombatComp = Character->FindComponentByClass<UPlayerCombatComponent>();
-//	if (CombatComp)
-//	{
-//		AWeapon* TargetWeapon = nullptr;
-//
-//		if (TargetWeaponIndex == 1) TargetWeapon = CombatComp->PistolWeapon;
-//		else if (TargetWeaponIndex == 2) TargetWeapon = CombatComp->SMGWeapon;
-//
-//		if (TargetWeapon)
-//		{
-//			TargetWeapon->AddAmmo(AmmoAmount);
-//
-//			UE_LOG(LogTemp, Warning, TEXT("Looted %d Ammo for Weapon %d"), AmmoAmount, TargetWeaponIndex);
-//
-//			Destroy();
-//		}
-//	}
-//}
+void AAmmoBoxActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
+{
+	if (!Character) return;
+
+	Super::HandleInteraction_Implementation(Character);
+
+	UPlayerCombatComponent* CombatComp = Character->FindComponentByClass<UPlayerCombatComponent>();
+	if (CombatComp)
+	{
+		AWeapon* TargetWeapon = nullptr;
+
+		if (TargetWeaponIndex == 1) TargetWeapon = CombatComp->PistolWeapon;
+		else if (TargetWeaponIndex == 2) TargetWeapon = CombatComp->SMGWeapon;
+
+		if (TargetWeapon)
+		{
+			TargetWeapon->AddAmmo(AmmoAmount);
+
+			UE_LOG(LogTemp, Warning, TEXT("Looted %d Ammo for Weapon %d"), AmmoAmount, TargetWeaponIndex);
+			
+			//Destroy();
+		}
+	}
+}
 
 EInteractionType AAmmoBoxActor::GetInteractionType_Implementation() const
 {
