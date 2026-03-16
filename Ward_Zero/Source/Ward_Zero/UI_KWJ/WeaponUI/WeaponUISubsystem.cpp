@@ -2,12 +2,12 @@
 
 #include "UI_KWJ/WeaponUI/WeaponUISubsystem.h"
 #include "UI_KWJ/WeaponUI/WeaponStatusWidget.h"
+#include "Character/Components/Status/PlayerStatusComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Character/Components/Combat/PlayerCombatComponent.h"
 #include "Weapon/Weapon.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/LocalPlayer.h"
-#include "Blueprint/UserWidget.h"
 #include "Ward_Zero.h"
 
 void UWeaponUISubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -18,8 +18,6 @@ void UWeaponUISubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UWeaponUISubsystem::Deinitialize()
 {
-	StopAmmoPolling();
-
 	if (WeaponWidget)
 	{
 		WeaponWidget->RemoveFromParent();
@@ -29,59 +27,27 @@ void UWeaponUISubsystem::Deinitialize()
 }
 
 // ════════════════════════════════════════════════════════
-//  탄약 폴링 (캐릭터 Tick 대체 — 10Hz)
+//  StatusComp 델리게이트 바인딩
 // ════════════════════════════════════════════════════════
 
-void UWeaponUISubsystem::StartAmmoPolling()
+void UWeaponUISubsystem::BindToStatusComponent(UPlayerStatusComponent* StatusComp)
 {
-	if (UWorld* World = GetWorld())
-	{
-		if (!World->GetTimerManager().IsTimerActive(AmmoUpdateTimerHandle))
-		{
-			World->GetTimerManager().SetTimer(
-				AmmoUpdateTimerHandle, this,
-				&UWeaponUISubsystem::PollAmmoUpdate,
-				0.1f, true); // 10Hz
-		}
-	}
+	if (!StatusComp || bAmmoBindingDone) return;
+
+	// 권총/SMG 양쪽 다 같은 콜백으로 받음
+	StatusComp->OnPistolAmmoChanged.AddDynamic(this, &UWeaponUISubsystem::OnAmmoChanged);
+	StatusComp->OnSMGAmmoChanged.AddDynamic(this, &UWeaponUISubsystem::OnAmmoChanged);
+
+	bAmmoBindingDone = true;
+	UE_LOG(LogWard_Zero, Log, TEXT("WeaponUI: StatusComp 탄약 델리게이트 바인딩 완료"));
 }
 
-void UWeaponUISubsystem::StopAmmoPolling()
-{
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(AmmoUpdateTimerHandle);
-	}
-}
-
-void UWeaponUISubsystem::PollAmmoUpdate()
+void UWeaponUISubsystem::OnAmmoChanged(int32 Current, int32 Max, int32 Reserve)
 {
 	UWeaponStatusWidget* Widget = GetOrCreateWidget();
-	if (!Widget) return;
-
-	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
-	if (!PC) return;
-
-	APrototypeCharacter* Character = Cast<APrototypeCharacter>(PC->GetPawn());
-	if (!Character) return;
-
-	UPlayerCombatComponent* Combat = Character->FindComponentByClass<UPlayerCombatComponent>();
-	if (!Combat) return;
-
-	AWeapon* Weapon = Combat->GetEquippedWeapon();
-	if (Weapon && Combat->IsWeaponDrawn())
+	if (Widget)
 	{
-		Widget->SetWeaponUIVisible(true);
-		Widget->UpdateAmmoDisplay(
-			Weapon->GetCurrentAmmo(),
-			Weapon->GetMaxCapacity(),
-			Weapon->GetReserveAmmo()
-		);
-	}
-	else
-	{
-		Widget->SetWeaponUIVisible(false);
-		StopAmmoPolling();
+		Widget->UpdateAmmoDisplay(Current, Max, Reserve);
 	}
 }
 
@@ -95,15 +61,38 @@ void UWeaponUISubsystem::NotifyWeaponChanged(int32 NewWeaponIndex, bool bIsDrawn
 	if (Widget)
 	{
 		Widget->OnWeaponChanged(NewWeaponIndex, bIsDrawn);
-	}
 
-	if (bIsDrawn)
-	{
-		StartAmmoPolling();
-	}
-	else
-	{
-		StopAmmoPolling();
+		if (bIsDrawn)
+		{
+			Widget->SetWeaponUIVisible(true);
+
+			// 무기 꺼낼 때 현재 탄약 즉시 표시
+			APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
+			if (PC)
+			{
+				APrototypeCharacter* Character = Cast<APrototypeCharacter>(PC->GetPawn());
+				if (Character)
+				{
+					UPlayerCombatComponent* Combat = Character->FindComponentByClass<UPlayerCombatComponent>();
+					if (Combat)
+					{
+						AWeapon* Weapon = Combat->GetEquippedWeapon();
+						if (Weapon)
+						{
+							Widget->UpdateAmmoDisplay(
+								Weapon->GetCurrentAmmo(),
+								Weapon->GetMaxCapacity(),
+								Weapon->GetReserveAmmo()
+							);
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			Widget->SetWeaponUIVisible(false);
+		}
 	}
 }
 
@@ -113,8 +102,8 @@ void UWeaponUISubsystem::NotifyWeaponHolstered()
 	if (Widget)
 	{
 		Widget->OnWeaponHolstered();
+		Widget->SetWeaponUIVisible(false);
 	}
-	StopAmmoPolling();
 }
 
 void UWeaponUISubsystem::SetWeaponUIVisible(bool bVisible)

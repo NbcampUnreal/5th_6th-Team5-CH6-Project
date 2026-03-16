@@ -10,6 +10,7 @@
 
 class UWardSaveGame;
 class USaveWidget;
+class ULoadWidget;
 
 // *** FSaveFileInfo 정의 삭제됨 — SaveTypes.h로 이동 ***
 
@@ -44,11 +45,11 @@ public:
 	TArray<FSaveFileInfo> GetSaveFileList();
 
 	// ══════════════════════════════════════════
-	//  세이브 UI
+	//  세이브 UI (세이브 포인트에서 사용)
 	// ══════════════════════════════════════════
 
 	UFUNCTION(BlueprintCallable, Category = "Save")
-	void ShowSaveUI(bool bFromGameOver = false);
+	void ShowSaveUI();
 
 	UFUNCTION(BlueprintCallable, Category = "Save")
 	void HideSaveUI();
@@ -56,24 +57,35 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Save")
 	bool IsSaveUIOpen() const;
 
+	// ══════════════════════════════════════════
+	//  불러오기 UI (ESC 메뉴 / 게임오버에서 사용)
+	// ══════════════════════════════════════════
+
+	UFUNCTION(BlueprintCallable, Category = "Save")
+	void ShowLoadUI();
+
+	UFUNCTION(BlueprintCallable, Category = "Save")
+	void HideLoadUI();
+
+	UFUNCTION(BlueprintPure, Category = "Save")
+	bool IsLoadUIOpen() const;
+
 private:
 
 	UWardSaveGame* CollectCurrentGameState();
 	void ApplyGameState(UWardSaveGame* SaveData);
 
-	// 레벨 전환 후 적용 대기 중인 세이브 데이터
 	UPROPERTY()
 	UWardSaveGame* PendingSaveData = nullptr;
 
 	FDelegateHandle OnLevelLoadedHandle;
 	void OnLevelLoaded(UWorld* LoadedWorld);
 
-	// 게임 오버 UI에서 세이브 창을 열었는지 여부
-	bool bOpenedFromGameOver = false;
 	void CaptureScreenshot(TArray<uint8>& OutPNGData, int32& OutWidth, int32& OutHeight);
 	UTexture2D* CreateThumbnailFromPNG(const TArray<uint8>& PNGData, int32 Width, int32 Height);
 	FString GenerateSlotName() const;
 
+	// ── 세이브 위젯 ──
 	UPROPERTY()
 	TSubclassOf<USaveWidget> SaveWidgetClass;
 
@@ -82,10 +94,17 @@ private:
 
 	USaveWidget* GetOrCreateSaveUI();
 
-	/** 마지막으로 저장한 슬롯 이름 */
+	// ── 불러오기 위젯 ──
+	UPROPERTY()
+	TSubclassOf<ULoadWidget> LoadWidgetClass;
+
+	UPROPERTY()
+	ULoadWidget* LoadWidgetInstance;
+
+	ULoadWidget* GetOrCreateLoadUI();
+
 	FString LastSaveSlotName;
 
-	/** UI 열기 전 캐시된 스크린샷 */
 	TArray<uint8> CachedScreenshotData;
 	int32 CachedScreenshotWidth = 0;
 	int32 CachedScreenshotHeight = 0;

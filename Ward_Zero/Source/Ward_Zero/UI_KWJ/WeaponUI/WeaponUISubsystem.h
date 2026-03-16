@@ -1,4 +1,5 @@
 // WeaponUISubsystem.h
+// 총기 UI 서브시스템 — StatusComp 델리게이트 기반
 
 #pragma once
 
@@ -18,17 +19,20 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
-	/** 무기 교체 시 호출 — 탄약 폴링 시작 */
+	/** 무기 교체 시 호출 */
 	UFUNCTION(BlueprintCallable, Category = "WeaponUI")
 	void NotifyWeaponChanged(int32 NewWeaponIndex, bool bIsDrawn);
 
-	/** 무기 집어넣기 시 호출 — 탄약 폴링 중지 */
+	/** 무기 집어넣기 시 호출 */
 	UFUNCTION(BlueprintCallable, Category = "WeaponUI")
 	void NotifyWeaponHolstered();
 
 	/** 위젯 표시/숨기기 */
 	UFUNCTION(BlueprintCallable, Category = "WeaponUI")
 	void SetWeaponUIVisible(bool bVisible);
+
+	/** StatusComp 델리게이트에 바인딩 (UIManager에서 호출) */
+	void BindToStatusComponent(class UPlayerStatusComponent* StatusComp);
 
 private:
 
@@ -40,9 +44,10 @@ private:
 
 	UWeaponStatusWidget* GetOrCreateWidget();
 
-	/** 탄약 갱신 폴링 (10Hz — 캐릭터 Tick 대체) */
-	FTimerHandle AmmoUpdateTimerHandle;
-	void PollAmmoUpdate();
-	void StartAmmoPolling();
-	void StopAmmoPolling();
+	/** OnPistolAmmoChanged / OnSMGAmmoChanged 콜백 */
+	UFUNCTION()
+	void OnAmmoChanged(int32 Current, int32 Max, int32 Reserve);
+
+	/** 바인딩 여부 */
+	bool bAmmoBindingDone = false;
 };

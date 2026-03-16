@@ -19,4 +19,10 @@ UWardSaveGame::UWardSaveGame()
 	PlayTimeSeconds = 0.0f;
 	ScreenshotWidth = 0;
 	ScreenshotHeight = 0;
+
+	// 파트 진행도
+	CurrentPart = 0;
+	CurrentSubPart = 0;
+
+	// 오브젝트 상태 (TMap은 빈 상태로 초기화됨)
 }

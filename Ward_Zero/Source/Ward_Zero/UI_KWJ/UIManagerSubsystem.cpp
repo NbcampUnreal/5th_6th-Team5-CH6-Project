@@ -3,6 +3,7 @@
 #include "UI_KWJ/UIManagerSubsystem.h"
 #include "UI_KWJ/Health/HealthVignetteWidget.h"
 #include "UI_KWJ/GameOver/GameOverSubsystem.h"
+#include "UI_KWJ/WeaponUI/WeaponUISubsystem.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Character/Components/Status/PlayerStatusComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -119,6 +120,12 @@ void UUIManagerSubsystem::BindToCharacter()
 
 	// StatusComp → OnPlayerDied → GameOver
 	StatusComp->OnPlayerDied.AddDynamic(this, &UUIManagerSubsystem::OnPlayerDied);
+
+	// ── WeaponUI 탄약 델리게이트 바인딩 ──
+	if (UWeaponUISubsystem* WeaponUI = GetLocalPlayer()->GetSubsystem<UWeaponUISubsystem>())
+	{
+		WeaponUI->BindToStatusComponent(StatusComp);
+	}
 
 	bBound = true;
 	UE_LOG(LogWard_Zero, Log, TEXT("UIManager: %s 바인딩 완료"), *Character->GetName());
