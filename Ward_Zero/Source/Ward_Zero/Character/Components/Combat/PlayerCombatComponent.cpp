@@ -32,7 +32,6 @@ void UPlayerCombatComponent::BeginPlay()
 			this->CombatData = OwnerChar->CombatData;
 
 			RecoilInterpSpeed = CombatData->RecoilInterpSpeed;
-			RecoilRecoverySpeed = CombatData->RecoilRecoverySpeed;
 			MaxSpread = CombatData->MaxSpread;
 			FireSpreadPenalty = CombatData->FireSpreadPenalty;
 		}
@@ -161,41 +160,15 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 		return;
 	}
 
-	// 시각/청각/반동 연출
 	PlayFireEffects(FireMontage, AnimInst, CamShake);
 	CalculateShotRecoil();
 
-	// 카메라 쉐이크
 	if (CamShake) UGameplayStatics::PlayWorldCameraShake(GetWorld(), CamShake, PlayerCamera->GetComponentLocation(), 0.f, 500.f);
-
-	// 반동(Recoil) 계산
-	float RecoilPitch = 0.0f;
-	float RecoilYaw = 0.0f;
-	float Intensity = EquippedWeapon->GetRecoilIntensity();
-
-	if (EquippedWeapon->RecoilCurve)
-	{
-		FVector CurveVal = EquippedWeapon->RecoilCurve->GetVectorValue((float)CurrentShotsFired);
-		RecoilPitch = CurveVal.Y * Intensity;
-		RecoilYaw = CurveVal.X * Intensity;
-		RecoilPitch += FMath::RandRange(-0.5f, 0.5f);
-		RecoilYaw += FMath::RandRange(-0.5f, 0.5f);
-	}
-	else if (EquippedWeapon->WeaponData)
-	{
-		float RandomVal = EquippedWeapon->WeaponData->HorizontalRecoilRandomness;
-		RecoilYaw += FMath::RandRange(-RandomVal, RandomVal);
-
-		RecoilPitch += Intensity + FMath::RandRange(-RandomVal * 0.2f, RandomVal * 0.2f);
-	}
-
-	TargetRecoilRot.Pitch = FMath::Clamp(TargetRecoilRot.Pitch + RecoilPitch, -30.0f, 15.0f);
-	TargetRecoilRot.Yaw = FMath::Clamp(TargetRecoilRot.Yaw + RecoilYaw, -10.0f, 10.0f);
 
 	// 라인트레이스 (발사 시점에 딱 한 번만 수행하여 목표 지점 확정)
 	// 라인 트레이스 수행
 	FVector Start = PlayerCamera->GetComponentLocation();
-	FVector Dir = FMath::VRandCone(PlayerCamera->GetForwardVector(), FMath::DegreesToRadians(CurrentSpread));
+	FVector Dir = FMath::VRandCone(PlayerCamera->GetForwardVector(), FMath::DegreesToRadians(CurrentSpread * 0.5f));
 	FVector End = Start + (Dir * 10000.f);
 
 	FHitResult Hit;
@@ -236,7 +209,7 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 	// 무기 데이터 업데이트
 	EquippedWeapon->SpendRound();
 	CurrentShotsFired++;
-	CurrentSpread = FMath::Clamp(CurrentSpread + 2.5f, 0.0f, 5.0f);
+	CurrentSpread = FMath::Clamp(CurrentSpread + FireSpreadPenalty, 0.0f, MaxSpread);
 }
 
 void UPlayerCombatComponent::HandleRecoil(float DeltaTime)
@@ -253,17 +226,12 @@ void UPlayerCombatComponent::HandleRecoil(float DeltaTime)
 		}
 	}
 
-	// 반동 회복 및 변수 완전 초기화
-	if (TargetRecoilRot.IsNearlyZero(0.01f))
+	if (FMath::IsNearlyEqual(CurrentRecoilRot.Pitch, TargetRecoilRot.Pitch, 0.01f) &&
+		FMath::IsNearlyEqual(CurrentRecoilRot.Yaw, TargetRecoilRot.Yaw, 0.01f))
 	{
 		TargetRecoilRot = FRotator::ZeroRotator;
 		CurrentRecoilRot = FRotator::ZeroRotator;
 		LastRecoilRot = FRotator::ZeroRotator;
-	}
-	else
-	{
-		float RecoverySpeed = EquippedWeapon ? EquippedWeapon->GetRecoilRecoverySpeed() : RecoilRecoverySpeed;
-		TargetRecoilRot = FMath::RInterpTo(TargetRecoilRot, FRotator::ZeroRotator, DeltaTime, RecoverySpeed);
 	}
 }
 
@@ -374,16 +342,20 @@ void UPlayerCombatComponent::CalculateShotRecoil()
 		FVector CurveVal = EquippedWeapon->RecoilCurve->GetVectorValue((float)CurrentShotsFired);
 		RecoilPitch = CurveVal.Y * Intensity;
 		RecoilYaw = CurveVal.X * Intensity;
+
+		RecoilPitch += FMath::RandRange(-0.5f, 0.5f);
+		RecoilYaw += FMath::RandRange(-0.5f, 0.5f);
 	}
 	else if (EquippedWeapon->WeaponData)
 	{
 		float RandomVal = EquippedWeapon->WeaponData->HorizontalRecoilRandomness;
 		RecoilYaw += FMath::RandRange(-RandomVal, RandomVal);
-		RecoilPitch += FMath::RandRange(-RandomVal * 0.2f, RandomVal * 0.2f);
+
+		RecoilPitch += Intensity + FMath::RandRange(-RandomVal * 0.2f, RandomVal * 0.2f);
 	}
 
-	TargetRecoilRot.Pitch = FMath::Clamp(TargetRecoilRot.Pitch + RecoilPitch, -30.0f, 15.0f);
-	TargetRecoilRot.Yaw = FMath::Clamp(TargetRecoilRot.Yaw + RecoilYaw, -10.0f, 10.0f);
+	TargetRecoilRot.Pitch += RecoilPitch;
+	TargetRecoilRot.Yaw += RecoilYaw;
 }
 
 void UPlayerCombatComponent::ProcessHit(const FHitResult& Hit, const FVector& ShotDir)

@@ -278,11 +278,6 @@ float AWeapon::GetRecoilIntensity() const
     return WeaponData ? WeaponData->RecoilIntensity : 1.0f;
 }
 
-float AWeapon::GetRecoilRecoverySpeed() const
-{
-    return WeaponData ? WeaponData->RecoilRecoverySpeed : 5.0f;
-}
-
 TSubclassOf<UCameraShakeBase> AWeapon::GetFireCameraShake() const
 {
     return WeaponData ? WeaponData->FireCameraShake : nullptr;

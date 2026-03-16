@@ -164,7 +164,6 @@ private:
 	float FireSpreadPenalty = 2.5f;
 
 	float RecoilInterpSpeed = 25.0f;
-	float RecoilRecoverySpeed = 5.0f;
 
 	private:
 		// 리펙토링  

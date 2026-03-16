@@ -404,7 +404,19 @@ void APrototypeCharacter::Fire(const FInputActionValue& Value)
 {
 	if (CombatComp)
 	{
-		CombatComp->StartFire(nullptr, GetMesh()->GetAnimInstance(), CombatData->FireCameraShake);
+		TSubclassOf<UCameraShakeBase> FinalCamShake = nullptr;
+
+		if (AWeapon* CurrentWeapon = CombatComp->GetEquippedWeapon())
+		{
+			FinalCamShake = CurrentWeapon->GetFireCameraShake();
+		}
+
+		if (!FinalCamShake && CombatData)
+		{
+			FinalCamShake = CombatData->FireCameraShake;
+		}
+
+		CombatComp->StartFire(nullptr, GetMesh()->GetAnimInstance(), FinalCamShake);
 	}
 }
 

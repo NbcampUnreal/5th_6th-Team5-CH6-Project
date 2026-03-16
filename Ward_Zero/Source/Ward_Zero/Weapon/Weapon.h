@@ -213,7 +213,6 @@ private:
 public:
     UCurveVector* GetRecoilCurve() const;
     float GetRecoilIntensity() const;
-    float GetRecoilRecoverySpeed() const;
     TSubclassOf<UCameraShakeBase> GetFireCameraShake() const;
 
 };
