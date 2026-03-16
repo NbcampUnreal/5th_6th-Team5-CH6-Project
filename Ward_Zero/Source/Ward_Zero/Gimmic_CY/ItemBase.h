@@ -34,7 +34,7 @@ public:
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
 	virtual void HiddenActor() override;
-	virtual void OnConstruction(const FTransform& Transform) override;
+	virtual void PostActorCreated() override;
 
 	// ===== SaveInterface =====
 	virtual FGuid GetActorID() const override;
