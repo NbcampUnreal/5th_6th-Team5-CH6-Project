@@ -74,25 +74,36 @@ public:
 	FName CurrentLevelName;
 
 	// ══════════════════════════════════════════
-	//  파트 진행도 — 각 파트 클리어 여부
-	//  레벨 디자이너가 파트별 트리거를 만들면
-	//  로드 시 이 값에 따라 트리거 on/off
+	//  파트 진행도 (몬스터 트리거 관리)
+	//  이전 파트의 몬스터는 전부 비활성화
 	// ══════════════════════════════════════════
 
+	/** 현재 파트 번호 (0=시작, 1=지하1층, 2=2층보스, 3=1층, 4=촉수) */
 	UPROPERTY(VisibleAnywhere, Category = "SaveData|Progress")
-	bool bPart1Cleared = false;
+	int32 CurrentPart = 0;
 
+	/** 현재 파트 내 서브파트 (좀비 웨이브 진행도) */
 	UPROPERTY(VisibleAnywhere, Category = "SaveData|Progress")
-	bool bPart2Cleared = false;
+	int32 CurrentSubPart = 0;
 
-	UPROPERTY(VisibleAnywhere, Category = "SaveData|Progress")
-	bool bPart3Cleared = false;
+	// ══════════════════════════════════════════
+	//  오브젝트 상태 (ID 기반)
+	//  맵에 배치된 오브젝트에 고유 ID를 부여하고
+	//  해당 오브젝트의 상태를 bool로 저장
+	//
+	//  ID 접두어 규칙 (팀 협의에 따라 변경 가능):
+	//    "lv_"  = 레버 (예: "lv_01", "lv_02")
+	//    "hl_"  = 힐 아이템 (예: "hl_01", "hl_02")
+	//    "dr_"  = 잠긴 문 (예: "dr_01")
+	//    "st_"  = 셔터 (예: "st_01")
+	//
+	//  저장 시: 맵에서 ID가 있는 오브젝트를 순회 → 상태 수집
+	//  로드 시: 맵에서 ID 매칭 → 저장된 상태 적용
+	//           매칭 안 되면 스킵 (맵에 없는 오브젝트)
+	// ══════════════════════════════════════════
 
-	UPROPERTY(VisibleAnywhere, Category = "SaveData|Progress")
-	bool bPart4Cleared = false;
-
-	UPROPERTY(VisibleAnywhere, Category = "SaveData|Progress")
-	bool bPart5Cleared = false;
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Objects")
+	TMap<FString, bool> SavedObjectStates;
 
 	// ══════════════════════════════════════════
 	//  메타 정보

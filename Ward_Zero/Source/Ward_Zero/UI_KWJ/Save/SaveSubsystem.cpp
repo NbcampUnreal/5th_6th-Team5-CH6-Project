@@ -3,6 +3,7 @@
 #include "UI_KWJ/Save/SaveSubsystem.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
 #include "UI_KWJ/Save/SaveWidget.h"
+#include "UI_KWJ/Save/LoadWidget.h"
 #include "UI_KWJ/GameOver/GameOverSubsystem.h"
 #include "UI_KWJ/Loading/LoadingScreenSubsystem.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
@@ -141,9 +142,9 @@ bool USaveSubsystem::LoadGame(const FString& SlotName)
 		}
 	}
 
-	// 로드 시에는 게임오버 복귀 불필요 → 플래그 리셋 후 SaveUI 닫기
-	bOpenedFromGameOver = false;
+	// 로드 시 Save/Load UI 모두 닫기
 	HideSaveUI();
+	HideLoadUI();
 
 	// 로딩 화면 표시
 	if (ULoadingScreenSubsystem* LoadingSys = GetLocalPlayer()->GetSubsystem<ULoadingScreenSubsystem>())
@@ -505,18 +506,15 @@ FString USaveSubsystem::GenerateSlotName() const
 //  세이브 UI
 // ════════════════════════════════════════════════════════
 
-void USaveSubsystem::ShowSaveUI(bool bFromGameOver)
+void USaveSubsystem::ShowSaveUI()
 {
 	// UI가 뜨기 전에 스크린샷 캐시
 	CaptureScreenshot(CachedScreenshotData, CachedScreenshotWidth, CachedScreenshotHeight);
-
-	bOpenedFromGameOver = bFromGameOver;
 
 	USaveWidget* Widget = GetOrCreateSaveUI();
 	if (Widget)
 	{
 		Widget->RefreshSaveList();
-		Widget->SetSaveButtonEnabled(!bFromGameOver); // 게임오버에서 열면 저장 버튼 비활성화
 		Widget->SetVisibility(ESlateVisibility::Visible);
 		Widget->SetKeyboardFocus();
 
@@ -539,25 +537,12 @@ void USaveSubsystem::HideSaveUI()
 		SaveWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	if (bOpenedFromGameOver)
+	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
+	if (PC)
 	{
-		bOpenedFromGameOver = false;
-
-		// 게임 오버 UI 다시 표시
-		if (UGameOverSubsystem* GameOverSys = GetLocalPlayer()->GetSubsystem<UGameOverSubsystem>())
-		{
-			GameOverSys->ShowGameOver();
-		}
-	}
-	else
-	{
-		APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
-		if (PC)
-		{
-			FInputModeGameOnly InputMode;
-			PC->SetInputMode(InputMode);
-			PC->SetShowMouseCursor(false);
-		}
+		FInputModeGameOnly InputMode;
+		PC->SetInputMode(InputMode);
+		PC->SetShowMouseCursor(false);
 	}
 }
 
@@ -566,9 +551,69 @@ bool USaveSubsystem::IsSaveUIOpen() const
 	return SaveWidget && SaveWidget->IsVisible();
 }
 
+// ════════════════════════════════════════════════════════
+//  불러오기 UI (ESC / 게임오버용)
+// ════════════════════════════════════════════════════════
+
+void USaveSubsystem::ShowLoadUI()
+{
+	ULoadWidget* Widget = GetOrCreateLoadUI();
+	if (Widget)
+	{
+		Widget->RefreshSaveList();
+		Widget->SetVisibility(ESlateVisibility::Visible);
+		Widget->SetKeyboardFocus();
+
+		APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
+		if (PC)
+		{
+			FInputModeUIOnly InputMode;
+			InputMode.SetWidgetToFocus(Widget->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			PC->SetInputMode(InputMode);
+			PC->SetShowMouseCursor(true);
+		}
+	}
+}
+
+void USaveSubsystem::HideLoadUI()
+{
+	if (LoadWidgetInstance)
+	{
+		LoadWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
+	if (PC)
+	{
+		FInputModeGameOnly InputMode;
+		PC->SetInputMode(InputMode);
+		PC->SetShowMouseCursor(false);
+	}
+}
+
+bool USaveSubsystem::IsLoadUIOpen() const
+{
+	return LoadWidgetInstance && LoadWidgetInstance->IsVisible();
+}
+
+// ════════════════════════════════════════════════════════
+//  위젯 생성
+// ════════════════════════════════════════════════════════
+
 USaveWidget* USaveSubsystem::GetOrCreateSaveUI()
 {
-	if (SaveWidget) return SaveWidget;
+	if (IsValid(SaveWidget))
+	{
+		if (!SaveWidget->IsInViewport())
+		{
+			SaveWidget->AddToViewport(150);
+			SaveWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		return SaveWidget;
+	}
+
+	SaveWidget = nullptr;
 
 	if (!SaveWidgetClass)
 	{
@@ -595,4 +640,45 @@ USaveWidget* USaveSubsystem::GetOrCreateSaveUI()
 	}
 
 	return SaveWidget;
+}
+
+ULoadWidget* USaveSubsystem::GetOrCreateLoadUI()
+{
+	if (IsValid(LoadWidgetInstance))
+	{
+		if (!LoadWidgetInstance->IsInViewport())
+		{
+			LoadWidgetInstance->AddToViewport(150);
+			LoadWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		return LoadWidgetInstance;
+	}
+
+	LoadWidgetInstance = nullptr;
+
+	if (!LoadWidgetClass)
+	{
+		LoadWidgetClass = LoadClass<ULoadWidget>(
+			nullptr,
+			TEXT("/Game/UI/Save/WBP_LoadMenu.WBP_LoadMenu_C")
+		);
+	}
+
+	if (!LoadWidgetClass)
+	{
+		UE_LOG(LogWard_Zero, Error, TEXT("WBP_LoadMenu를 찾을 수 없습니다!"));
+		return nullptr;
+	}
+
+	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
+	if (!PC) return nullptr;
+
+	LoadWidgetInstance = CreateWidget<ULoadWidget>(PC, LoadWidgetClass);
+	if (LoadWidgetInstance)
+	{
+		LoadWidgetInstance->AddToViewport(150);
+		LoadWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	return LoadWidgetInstance;
 }

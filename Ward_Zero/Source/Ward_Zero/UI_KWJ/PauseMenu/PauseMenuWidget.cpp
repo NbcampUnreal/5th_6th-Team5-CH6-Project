@@ -55,14 +55,14 @@ void UPauseMenuWidget::OnLoadClicked()
 {
 	UE_LOG(LogWard_Zero, Log, TEXT("일시정지: 불러오기"));
 
-	// 일시정지 해제 후 세이브 UI 열기
+	// 일시정지 해제 후 Load UI 열기
 	UGameplayStatics::SetGamePaused(GetWorld(), false);
 	SetVisibility(ESlateVisibility::Collapsed);
 
 	USaveSubsystem* SaveSys = GetOwningLocalPlayer()->GetSubsystem<USaveSubsystem>();
 	if (SaveSys)
 	{
-		SaveSys->ShowSaveUI(false);
+		SaveSys->ShowLoadUI();
 	}
 }
 

@@ -93,11 +93,11 @@ void UGameOverWidget::OnLoadSaveClicked()
 	// 일시정지 해제 (Save UI가 작동하려면 해제 필요)
 	UGameplayStatics::SetGamePaused(GetWorld(), false);
 
-	// Save UI 열기
+	// Load UI 열기
 	USaveSubsystem* SaveSys = LP->GetSubsystem<USaveSubsystem>();
 	if (SaveSys)
 	{
-		SaveSys->ShowSaveUI(true);
+		SaveSys->ShowLoadUI();
 	}
 }
 
