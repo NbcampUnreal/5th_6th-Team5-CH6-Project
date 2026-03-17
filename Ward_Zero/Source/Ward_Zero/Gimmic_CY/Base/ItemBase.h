@@ -2,29 +2,26 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Gimmic_CY/InteractionBase.h"
-#include "SaveInterface.h"
-#include "DoorBase.generated.h"
+#include "Gimmic_CY/Base/InteractionBase.h"
+#include "ItemBase.generated.h"
 
 class UStaticMeshComponent;
 class UBoxComponent;
 
 UCLASS()
-class WARD_ZERO_API ADoorBase : public AActor, public IInteractionBase, public ISaveInterface
+class WARD_ZERO_API AItemBase : public AActor, public IInteractionBase
 {
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
-	ADoorBase();
+	AItemBase();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
 
 	// ===== IGimmickInterface =====
 public:
@@ -37,15 +34,15 @@ public:
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
 	virtual void PostActorCreated() override;
-	virtual void HiddenActor() override;
-	virtual FVector GetInteractionTargetLocation() const ;
-
 
 	// ===== SaveInterface =====
-	virtual FGuid GetActorID() const override;
-	virtual void SaveActorState(class UWardSaveGame* SaveData) override;
-	virtual void LoadActorState(class UWardSaveGame* SaveData) override;
+	//virtual FGuid GetActorID() const override;
+	//virtual void SaveActorState(class UWardSaveGame* SaveData) override;
+	//virtual void LoadActorState(class UWardSaveGame* SaveData) override;
 
+	FVector GetInteractionTargetLocation_Implementation() const;
+
+	void HiddenActor();
 
 protected:
 	UPROPERTY(EditInstanceOnly)
@@ -60,5 +57,4 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UBoxComponent* CollisionBox;
-
 };

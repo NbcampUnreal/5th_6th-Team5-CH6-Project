@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/TimelineComponent.h"
-#include "Gimmic_CY/InteractionBase.h"
+#include "Gimmic_CY/Base/InteractionBase.h"
 #include "SafeActor.generated.h"
 
 class UStaticMeshComponent;
@@ -80,7 +80,7 @@ public:
     virtual bool CanBeInteracted_Implementation() const override { return !bIsOpened;}
     virtual bool SetBCanInteract(bool IsCanInteract) override;
     virtual bool GetBCanInteract() const override;
-    virtual void HiddenActor() override;
+    //virtual void HiddenActor() override;
 
 protected:
     bool bCanInteract;

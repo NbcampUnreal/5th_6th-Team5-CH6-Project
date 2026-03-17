@@ -1,4 +1,4 @@
-#include "Gimmic_CY/AmmoBoxActor.h"
+#include "Gimmic_CY/Items/AmmoBoxActor.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"

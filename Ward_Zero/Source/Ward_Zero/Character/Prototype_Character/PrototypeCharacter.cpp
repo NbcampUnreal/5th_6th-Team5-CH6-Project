@@ -24,9 +24,9 @@
 #include "UI_KWJ/Save/SaveSubsystem.h"
 #include "UI_KWJ/WeaponUI/WeaponUISubsystem.h"
 #include "UI_KWJ/Health/HealthVignetteWidget.h"
-#include "Gimmic_CY/InteractionBase.h"
+#include "Gimmic_CY/Base/InteractionBase.h"
 #include "Engine/OverlapResult.h"
-#include "Gimmic_CY/HealItemActor.h"
+#include "Gimmic_CY/Items/HealItemActor.h"
 #include "Components/WidgetComponent.h"
 #include "MotionWarpingComponent.h"
 

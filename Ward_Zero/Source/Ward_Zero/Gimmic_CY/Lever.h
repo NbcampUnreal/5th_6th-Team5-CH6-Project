@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Gimmic_CY/InteractionBase.h"
+#include "Gimmic_CY/Base/InteractionBase.h"
 #include "Lever.generated.h"
 
 class UStaticMeshComponent;
@@ -46,14 +46,14 @@ public:
 	virtual EInteractionType GetInteractionType_Implementation() const override;
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
-	virtual void HiddenActor() override;
+	//virtual void HiddenActor() override;
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<ADoorActor*> DoorsForOpen;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	//TArray<ADoorActor*> DoorsForOpen;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<ADoorActor*> DoorsForClose;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	//TArray<ADoorActor*> DoorsForClose;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<AActor*> InteractionActors;

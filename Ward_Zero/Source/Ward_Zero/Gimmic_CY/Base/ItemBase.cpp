@@ -107,26 +107,26 @@ void AItemBase::PostActorCreated()
 //	UE_LOG(LogTemp, Warning, TEXT("Item ID: %s"), *ActorID.ToString());
 //}
 
-FGuid AItemBase::GetActorID() const
-{
-	return ActorID;
-}
-
-void AItemBase::SaveActorState(UWardSaveGame* SaveData)
-{
-	//if (bCollected)
-	//{
-	//	SaveData->CollectedItems.Add(ActorID);
-	//}
-}
-
-void AItemBase::LoadActorState(UWardSaveGame* SaveData)
-{
-	//if (SaveData->CollectedItems.Contains(ActorID))
-	//{
-	//	Destroy();
-	//}
-}
+//FGuid AItemBase::GetActorID() const
+//{
+//	return ActorID;
+//}
+//
+//void AItemBase::SaveActorState(UWardSaveGame* SaveData)
+//{
+//	//if (bCollected)
+//	//{
+//	//	SaveData->CollectedItems.Add(ActorID);
+//	//}
+//}
+//
+//void AItemBase::LoadActorState(UWardSaveGame* SaveData)
+//{
+//	//if (SaveData->CollectedItems.Contains(ActorID))
+//	//{
+//	//	Destroy();
+//	//}
+//}
 
 FVector AItemBase::GetInteractionTargetLocation_Implementation() const
 {
