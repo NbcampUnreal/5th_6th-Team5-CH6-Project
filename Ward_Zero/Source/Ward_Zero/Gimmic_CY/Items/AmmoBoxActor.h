@@ -1,64 +1,63 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Gimmic_CY/ItemBase.h"
-#include "HealItemActor.generated.h"
+#include "Gimmic_CY/Base/ItemBase.h"
+#include "AmmoBoxActor.generated.h"
 
-class UBoxComponent;
 class UWidgetComponent;
+class UStaticMeshComponent;
 
 UCLASS()
-class WARD_ZERO_API AHealItemActor : public AItemBase
+class WARD_ZERO_API AAmmoBoxActor : public AItemBase
 {
 	GENERATED_BODY()
-
+	
 public:
-	AHealItemActor();
+	AAmmoBoxActor();
 
 protected:
 	virtual void BeginPlay() override;
 
 public:
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	//UBoxComponent* CollisionBox;
+	//class UBoxComponent* CollisionBox;
 
-	// ì•½ë³‘ ë©”ì‰¬
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	UStaticMeshComponent* BottleMesh;
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	//class UStaticMeshComponent* MeshComp;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	UStaticMeshComponent* CapMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ammo Loot")
+	int32 AmmoAmount = 15;
 
-	// ë©€ë¦¬ì„œ ë³´ì´ëŠ” ë¹¨ê°„ ê¸°ë‘¥
+	// ¾î¶² ¹«±âÀÇ ÃÑ¾ËÀÎÁö? (1: ±ÇÃÑ, 2: SMG)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ammo Loot")
+	int32 TargetWeaponIndex = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+	EInteractionType InteractType = EInteractionType::Ammo;
+
+	// [Ãß°¡!] ¸Ö¸®¼­ º¸ÀÌ´Â »ó½Ã »¡°£ ±âµÕ (¿¡µğÅÍ¿¡¼­ ¿ø±âµÕ ÁöÁ¤)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* MarkerPillar;
 
-	// ê°€ê¹Œì´ ê°€ë©´ ëœ¨ëŠ” Eí‚¤ ìœ„ì ¯
+	// [Ãß°¡!] °¡±îÀÌ °¡¸é ¶ß´Â »óÈ£ÀÛ¿ë µ¿±×¶ó¹Ì À§Á¬
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UWidgetComponent* InteractWidget;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	USceneComponent* PickUpPoint;
-
-	// ì˜¤ë²„ë© ì´ë²¤íŠ¸ í•¨ìˆ˜
 	UFUNCTION()
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
 	void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-	// ì¸í„°í˜ì´ìŠ¤ í•¨ìˆ˜ë“¤ ì˜¤ë²„ë¼ì´ë“œ
 	virtual void OnIneractionRangeEntered_Implementation() override;
 	virtual void OnIneractionRangeExited_Implementation() override;
-	virtual void OnIneracted_Implementation(APrototypeCharacter* Character) override;
+	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
 	virtual EInteractionType GetInteractionType_Implementation() const override;
+	//virtual void HiddenActor() override;
 
-	// í•„ìˆ˜ ê°€ìƒ í•¨ìˆ˜ êµ¬í˜„
-	virtual bool SetBCanInteract(bool IsCanInteract) override;
-	virtual bool GetBCanInteract() const override;
-	virtual void HiddenActor() override;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USceneComponent> PickUpPoint;
 
 	FVector GetInteractionTargetLocation_Implementation() const;
 };
-

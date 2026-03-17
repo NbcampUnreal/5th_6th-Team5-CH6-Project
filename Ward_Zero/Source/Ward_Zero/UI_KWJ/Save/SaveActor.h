@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Gimmic_CY/InteractionBase.h"
+#include "Gimmic_CY/Base/InteractionBase.h"
 #include "SaveActor.generated.h"
 
 class UStaticMeshComponent;
@@ -26,7 +26,7 @@ public:
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override {}
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
-	virtual void HiddenActor() override;
+	//virtual void HiddenActor() override;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Save")

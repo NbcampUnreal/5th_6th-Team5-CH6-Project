@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ItemBase.h"
+#include "Gimmic_CY/Base/ItemBase.h"
 #include "KeyCardActor.generated.h"
 
 class UStaticMeshComponent;

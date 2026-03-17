@@ -1,4 +1,4 @@
-#include "Gimmic_CY/HealItemActor.h"
+#include "Gimmic_CY/Items/HealItemActor.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/WidgetComponent.h"
@@ -106,7 +106,7 @@ void AHealItemActor::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AAct
 // 인터페이스 필수 가상 함수들
 bool AHealItemActor::SetBCanInteract(bool IsCanInteract) { bCanInteract = IsCanInteract; return bCanInteract; }
 bool AHealItemActor::GetBCanInteract() const { return bCanInteract; }
-void AHealItemActor::HiddenActor() {}
+//void AHealItemActor::HiddenActor() {}
 
 FVector AHealItemActor::GetInteractionTargetLocation_Implementation() const
 {

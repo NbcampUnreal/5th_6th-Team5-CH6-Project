@@ -1,42 +1,42 @@
-#include "Gimmic_CY/BasicDoorActor.h"
-#include "Components/BoxComponent.h"
-#include "Components/StaticMeshComponent.h"
+#include "Gimmic_CY/Door/SingleDoor.h"
 #include "NavModifierComponent.h"
 #include "NavAreas/NavArea_Default.h"
 #include "NavAreas/NavArea_Null.h"
-#include "Components/TimelineComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 
-
-ABasicDoorActor::ABasicDoorActor()
+ASingleDoor::ASingleDoor()
 {
 	PickUpPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickUpPoint"));
-	PickUpPoint->SetupAttachment(Door);
+	PickUpPoint->SetupAttachment(Mesh);
 	PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
 }
 
-
-void ABasicDoorActor::BeginPlay()
+void ASingleDoor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	InitialRotation = Door->GetRelativeRotation();
-	UpdateFunctionFloat.BindDynamic(this, &ABasicDoorActor::UpdateTimelineComp);
+	InitialRotation = Mesh->GetRelativeRotation();
+	UpdateFunctionFloat.BindDynamic(this, &ASingleDoor::UpdateTimelineComp);
+
+	if (DoorTimelineFloatCurve)
+	{
+		DoorTimelineComp->AddInterpFloat(DoorTimelineFloatCurve, UpdateFunctionFloat);
+	}
 }
 
-void ABasicDoorActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
+void ASingleDoor::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
 	if (!DoorTimelineFloatCurve || !Character || !bCanInteract)
 		return;
 
 	bCanInteract = false;
-	Door->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 
 	FTimerHandle InteractionTimer;
-	TWeakObjectPtr<ABasicDoorActor> WeakThis(this);
+	TWeakObjectPtr<ASingleDoor> WeakThis(this);
 	GetWorld()->GetTimerManager().SetTimer(InteractionTimer, FTimerDelegate::CreateLambda([WeakThis]() {
 		WeakThis->bCanInteract = true;
-		WeakThis->Door->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+		WeakThis->Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 		}), 1.0f, false);
 
 	//
@@ -70,11 +70,11 @@ void ABasicDoorActor::HandleInteraction_Implementation(APrototypeCharacter* Char
 
 }
 
-FVector ABasicDoorActor::GetInteractionTargetLocation_Implementation() const {
+FVector ASingleDoor::GetInteractionTargetLocation_Implementation() const {
 	return PickUpPoint->GetComponentLocation();
 }
 
-void ABasicDoorActor::UpdateTimelineComp(float Output)
+void ASingleDoor::UpdateTimelineComp(float Output)
 {
 	float NewYaw = FMath::Lerp(0.f, TargetYaw, Output);
 
@@ -82,6 +82,5 @@ void ABasicDoorActor::UpdateTimelineComp(float Output)
 	NewRotation.Yaw += NewYaw;
 
 	//FRotator NewRotation(0.f, Output, 0.f);
-	Door->SetRelativeRotation(NewRotation);
-
+	Mesh->SetRelativeRotation(NewRotation);
 }

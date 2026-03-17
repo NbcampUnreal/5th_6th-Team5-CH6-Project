@@ -31,9 +31,9 @@ bool ASaveActor::GetBCanInteract() const
 	return false;
 }
 
-void ASaveActor::HiddenActor()
-{
-}
+//void ASaveActor::HiddenActor()
+//{
+//}
 
 void ASaveActor::OnIneracted_Implementation(APrototypeCharacter* Character)
 {

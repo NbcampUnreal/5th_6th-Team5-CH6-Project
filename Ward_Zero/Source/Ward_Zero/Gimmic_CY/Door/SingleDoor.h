@@ -1,16 +1,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Gimmic_CY/DoorBase.h"
-#include "BasicDoorActor.generated.h"
+#include "Gimmic_CY/Base/DoorBase.h"
+#include "SingleDoor.generated.h"
 
 class UStaticMeshComponent;
 class UNavModifierComponent;
 class USceneComponent;
 
-
 UCLASS()
-class WARD_ZERO_API ABasicDoorActor : public ADoorBase
+class WARD_ZERO_API ASingleDoor : public ADoorBase
 {
 	GENERATED_BODY()
 	
@@ -18,7 +17,7 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	ABasicDoorActor();
+	ASingleDoor();
 
 	// ===== IGimmickInterface =====
 	virtual bool CanBeInteracted_Implementation() const override { return true; }

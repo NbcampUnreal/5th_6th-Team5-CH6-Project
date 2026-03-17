@@ -49,9 +49,9 @@ bool ADocumentPickupActor::GetBCanInteract() const
 	return bCanInteract;
 }
 
-void ADocumentPickupActor::HiddenActor()
-{
-}
+//void ADocumentPickupActor::HiddenActor()
+//{
+//}
 
 bool ADocumentPickupActor::CanBeInteracted_Implementation() const
 {
