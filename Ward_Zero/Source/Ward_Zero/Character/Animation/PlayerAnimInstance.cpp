@@ -23,7 +23,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	Super::NativeUpdateAnimation(DeltaSeconds);
 	if (!Character || !MovementComp) return;
 
-	// 1. 기초 데이터 계산 (원본 유지)
+	// 기초 데이터 계산 
 	Velocity = Character->GetVelocity();
 	Acceleration = MovementComp->GetCurrentAcceleration();
 	if (Velocity.SizeSquared() < 1.0f)
@@ -35,7 +35,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		UpdateMovementCalculations(DeltaSeconds);
 	}
 
-	// 2. 인터페이스 상태 캐싱 (원본 유지)
+	// 인터페이스 상태 캐싱
 	if (IPlayerAnimInterface* AnimInterface = Cast<IPlayerAnimInterface>(TryGetPawnOwner()))
 	{
 		bIsRunning = AnimInterface->GetIsRunning();
@@ -63,36 +63,33 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		AimPitch = bIsReloading ? FMath::FInterpTo(AimPitch, 0.0f, DeltaSeconds, 5.0f) : AnimInterface->GetAimPitch();
 	}
 
-	// [해결 1] IK를 끄는 Busy 조건 (사격 bIsFiring은 여기서 제외해야 사격 시 안 깜빡임)
+	// IK를 끄는 Busy 조건 
 	bool bIsIKBusy = bIsEquipping || bIsReloading || bIsInteracting || bIsQuickTurning;
 
-	// 3. SMG IK (원본 유지)
+	// SMG IK
 	float CurveValue = GetCurveValue(TEXT("HandIKLeftAlpha"));
 	bool bCanUseSMGIK = bIsSMGEquipped && !bIsQuickTurning;
 	SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, (bCanUseSMGIK && !bIsIKBusy) ? CurveValue : 0.0f, DeltaSeconds, 15.0f);
 
-	// 4. Pistol IK 조건
-	// 비조준 시 손전등을 켜도 양손 파지를 유지하도록 (!bIsUseFlashLight || !bIsAiming) 조건 유지
+	// Pistol IK 조건
 	bool bPistolIKCondition = bIsPistolEquipped && !bIsSMGEquipped
 		&& !bIsEquipping && !bIsReloading && !bIsInteracting
 		&& (!bIsUseFlashLight || !bIsAiming || bIsRunning);
 
 	PistolIKAlpha = FMath::FInterpTo(PistolIKAlpha, bPistolIKCondition ? 1.0f : 0.0f, DeltaSeconds, 15.0f);
 
-	// 5. Flashlight IK 및 Additive 포즈 조건
-
-	// [A] 조준 중 손전등 IK (Harries Grip) : 원본 조건 복구
+	// Flashlight IK
+	// 조준 중 손전등 IK 
 	bool bFlashlightAimCondition = bIsUseFlashLight && bIsPistolEquipped && bIsAiming && !bIsSMGEquipped && !bIsIKBusy;
 	FlashlightAimIKAlpha = FMath::FInterpTo(FlashlightAimIKAlpha, bFlashlightAimCondition ? 1.0f : 0.0f, DeltaSeconds, 20.0f);
 
-	// [해결 2] Flashlight Alpha (Additive 포즈) : 
-	// 권총 비조준 시에는 이 값이 1이 되면 손이 뒤틀림. (Pistol + Relax 상황에서 0이 되도록 수정)
+	// Flashlight Alpha 
 	float TargetFlashAlpha = (bIsUseFlashLight && !bIsSMGEquipped && (!bIsPistolEquipped || bIsAiming)) ? 1.0f : 0.0f;
 	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetFlashAlpha, DeltaSeconds, 5.0f);
 
 	FlashlightRelaxIKAlpha = FMath::FInterpTo(FlashlightRelaxIKAlpha, 0.0f, DeltaSeconds, 20.0f);
 
-	// 6. 소켓 및 관절 위치 업데이트 (원본 로직 유지)
+	// 소켓 및 관절 위치 업데이트 
 	if (bIsPistolEquipped && WeaponMesh)
 	{
 		FName TargetSocketName = bIsAiming ? FName("FlashLightIKSocket") : FName("RelaxFlashLightIK_Socket");
@@ -102,7 +99,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		PistolJointTarget = FMath::VInterpTo(PistolJointTarget, TargetJointPos, DeltaSeconds, 15.0f);
 	}
 
-	// 7. 아이템 픽업 IK (원본 유지)
+	// 아이템 픽업 IK 
 	if (APrototypeCharacter* Player = Cast<APrototypeCharacter>(TryGetPawnOwner()))
 	{
 		PickupTargetLocation = Player->CurrentPickupLocation;
