@@ -64,6 +64,12 @@ public:
 	bool IsAiming() const { return bIsAiming; }
 	bool IsFiring() const { return bIsFiring; }
 	bool IsWeaponDrawn() const { return bIsWeaponDrawn; }
+	bool IsRecoiling() const
+	{
+		return !FMath::IsNearlyEqual(CurrentRecoilRot.Pitch, TargetRecoilRot.Pitch, 0.01f) ||
+			!FMath::IsNearlyEqual(CurrentRecoilRot.Yaw, TargetRecoilRot.Yaw, 0.01f);
+	}
+
 	void SetIsWeaponDrawn(bool bDrawn) { bIsWeaponDrawn = bDrawn; }
 	AWeapon* GetEquippedWeapon() const { return EquippedWeapon; }
 	FVector GetHandIKTarget() const { return HandIKTargetLocation; }
@@ -71,6 +77,7 @@ public:
 	float GetAimYaw() const { return AimYaw; }
 	float GetAimPitch() const { return AimPitch; }
 	bool GetIsReloading() const;
+
 
 private:
 	void AutoFireLogic();

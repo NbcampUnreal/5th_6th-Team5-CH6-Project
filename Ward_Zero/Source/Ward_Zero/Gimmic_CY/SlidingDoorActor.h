@@ -42,7 +42,7 @@ protected:
 	UFUNCTION()
 	void UpdateTimeline(float Value);
 
-	// À§Ä¡
+	// ï¿½ï¿½Ä¡
 	FVector ClosedLocation;
 
 	UPROPERTY(EditAnywhere)

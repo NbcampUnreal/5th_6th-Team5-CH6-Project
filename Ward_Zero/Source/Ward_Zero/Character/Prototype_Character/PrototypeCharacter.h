@@ -44,6 +44,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera") class UCameraComponent* MainCamera;
 
 
+	UPROPERTY(EditDefaultsOnly, Category = "Camera|Effects")
+	TSubclassOf<class UCameraShakeBase> HitCameraShakeClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UHealthVignetteWidget> HealthVignetteClass;
@@ -202,4 +204,11 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ConsumeInteractingItem();
+
+	bool bIsInteractingDoor = false;
+
+	UPROPERTY()
+	AActor* LastInteractedDoorActor = nullptr;
+
+	float LastDoorInteractTime = 0.0f;
 };

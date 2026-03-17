@@ -78,36 +78,23 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
             TargetSocketOffset = (Combat->GetCurrentWeaponIndex() == 2) ? CameraData->SMGAimSocketOffset : CameraData->PistolAimSocketOffset;
         }
 
-        bool bIsShooting = Combat->IsFiring();
-
-        if (!bIsShooting)
+        if (!Combat->IsRecoiling())
         {
             BobTime += DeltaTime;
-
-            float CurrentSway = (Speed > 10.f) ? CameraData->WalkSwayIntensity : CameraData->BreathSwayIntensity;
-
-            float SwayPitch = FMath::Sin(BobTime * 2.0f) * CurrentSway * 0.05f;
-            float SwayYaw = FMath::Cos(BobTime * 1.0f) * CurrentSway * 0.05f;
-
-            FRotator NewSwayRot = FRotator(SwayPitch, SwayYaw, 0.0f);
-            FRotator DeltaSway = NewSwayRot - LastSwayRot;
-            LastSwayRot = NewSwayRot;
-
-            if (AController* Controller = OwnerCharacter->GetController())
-            {
-                Controller->SetControlRotation(Controller->GetControlRotation() + DeltaSway);
-            }
         }
-        else
+
+        float CurrentSway = (Speed > 10.f) ? CameraData->WalkSwayIntensity : CameraData->BreathSwayIntensity;
+
+        float SwayPitch = FMath::Sin(BobTime * 2.0f) * CurrentSway * 0.05f;
+        float SwayYaw = FMath::Cos(BobTime * 1.0f) * CurrentSway * 0.05f;
+
+        FRotator NewSwayRot = FRotator(SwayPitch, SwayYaw, 0.0f);
+        FRotator DeltaSway = NewSwayRot - LastSwayRot;
+        LastSwayRot = NewSwayRot;
+
+        if (AController* Controller = OwnerCharacter->GetController())
         {
-            if (!LastSwayRot.IsNearlyZero())
-            {
-                if (AController* Controller = OwnerCharacter->GetController())
-                {
-                    Controller->SetControlRotation(Controller->GetControlRotation() - LastSwayRot);
-                }
-                LastSwayRot = FRotator::ZeroRotator;
-            }
+            Controller->SetControlRotation(Controller->GetControlRotation() + DeltaSway);
         }
     }
     else
