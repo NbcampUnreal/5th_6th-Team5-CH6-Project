@@ -442,7 +442,7 @@ void UPlayerCombatComponent::CalculateAimOffset()
 
 	// 에임 오프셋 값 업데이트 (애니메이션 에셋 범위에 맞춰 클램프 권장)
 	// 보통 Pitch는 -90~90, Yaw는 -90~90 혹은 그 이상
-	AimYaw = FMath::Clamp(Delta.Yaw, -90.f, 90.f);
+	AimYaw = FMath::Clamp(Delta.Yaw, -180.f, 180.f);
 	AimPitch = FMath::Clamp(Delta.Pitch, -90.f, 90.f);
 	if (!bIsAiming)
 	{

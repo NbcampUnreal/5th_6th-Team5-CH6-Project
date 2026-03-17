@@ -199,25 +199,20 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 
 void APrototypeCharacter::Move(const FInputActionValue& Value)
 {
-	if (GetIsQuickTurning() || IsEquipping()) return;
+	if (GetIsQuickTurning()) return;
 
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	if (Controller == nullptr) return;
 
-	if (bIsCrouched && GetIsReloading() && GetCurrentWeaponIndex() == 2)
-	{
-		return;
-	}
-
-	// 장전 중 이동 제한 
+	// 앉아서 장전 중 이동 제한 
 	if (bIsCrouched && GetIsReloading()) return;
 
 	float SpeedModifier = 1.0f;
 
 	// 장전 중이면서 달리는 중이 아니면 속도 50% 감소
-	if (!bIsCrouched && GetIsReloading() && !bIsRunning)
+	if (GetIsReloading())
 	{
-		SpeedModifier = 0.5f;
+		SpeedModifier = 0.6f;
 	}
 
 	const FRotator Rotation = Controller->GetControlRotation();
@@ -242,9 +237,9 @@ void APrototypeCharacter::Look(const FInputActionValue& Value)
 void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 {
 	if (CombatComp && CombatComp->IsAiming()) return;
-
 	if (StatusComp && !StatusComp->CanSprint()) return;
-	if (GetIsReloading() || IsEquipping()) return;
+
+	if (GetIsReloading()) return;
 
 	if (bIsRunning)
 	{
@@ -440,11 +435,6 @@ void APrototypeCharacter::Reload(const FInputActionValue& Value)
 			EndRunning(Value);
 		}
 		CombatComp->Reload();
-
-		if (bIsCrouched && GetCurrentWeaponIndex() == 2)
-		{
-			GetCharacterMovement()->StopMovementImmediately();
-		}
 	}
 }
 
@@ -647,25 +637,79 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 
 			if (Type == EInteractionType::Door)
 			{
-				if (bIsRunning) EndRunning(FInputActionValue());
-				GetCharacterMovement()->StopMovementImmediately();
+				// 방금 조작했던 문인지 확인
+				bool bIsSameDoor = (ClosestInteractableActor == LastInteractedDoorActor);
+
+				float CurrentTime = GetWorld()->GetTimeSeconds();
+
+				// 쿨다운 체크 (문이 움직이는 도중 연속 클릭 방지, 약 2.5초~3초)
+				if (bIsSameDoor && (CurrentTime - LastDoorInteractTime) < 2.5f)
+				{
+					return;
+				}
+
+				// 최근 상호작용한 문 데이터 갱신
+				LastInteractedDoorActor = ClosestInteractableActor;
+				LastDoorInteractTime = CurrentTime;
+
+				if (bIsInteractingDoor) return;
+				bIsInteractingDoor = true;
 
 				PendingDoorActor = ClosestInteractableActor;
 				CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(PendingDoorActor);
-			
+
+				// 충돌 무시
+				GetCapsuleComponent()->IgnoreActorWhenMoving(PendingDoorActor, true);
+
 				if (MotionWarpingComp)
 				{
-					FVector DirectionToPlayer = (GetActorLocation() - CurrentPickupLocation).GetSafeNormal2D();
-					FVector TargetWarpLocation = CurrentPickupLocation + (DirectionToPlayer * 65.0f);
-					FRotator TargetWarpRotation = PendingDoorActor->GetActorForwardVector().Rotation();
+					if (bIsSameDoor)
+					{
+						// 워핑 타겟을 내 현재 위치와 회전값으로 설정
+						MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(
+							TEXT("DoorWarp"), GetActorLocation(), GetActorRotation());
+					}
+					else // 처음 여는 문 
+					{
+						// 워핑 거리 계산
+						FVector DirectionToPlayer = (GetActorLocation() - CurrentPickupLocation).GetSafeNormal2D();
+						FVector TargetWarpLocation = CurrentPickupLocation + (DirectionToPlayer * 65.0f);
+						FRotator TargetWarpRotation = PendingDoorActor->GetActorForwardVector().Rotation();
 
-					MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("DoorWarp"), TargetWarpLocation, TargetWarpRotation);
+						MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(
+							TEXT("DoorWarp"), TargetWarpLocation, TargetWarpRotation);
+					}
 				}
 
 				if (AnimData && AnimData->OpenDoorMontage)
 				{
-					PlayAnimMontage(AnimData->OpenDoorMontage);
+					float AnimDuration = PlayAnimMontage(AnimData->OpenDoorMontage);
+					AActor* SafeDoorActor = PendingDoorActor;
+
+					FTimerHandle DoorTimer;
+					GetWorldTimerManager().SetTimer(DoorTimer, [this, SafeDoorActor]()
+						{
+							bIsInteractingDoor = false;
+							if (APlayerController* PC = Cast<APlayerController>(GetController()))
+							{
+								EnableInput(PC);
+							}
+
+							// 애니메이션 종료 1.5초 후 콜리전 원상 복구
+							if (SafeDoorActor)
+							{
+								FTimerHandle CollisionRestoreTimer;
+								GetWorldTimerManager().SetTimer(CollisionRestoreTimer, FTimerDelegate::CreateLambda([this, SafeDoorActor]()
+									{
+										if (IsValid(this) && IsValid(SafeDoorActor))
+										{
+											GetCapsuleComponent()->IgnoreActorWhenMoving(SafeDoorActor, false);
+										}
+									}), 1.5f, false);
+							}
+						}, AnimDuration, false);
 				}
+
 				IInteractionBase::Execute_OnIneracted(ClosestInteractableActor, this);
 			}
 			else if (Type == EInteractionType::Ammo || Type == EInteractionType::Heal || Type == EInteractionType::Key)

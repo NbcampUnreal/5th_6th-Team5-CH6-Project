@@ -204,4 +204,11 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ConsumeInteractingItem();
+
+	bool bIsInteractingDoor = false;
+
+	UPROPERTY()
+	AActor* LastInteractedDoorActor = nullptr;
+
+	float LastDoorInteractTime = 0.0f;
 };

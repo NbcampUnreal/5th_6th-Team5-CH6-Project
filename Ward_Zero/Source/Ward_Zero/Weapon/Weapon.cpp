@@ -34,12 +34,14 @@ AWeapon::AWeapon()
     GunMagMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GunMagMesh"));
     GunMagMesh->SetupAttachment(WeaponMesh, TEXT("MagSocket"));
     GunMagMesh->SetCastShadow(false);
+    GunMagMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
     SMGLight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SMGLight"));
     SMGLight->SetupAttachment(RootComponent);
     SMGLight->SetRelativeLocation(FVector(-31.2f, 0.95f, 2.8f));
     SMGLight->SetRelativeRotation(FRotator(0.0f, 0.0f, 180.0f));
     SMGLight->SetRelativeScale3D(FVector(0.02f, 0.005f, 0.005f));
+    SMGLight->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
     SMGSpotLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("SMGSpotLight"));
     SMGSpotLight->SetupAttachment(SMGLight);
