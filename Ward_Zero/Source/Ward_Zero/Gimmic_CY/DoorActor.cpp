@@ -153,14 +153,14 @@ EInteractionType ADoorActor::GetInteractionType_Implementation() const
 bool ADoorActor::SetBCanInteract(bool IsCanInteract)
 {
 	bCanInteract = IsCanInteract;
-	if (bCanInteract)
-	{
-		ChangeColorLampGreen_Implementation();
-	}
-	else
-	{
-		ChangeColorLampRed_Implementation();
-	}
+	//if (bCanInteract)
+	//{
+	//	ChangeColorLampGreen_Implementation();
+	//}
+	//else
+	//{
+	//	ChangeColorLampRed_Implementation();
+	//}
 
 	return bCanInteract;
 }
@@ -199,15 +199,15 @@ void ADoorActor::CloseDoor()
 	}
 }
 
-void ADoorActor::ChangeColorLampRed_Implementation()
-{
-
-}
-
-void ADoorActor::ChangeColorLampGreen_Implementation()
-{
-
-}
+//void ADoorActor::ChangeColorLampRed_Implementation()
+//{
+//
+//}
+//
+//void ADoorActor::ChangeColorLampGreen_Implementation()
+//{
+//
+//}
 
 FVector ADoorActor::GetInteractionTargetLocation_Implementation() const {
 	return PickUpPoint->GetComponentLocation();

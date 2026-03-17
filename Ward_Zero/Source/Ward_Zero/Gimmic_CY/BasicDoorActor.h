@@ -5,21 +5,38 @@
 #include "BasicDoorActor.generated.h"
 
 class UStaticMeshComponent;
+class UNavModifierComponent;
+class USceneComponent;
+
 
 UCLASS()
 class WARD_ZERO_API ABasicDoorActor : public ADoorBase
 {
 	GENERATED_BODY()
 	
+protected:
+	virtual void BeginPlay() override;
+
 public:
 	ABasicDoorActor();
 
+	// ===== IGimmickInterface =====
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
-	virtual EInteractionType GetInteractionType_Implementation() const override;
+	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 
 protected:
 
-	// Door Mesh
 	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* Door;
+	USceneComponent* PickUpPoint;
+
+	float TargetYaw = 90.f;
+
+	bool bIsOpen = false;
+
+	FVector GetInteractionTargetLocation_Implementation() const;
+
+	FRotator InitialRotation;
+
+	UFUNCTION()
+	void UpdateTimelineComp(float Output);
 };

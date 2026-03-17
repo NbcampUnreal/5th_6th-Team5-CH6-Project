@@ -39,8 +39,8 @@ protected:
 
 	FOnTimelineFloat UpdateFunctionFloat;
 
-	UFUNCTION()
-	void UpdateTimeline(float Value);
+	//UFUNCTION()
+	//void UpdateTimeline(float Value);
 
 	// À§Ä¡
 	FVector ClosedLocation;

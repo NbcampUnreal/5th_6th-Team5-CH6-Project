@@ -105,9 +105,9 @@ public:
 	void OpenDoor();
 	void CloseDoor();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void ChangeColorLampRed();
+	//UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	//void ChangeColorLampRed();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void ChangeColorLampGreen();
+	//UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	//void ChangeColorLampGreen();
 };

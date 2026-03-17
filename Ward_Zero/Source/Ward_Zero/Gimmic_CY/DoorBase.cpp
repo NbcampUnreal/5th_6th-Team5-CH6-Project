@@ -1,5 +1,10 @@
 #include "Gimmic_CY/DoorBase.h"
 #include "Components/BoxComponent.h"
+#include "NavModifierComponent.h"
+#include "NavAreas/NavArea_Default.h"
+#include "NavAreas/NavArea_Null.h"
+#include "Components/TimelineComponent.h"
+#include "Character/Prototype_Character/PrototypeCharacter.h"
 
 ADoorBase::ADoorBase()
 {
@@ -10,12 +15,29 @@ ADoorBase::ADoorBase()
 	CollisionBox->SetBoxExtent(FVector(10.0f, 10.0f, 10.0f));
 	SetRootComponent(CollisionBox);;
 	CollisionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
+	Door = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Door"));
+	Door->SetupAttachment(CollisionBox);
+	Door->SetCollisionResponseToChannels(ECR_Block);
+
+	Lamp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Lamp"));
+	Lamp->SetupAttachment(CollisionBox);
+
+	DoorTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("DoorTimeline"));
+
+	NavModifier = CreateDefaultSubobject<UNavModifierComponent>(TEXT("NavModifier"));
+	//NavModifier->SetupAttachment(Scene);
 }
 
 void ADoorBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	NavModifier->SetAreaClass(UNavArea_Null::StaticClass());
+
+	if (DoorTimelineFloatCurve)
+	{
+		DoorTimelineComp->AddInterpFloat(DoorTimelineFloatCurve, UpdateFunctionFloat);
+	}
 }
 
 // Called every frame
@@ -53,6 +75,14 @@ EInteractionType ADoorBase::GetInteractionType_Implementation() const
 bool ADoorBase::SetBCanInteract(bool IsCanInteract)
 {
 	bCanInteract = IsCanInteract;
+	if (bCanInteract)
+	{
+		ChangeColorLampGreen_Implementation();
+	}
+	else
+	{
+		ChangeColorLampRed_Implementation();
+	}
 	return bCanInteract;
 }
 
@@ -97,3 +127,12 @@ void ADoorBase::LoadActorState(UWardSaveGame* SaveData)
 
 }
 
+void ADoorBase::ChangeColorLampRed_Implementation()
+{
+
+}
+
+void ADoorBase::ChangeColorLampGreen_Implementation()
+{
+
+}

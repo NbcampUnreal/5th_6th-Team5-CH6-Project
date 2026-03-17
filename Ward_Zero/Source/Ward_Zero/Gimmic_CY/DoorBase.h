@@ -3,11 +3,13 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Gimmic_CY/InteractionBase.h"
+#include "Components/TimelineComponent.h"
 #include "SaveInterface.h"
 #include "DoorBase.generated.h"
 
 class UStaticMeshComponent;
 class UBoxComponent;
+class UNavModifierComponent;
 
 UCLASS()
 class WARD_ZERO_API ADoorBase : public AActor, public IInteractionBase, public ISaveInterface
@@ -15,15 +17,12 @@ class WARD_ZERO_API ADoorBase : public AActor, public IInteractionBase, public I
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
 	ADoorBase();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 	// ===== IGimmickInterface =====
@@ -46,7 +45,6 @@ public:
 	virtual void SaveActorState(class UWardSaveGame* SaveData) override;
 	virtual void LoadActorState(class UWardSaveGame* SaveData) override;
 
-
 protected:
 	UPROPERTY(EditInstanceOnly)
 	FGuid ActorID;
@@ -61,4 +59,28 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UBoxComponent* CollisionBox;
 
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* Door;
+
+	// Timeline
+	UPROPERTY(VisibleAnywhere)
+	UTimelineComponent* DoorTimelineComp;
+
+	UPROPERTY(EditAnywhere)
+	UCurveFloat* DoorTimelineFloatCurve;
+
+	FOnTimelineFloat UpdateFunctionFloat;
+
+	UPROPERTY(VisibleAnywhere)
+	UNavModifierComponent* NavModifier;
+	
+	// Lamp Mesh
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* Lamp;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void ChangeColorLampRed();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void ChangeColorLampGreen();
 };

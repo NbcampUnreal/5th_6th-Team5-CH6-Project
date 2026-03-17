@@ -29,7 +29,7 @@ void ASlidingDoorActor::BeginPlay()
 
 	ClosedLocation = Door->GetRelativeLocation();
 
-	UpdateFunctionFloat.BindDynamic(this, &ASlidingDoorActor::UpdateTimeline);
+	//UpdateFunctionFloat.BindDynamic(this, &ASlidingDoorActor::UpdateTimeline);
 
 	if (DoorCurve)
 	{
@@ -38,14 +38,14 @@ void ASlidingDoorActor::BeginPlay()
 	
 }
 
-void ASlidingDoorActor::UpdateTimeline(float Value)
-{
-	FVector OpenLocation = ClosedLocation + OpenOffset;
-
-	FVector NewLocation = FMath::Lerp(ClosedLocation, OpenLocation, Value);
-
-	Door->SetRelativeLocation(NewLocation);
-}
+//void ASlidingDoorActor::UpdateTimeline(float Value)
+//{
+//	FVector OpenLocation = ClosedLocation + OpenOffset;
+//
+//	FVector NewLocation = FMath::Lerp(ClosedLocation, OpenLocation, Value);
+//
+//	Door->SetRelativeLocation(NewLocation);
+//}
 
 void ASlidingDoorActor::OnIneracted_Implementation(APrototypeCharacter* Character)
 {
