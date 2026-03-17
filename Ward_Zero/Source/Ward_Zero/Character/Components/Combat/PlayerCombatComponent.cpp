@@ -85,7 +85,6 @@ void UPlayerCombatComponent::SpawnDefaultWeapon()
 	bIsWeaponDrawn = false;
 }
 
-
 void UPlayerCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -225,14 +224,6 @@ void UPlayerCombatComponent::HandleRecoil(float DeltaTime)
 			PC->SetControlRotation(PC->GetControlRotation() + Delta);
 		}
 	}
-
-	if (FMath::IsNearlyEqual(CurrentRecoilRot.Pitch, TargetRecoilRot.Pitch, 0.01f) &&
-		FMath::IsNearlyEqual(CurrentRecoilRot.Yaw, TargetRecoilRot.Yaw, 0.01f))
-	{
-		TargetRecoilRot = FRotator::ZeroRotator;
-		CurrentRecoilRot = FRotator::ZeroRotator;
-		LastRecoilRot = FRotator::ZeroRotator;
-	}
 }
 
 void UPlayerCombatComponent::UpdateSpread(float DeltaTime)
@@ -343,15 +334,15 @@ void UPlayerCombatComponent::CalculateShotRecoil()
 		RecoilPitch = CurveVal.Y * Intensity;
 		RecoilYaw = CurveVal.X * Intensity;
 
-		RecoilPitch += FMath::RandRange(-0.5f, 0.5f);
-		RecoilYaw += FMath::RandRange(-0.5f, 0.5f);
+		/*RecoilPitch = FMath::Max(0.0f, RecoilPitch + FMath::RandRange(-0.5f, 0.5f));
+		RecoilYaw += FMath::RandRange(-0.5f, 0.5f);*/
 	}
 	else if (EquippedWeapon->WeaponData)
 	{
 		float RandomVal = EquippedWeapon->WeaponData->HorizontalRecoilRandomness;
 		RecoilYaw += FMath::RandRange(-RandomVal, RandomVal);
 
-		RecoilPitch += Intensity + FMath::RandRange(-RandomVal * 0.2f, RandomVal * 0.2f);
+		RecoilPitch = FMath::Max(0.0f, Intensity + FMath::RandRange(-RandomVal * 0.2f, RandomVal * 0.2f));
 	}
 
 	TargetRecoilRot.Pitch += RecoilPitch;

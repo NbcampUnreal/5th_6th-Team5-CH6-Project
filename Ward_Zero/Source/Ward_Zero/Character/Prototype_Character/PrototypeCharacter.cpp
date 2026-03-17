@@ -751,6 +751,15 @@ float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 	// 데미지 적용 (HP 감소 및 사망 판정)
 	float ActualDamage = StatusComp->ApplyDamage(DamageAmount);
 
+	// 피격 당할시 화면 흔들림
+	if (HitCameraShakeClass)
+	{
+		if (APlayerController* PC = Cast<APlayerController>(GetController()))
+		{
+			PC->ClientStartCameraShake(HitCameraShakeClass);
+		}
+	}
+
 	// AI 위치 파악
 	FVector AttackerLocation;
 	bool bAttackerFound = false;

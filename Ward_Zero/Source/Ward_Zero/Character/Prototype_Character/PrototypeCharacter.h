@@ -44,6 +44,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera") class UCameraComponent* MainCamera;
 
 
+	UPROPERTY(EditDefaultsOnly, Category = "Camera|Effects")
+	TSubclassOf<class UCameraShakeBase> HitCameraShakeClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UHealthVignetteWidget> HealthVignetteClass;
