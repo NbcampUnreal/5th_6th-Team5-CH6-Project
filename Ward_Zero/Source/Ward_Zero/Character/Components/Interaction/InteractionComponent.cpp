@@ -4,7 +4,7 @@
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Character/Data/AnimData/CharacterAnimData.h"
 #include "Objects/Interface/Interact.h"
-#include "Gimmic_CY/InteractionBase.h"
+#include "Gimmic_CY/Base/InteractionBase.h"
 #include "UI_KWJ/Save/SavePointComponent.h"
 #include "UI_KWJ/Save/SaveSubsystem.h"
 #include "UI_KWJ/GameClear/GameClearComponent.h"

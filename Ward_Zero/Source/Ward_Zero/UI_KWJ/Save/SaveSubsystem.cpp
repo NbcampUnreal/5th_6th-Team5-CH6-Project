@@ -555,12 +555,13 @@ bool USaveSubsystem::IsSaveUIOpen() const
 //  불러오기 UI (ESC / 게임오버용)
 // ════════════════════════════════════════════════════════
 
-void USaveSubsystem::ShowLoadUI()
+void USaveSubsystem::ShowLoadUI(bool bFromGameOver)
 {
 	ULoadWidget* Widget = GetOrCreateLoadUI();
 	if (Widget)
 	{
 		Widget->RefreshSaveList();
+		Widget->SetCloseButtonVisible(!bFromGameOver); // 게임오버에서 열면 나가기 숨김
 		Widget->SetVisibility(ESlateVisibility::Visible);
 		Widget->SetKeyboardFocus();
 
@@ -608,6 +609,7 @@ USaveWidget* USaveSubsystem::GetOrCreateSaveUI()
 		if (!SaveWidget->IsInViewport())
 		{
 			SaveWidget->AddToViewport(150);
+			SaveWidget->SetAnchorsInViewport(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
 			SaveWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}
 		return SaveWidget;
@@ -636,6 +638,7 @@ USaveWidget* USaveSubsystem::GetOrCreateSaveUI()
 	if (SaveWidget)
 	{
 		SaveWidget->AddToViewport(150);
+		SaveWidget->SetAnchorsInViewport(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
 		SaveWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
@@ -649,6 +652,7 @@ ULoadWidget* USaveSubsystem::GetOrCreateLoadUI()
 		if (!LoadWidgetInstance->IsInViewport())
 		{
 			LoadWidgetInstance->AddToViewport(150);
+			LoadWidgetInstance->SetAnchorsInViewport(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
 			LoadWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
 		}
 		return LoadWidgetInstance;
@@ -677,6 +681,7 @@ ULoadWidget* USaveSubsystem::GetOrCreateLoadUI()
 	if (LoadWidgetInstance)
 	{
 		LoadWidgetInstance->AddToViewport(150);
+		LoadWidgetInstance->SetAnchorsInViewport(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
 		LoadWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
 	}
 

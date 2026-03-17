@@ -126,6 +126,8 @@ UWeaponStatusWidget* UWeaponUISubsystem::GetOrCreateWidget()
 		if (!WeaponWidget->IsInViewport())
 		{
 			WeaponWidget->AddToViewport(50);
+			WeaponWidget->SetAnchorsInViewport(FAnchors(1.0f, 1.0f));
+			WeaponWidget->SetAlignmentInViewport(FVector2D(1.0f, 1.0f));
 			WeaponWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}
 		return WeaponWidget;
@@ -154,6 +156,8 @@ UWeaponStatusWidget* UWeaponUISubsystem::GetOrCreateWidget()
 	if (WeaponWidget)
 	{
 		WeaponWidget->AddToViewport(50);
+		WeaponWidget->SetAnchorsInViewport(FAnchors(1.0f, 1.0f));
+		WeaponWidget->SetAlignmentInViewport(FVector2D(1.0f, 1.0f));
 		WeaponWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 

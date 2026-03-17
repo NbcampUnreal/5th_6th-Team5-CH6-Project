@@ -1,7 +1,7 @@
 #include "Gimmic_CY/SafeActor.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "KeyCardActor.h"
+#include "Items/KeyCardActor.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 
 ASafeActor::ASafeActor()
@@ -128,8 +128,8 @@ bool ASafeActor::GetBCanInteract() const
     return bCanInteract;
 }
 
-void ASafeActor::HiddenActor()
-{
-}
+//void ASafeActor::HiddenActor()
+//{
+//}
 
 

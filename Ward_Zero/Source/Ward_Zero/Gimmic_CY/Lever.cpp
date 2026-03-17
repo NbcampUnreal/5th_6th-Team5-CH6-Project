@@ -1,8 +1,8 @@
 #include "Gimmic_CY/Lever.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Gimmic_CY/InteractionBase.h"
-#include "DoorActor.h"
+#include "Gimmic_CY/Base/InteractionBase.h"
+//#include "DoorActor.h"
 
 ALever::ALever()
 {
@@ -25,24 +25,24 @@ void ALever::BeginPlay()
 
 void ALever::LeverOpenDoor()
 {
-	for (ADoorActor* doorActor : DoorsForOpen)
-	{
-		if (doorActor)
-		{
-			doorActor->OpenDoor();
-		}
-	}
+	//for (ADoorActor* doorActor : DoorsForOpen)
+	//{
+	//	if (doorActor)
+	//	{
+	//		doorActor->OpenDoor();
+	//	}
+	//}
 }
 
 void ALever::LeverCloseDoor()
 {
-	for (ADoorActor* doorColseActor : DoorsForClose)
-	{
-		if (doorColseActor)
-		{
-			doorColseActor->CloseDoor();
-		}
-	}
+	//for (ADoorActor* doorColseActor : DoorsForClose)
+	//{
+	//	if (doorColseActor)
+	//	{
+	//		doorColseActor->CloseDoor();
+	//	}
+	//}
 }
 
 void ALever::LeverLockInteraction()
@@ -109,9 +109,9 @@ bool ALever::GetBCanInteract() const
 	return false;
 }
 
-void ALever::HiddenActor()
-{
-}
+//void ALever::HiddenActor()
+//{
+//}
 
 void ALever::ActivateLever()
 {

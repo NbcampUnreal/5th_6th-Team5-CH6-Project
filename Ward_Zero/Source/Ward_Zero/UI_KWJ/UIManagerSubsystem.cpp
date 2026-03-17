@@ -84,6 +84,8 @@ void UUIManagerSubsystem::BindToCharacter()
 		if (!HealthVignetteWidget->IsInViewport())
 		{
 			HealthVignetteWidget->AddToViewport(0);
+			HealthVignetteWidget->SetAnchorsInViewport(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
+			HealthVignetteWidget->SetAlignmentInViewport(FVector2D(0.0f, 0.0f));
 			UE_LOG(LogWard_Zero, Log, TEXT("UIManager: HealthVignette 뷰포트 재추가"));
 		}
 	}
@@ -103,6 +105,8 @@ void UUIManagerSubsystem::BindToCharacter()
 			if (HealthVignetteWidget)
 			{
 				HealthVignetteWidget->AddToViewport(0);
+				HealthVignetteWidget->SetAnchorsInViewport(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
+				HealthVignetteWidget->SetAlignmentInViewport(FVector2D(0.0f, 0.0f));
 				UE_LOG(LogWard_Zero, Log, TEXT("UIManager: HealthVignette 새로 생성"));
 			}
 		}
