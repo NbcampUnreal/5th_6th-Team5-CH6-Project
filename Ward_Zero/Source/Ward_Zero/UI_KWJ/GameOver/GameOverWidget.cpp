@@ -97,7 +97,7 @@ void UGameOverWidget::OnLoadSaveClicked()
 	USaveSubsystem* SaveSys = LP->GetSubsystem<USaveSubsystem>();
 	if (SaveSys)
 	{
-		SaveSys->ShowLoadUI();
+		SaveSys->ShowLoadUI(true); // 게임오버에서 열림 → 나가기 숨김
 	}
 }
 

@@ -65,6 +65,7 @@ UGameOverWidget* UGameOverSubsystem::GetOrCreateWidget()
 		if (!GameOverWidget->IsInViewport())
 		{
 			GameOverWidget->AddToViewport(300);
+			GameOverWidget->SetAnchorsInViewport(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
 			GameOverWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}
 		return GameOverWidget;
@@ -91,6 +92,7 @@ UGameOverWidget* UGameOverSubsystem::GetOrCreateWidget()
 	if (GameOverWidget)
 	{
 		GameOverWidget->AddToViewport(300);
+		GameOverWidget->SetAnchorsInViewport(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
 		GameOverWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 

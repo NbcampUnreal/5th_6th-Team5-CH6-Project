@@ -62,7 +62,7 @@ public:
 	// ══════════════════════════════════════════
 
 	UFUNCTION(BlueprintCallable, Category = "Save")
-	void ShowLoadUI();
+	void ShowLoadUI(bool bFromGameOver = false);
 
 	UFUNCTION(BlueprintCallable, Category = "Save")
 	void HideLoadUI();
