@@ -53,6 +53,15 @@ void ULoadWidget::RefreshSaveList()
 
 		if (!SaveSlotItemClass)
 		{
+			// WBP에서 미할당 시 코드에서 직접 로드
+			SaveSlotItemClass = LoadClass<UUserWidget>(
+				nullptr,
+				TEXT("/Game/UI/save/WBP_SaveSlot.WBP_SaveSlot_C")
+			);
+		}
+
+		if (!SaveSlotItemClass)
+		{
 			UButton* SlotButton = NewObject<UButton>(this);
 			if (!SlotButton) continue;
 
@@ -190,5 +199,13 @@ void ULoadWidget::UpdateDetailPanel(const FSaveFileInfo& Info)
 		Brush.Tiling = ESlateBrushTileType::NoTile;
 		IMG_Screenshot->SetBrush(Brush);
 		IMG_Screenshot->SetColorAndOpacity(FLinearColor::White);
+	}
+}
+
+void ULoadWidget::SetCloseButtonVisible(bool bVisible)
+{
+	if (BTN_Close)
+	{
+		BTN_Close->SetVisibility(bVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
 }

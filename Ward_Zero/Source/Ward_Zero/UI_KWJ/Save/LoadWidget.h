@@ -75,6 +75,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Load")
 	void RefreshSaveList();
 
+	/** 나가기 버튼 표시/숨기기 (게임오버에서 열면 숨김) */
+	UFUNCTION(BlueprintCallable, Category = "Load")
+	void SetCloseButtonVisible(bool bVisible);
+
 protected:
 
 	virtual void NativeOnInitialized() override;
