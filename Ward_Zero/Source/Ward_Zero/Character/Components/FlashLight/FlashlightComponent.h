@@ -57,4 +57,7 @@ public:
 	// 캐싱용 변수 - 매번 Cast 하지 않게 최적화 
 	UPROPERTY()
 	TObjectPtr<class UPlayerCombatComponent> CachedCombatComp;
+
+	UPROPERTY()
+	TObjectPtr<class AWeapon> LastEquippedWeapon;
 };
