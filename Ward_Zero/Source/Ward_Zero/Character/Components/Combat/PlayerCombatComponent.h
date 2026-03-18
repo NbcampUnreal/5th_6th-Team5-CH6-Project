@@ -118,8 +118,13 @@ public:
 #pragma endregion 
 
 #pragma region 몽타주 
-	UPROPERTY(EditAnywhere, Category = "Combat|Animation") UAnimMontage* Pistol_FireMontage;
-	UPROPERTY(EditAnywhere, Category = "Combat|Animation") UAnimMontage* SMG_FireMontage;
+	// Pistol 사격 몽타주
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation|Pistol") TObjectPtr<UAnimMontage> Pistol_FireMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation|Pistol") TObjectPtr<UAnimMontage> Pistol_CrouchFireMontage;
+	// SMG 사격 몽타주
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation|SMG") TObjectPtr<UAnimMontage> SMG_FireMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Animation|SMG") TObjectPtr<UAnimMontage> SMG_CrouchFireMontage;
 	UPROPERTY(EditAnywhere, Category = "Combat|Animation") UAnimMontage* Pistol_EquipMontage;
 	UPROPERTY(EditAnywhere, Category = "Combat|Animation") UAnimMontage* Pistol_UnEquipMontage;
 	UPROPERTY(EditAnywhere, Category = "Combat|Animation") UAnimMontage* SMG_EquipMontage;
@@ -163,6 +168,8 @@ private:
 	UPROPERTY() UAnimInstance* CachedAnimInst;
 	TSubclassOf<UCameraShakeBase> CachedCamShake;
 
+	UAnimMontage* GetSelectedFireMontage() const;
+
 	// DataAsset에서 받아올 수치들 
 	float MaxSpread = 5.0f;
 	float MinSpread = 0.0f;
@@ -172,10 +179,14 @@ private:
 
 	float RecoilInterpSpeed = 25.0f;
 
-	private:
-		// 리펙토링  
-		void PlayFireEffects(UAnimMontage* FireMontage, UAnimInstance* AnimInst, TSubclassOf<UCameraShakeBase> CamShake);
-		void CalculateShotRecoil();
-		void ProcessHit(const FHitResult& Hit, const FVector& ShotDir);
-		void SpawnTracer(const FVector& Start, const FVector& End);
+private:
+	// 리펙토링  
+	void PlayFireEffects(UAnimMontage* FireMontage, UAnimInstance* AnimInst, TSubclassOf<UCameraShakeBase> CamShake);
+	void CalculateShotRecoil();
+	void ProcessHit(const FHitResult& Hit, const FVector& ShotDir);
+	void SpawnTracer(const FVector& Start, const FVector& End);
+
+private:
+	UPROPERTY()
+	class ACharacter* CachedOwnerCharacter;
 };

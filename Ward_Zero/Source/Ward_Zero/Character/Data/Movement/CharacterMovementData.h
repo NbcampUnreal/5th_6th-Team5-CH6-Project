@@ -20,6 +20,12 @@ public:
     float RunSpeed = 450.f;
 
     UPROPERTY(EditAnywhere, Category = "Speed")
+    float MaxAcceleration = 750.f;
+
+    UPROPERTY(EditAnywhere, Category = "Speed")
+    float BrakingDeceleration = 400.f;
+
+    UPROPERTY(EditAnywhere, Category = "Speed")
     float multiplySMGRunSpeed = 0.9;
 
     UPROPERTY(EditAnywhere, Category = "Movement")

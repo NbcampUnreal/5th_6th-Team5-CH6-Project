@@ -76,4 +76,15 @@ public:
 
 	// 회복약 습득 시 호출될 함수
 	bool AddHealingItem(int32 Amount);
+
+	UPROPERTY(EditDefaultsOnly, Category = "Heal")
+	TSubclassOf<AActor> HealItemClass;
+
+	void SpawnHealItemVisual(class USkeletalMeshComponent* Mesh);
+	void DestroyHealItemVisual();
+	void PopHealItemCap();
+
+private:
+	UPROPERTY()
+	AActor* CurrHealItem;
 };

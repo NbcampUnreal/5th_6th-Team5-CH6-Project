@@ -1,5 +1,7 @@
 ﻿#include "Character/Components/Status/PlayerStatusComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
+#include "Gimmic_CY/Items/HealItemActor.h"
+#include "Components/WidgetComponent.h"
 
 UPlayerStatusComponent::UPlayerStatusComponent()
 {
@@ -99,4 +101,48 @@ bool UPlayerStatusComponent::AddHealingItem(int32 Amount)
 
 	HealingItemCount = FMath::Clamp(HealingItemCount + Amount, 0, MaxHealingItemCount);
 	return true;
+}
+
+void UPlayerStatusComponent::SpawnHealItemVisual(USkeletalMeshComponent* Mesh)
+{
+	if (!HealItemClass || !Mesh) return;
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = GetOwner();
+
+	CurrHealItem = GetWorld()->SpawnActor<AActor>(HealItemClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+
+	if (CurrHealItem)
+	{
+		CurrHealItem->AttachToComponent(Mesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("HealItemSocket"));
+		CurrHealItem->SetActorRelativeScale3D(FVector(0.5f, 0.5f, 0.5f));
+
+		AHealItemActor* HealProp = Cast<AHealItemActor>(CurrHealItem);
+		if (HealProp)
+		{
+			if (HealProp->MarkerPillar) HealProp->MarkerPillar->SetHiddenInGame(true);
+			if (HealProp->InteractWidget) HealProp->InteractWidget->SetVisibility(false);
+		}
+	}
+}
+
+void UPlayerStatusComponent::DestroyHealItemVisual()
+{
+	if (CurrHealItem)
+	{
+		CurrHealItem->Destroy();
+		CurrHealItem = nullptr;
+	}
+}
+
+void UPlayerStatusComponent::PopHealItemCap()
+{
+	if (CurrHealItem)
+	{
+		AHealItemActor* HealProp = Cast<AHealItemActor>(CurrHealItem);
+		if (HealProp && HealProp->CapMesh)
+		{
+			HealProp->CapMesh->SetHiddenInGame(true);
+		}
+	}
 }

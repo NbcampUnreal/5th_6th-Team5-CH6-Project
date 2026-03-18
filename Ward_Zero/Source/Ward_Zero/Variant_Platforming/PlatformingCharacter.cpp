@@ -71,6 +71,11 @@ APlatformingCharacter::APlatformingCharacter()
 	CameraBoom->bEnableCameraRotationLag = true;	
 	CameraBoom->CameraRotationLagSpeed = 8.0f;
 
+	CameraBoom->bEnableCameraLag = true;           
+	CameraBoom->CameraLagSpeed = 12.0f;            
+	CameraBoom->bEnableCameraRotationLag = true;   
+	CameraBoom->CameraRotationLagSpeed = 15.0f;
+
 	// create the orbiting camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);

@@ -24,10 +24,9 @@
 #include "UI_KWJ/Save/SaveSubsystem.h"
 #include "UI_KWJ/WeaponUI/WeaponUISubsystem.h"
 #include "UI_KWJ/Health/HealthVignetteWidget.h"
+#include "UI_KWJ/PauseMenu/PauseMenuSubsystem.h"
 #include "Gimmic_CY/Base/InteractionBase.h"
 #include "Engine/OverlapResult.h"
-#include "Gimmic_CY/Items/HealItemActor.h"
-#include "Components/WidgetComponent.h"
 #include "MotionWarpingComponent.h"
 
 APrototypeCharacter::APrototypeCharacter()
@@ -101,6 +100,8 @@ void APrototypeCharacter::BeginPlay()
 	{
 		GetCharacterMovement()->MaxWalkSpeed = MovementData->WalkSpeed;
 		GetCharacterMovement()->MaxWalkSpeedCrouched = MovementData->CrouchMovementSpeed;
+		GetCharacterMovement()->MaxAcceleration = MovementData->MaxAcceleration;
+		GetCharacterMovement()->BrakingDecelerationWalking = MovementData->BrakingDeceleration;
 		OriginalArmLength = MovementData->DefaultArmLength;
 		// CameraConfig가 유효하다면 위 수치들을 덮어씌움
 	}
@@ -140,9 +141,10 @@ void APrototypeCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (!CameraBoom || !MainCamera || !GetCharacterMovement()) return;
-
-	CheckRunState();
+	if (bIsRunning)
+	{
+		CheckRunState();
+	}
 
 	// 퀵턴 처리 
 	if (QuickTurnComp && QuickTurnComp->IsQuickTurning()) return;
@@ -165,10 +167,6 @@ void APrototypeCharacter::Tick(float DeltaTime)
 		}
 	}
 #endif
-	if (CustomCameraComp)
-	{
-		CustomCameraComp->UpdateCamera(DeltaTime);
-	}
 }
 #pragma region Input Biding
 void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -193,6 +191,7 @@ void APrototypeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		EI->BindAction(EquipSlot1Action, ETriggerEvent::Started, this, &APrototypeCharacter::SelectWeapon1);
 		EI->BindAction(EquipSlot2Action, ETriggerEvent::Started, this, &APrototypeCharacter::SelectWeapon2);
 		EI->BindAction(HealAction, ETriggerEvent::Started, this, &APrototypeCharacter::StartHeal);
+		EI->BindAction(PauseAction, ETriggerEvent::Started, this, &APrototypeCharacter::TogglePauseMenu);
 	}
 }
 #pragma endregion
@@ -238,8 +237,11 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 {
 	if (CombatComp && CombatComp->IsAiming()) return;
 	if (StatusComp && !StatusComp->CanSprint()) return;
-
 	if (GetIsReloading()) return;
+
+	FVector LastInput = GetLastMovementInputVector();
+	FVector LocalInput = GetActorRotation().UnrotateVector(LastInput);
+	if (LocalInput.X < 0.1f) return;
 
 	if (bIsRunning)
 	{
@@ -251,7 +253,6 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 		GetCharacterMovement()->MaxWalkSpeed = MovementData->RunSpeed;
 		bUseControllerRotationYaw = false;
 		GetCharacterMovement()->bOrientRotationToMovement = true;
-
 		FlashLightComp->UpdateFlashlight(0.0f);
 	}
 }
@@ -268,7 +269,6 @@ void APrototypeCharacter::EndRunning(const FInputActionValue& Value)
 	bIsRunning = false;
 	GetCharacterMovement()->MaxWalkSpeed = MovementData->WalkSpeed;
 	GetCharacterMovement()->bOrientRotationToMovement = false; // Strafe 모드로 복구
-
 	FlashLightComp->UpdateFlashlight(0.0f); //달리기 종료 시 원래 소켓으로 복구
 }
 
@@ -394,7 +394,16 @@ void APrototypeCharacter::CheckRunState()
 {
 	if (bIsRunning)
 	{
-		if ((StatusComp && !StatusComp->CanSprint()) || GetVelocity().SizeSquared() <= 100.0f)
+		FVector AccelNormal = GetCharacterMovement()->GetCurrentAcceleration().GetSafeNormal2D();
+
+		if (AccelNormal.IsNearlyZero())
+		{
+			EndRunning(FInputActionValue());
+			return;
+		}
+
+		float ForwardDot = FVector::DotProduct(GetActorForwardVector(), AccelNormal);
+		if (ForwardDot < 0.2f)
 		{
 			EndRunning(FInputActionValue());
 		}
@@ -447,93 +456,29 @@ void APrototypeCharacter::ToggleFlashLight(const FInputActionValue& Value)
 }
 void APrototypeCharacter::SelectWeapon1(const FInputActionValue& Value)
 {
-	if (GetIsReloading() || !CombatComp) return;
-
-	// 조준 중이었다면 강제 해제
-	if (GetIsAiming()) StopAiming(Value);
-
-	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
-	if (!AnimInst) return;
-
-	GetCharacterMovement()->MaxWalkSpeed *= MovementData->multiplySMGRunSpeed;
-
-	// 이미 권총을 들고 있는 상태라면 무기 집어넣기 (토글)
-	if (CombatComp->GetCurrentWeaponIndex() == 1 && CombatComp->IsWeaponDrawn())
-	{
-		ToggleEquip(Value);
-		return;
-	}
-
-	// 무기 교체 
-	CombatComp->ChangeWeapon(1, AnimInst);
-
-	// 무기 교체 시 손전등 내리고 끄기 
-	if (FlashLightComp)
-	{
-		FlashLightComp->SetFlashlightOff();
-	}
-
-	// 레이어 연결 및 손전등 상태 갱신
-	if (PistolLayer) AnimInst->LinkAnimClassLayers(PistolLayer);
-	if (FlashLightComp) FlashLightComp->UpdateFlashlight(0.0f);
-
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-	{
-		if (ULocalPlayer* LP = PC->GetLocalPlayer())
-		{
-			if (UWeaponUISubsystem* WeaponUI = LP->GetSubsystem<UWeaponUISubsystem>())
-			{
-				WeaponUI->NotifyWeaponChanged(1, true);
-			}
-		}
-	}
+	SwitchWeaponByIndex(1);
 }
 
 
 void APrototypeCharacter::SelectWeapon2(const FInputActionValue& Value)
 {
-	if (GetIsReloading() || !CombatComp) return;
+	SwitchWeaponByIndex(2);
+}
 
-	// 조준 중이었다면 강제 해제
-	if (GetIsAiming()) StopAiming(Value);
-
-	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
-	if (!AnimInst) return;
-
-	GetCharacterMovement()->MaxWalkSpeed = MovementData->WalkSpeed * 0.9f;
-
-	// 이미 SMG를 들고 있는 상태라면 무기 집어넣기 
-	if (CombatComp->GetCurrentWeaponIndex() == 2 && CombatComp->IsWeaponDrawn())
-	{
-		ToggleEquip(Value);
-		return;
-	}
-
-	// 무기 교체 
-	CombatComp->ChangeWeapon(2, AnimInst);
-
-	
-
-	if (FlashLightComp)
-	{
-		FlashLightComp->SetFlashlightOff();
-	}
-
-	// 레이어 연결 및 손전등 상태 갱신
-	if (SMGLayer) AnimInst->LinkAnimClassLayers(SMGLayer);
-	if (FlashLightComp) FlashLightComp->UpdateFlashlight(0.0f);
-
+void APrototypeCharacter::TogglePauseMenu(const FInputActionValue& Value)
+{
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		if (ULocalPlayer* LP = PC->GetLocalPlayer())
 		{
-			if (UWeaponUISubsystem* WeaponUI = LP->GetSubsystem<UWeaponUISubsystem>())
+			if (UPauseMenuSubsystem* PauseSubsystem = LP->GetSubsystem<UPauseMenuSubsystem>())
 			{
-				WeaponUI->NotifyWeaponChanged(2, true);
+				PauseSubsystem->TogglePauseMenu();
 			}
 		}
 	}
 }
+
 void APrototypeCharacter::Interact(const FInputActionValue& Value)
 {
 	//if (InteractionComp)
@@ -558,194 +503,40 @@ void APrototypeCharacter::Interact(const FInputActionValue& Value)
 
 	if (bIsRunning) return;
 
-	FVector NewLocation = GetActorLocation();
-	NewLocation.Z += 50.0f;
+	// 가장 가까운 상호작용 물체 탐색
+	AActor* ClosestInteractableActor = FindClosestInteractable();
 
-	/*FVector Start = NewLocation;
-	FVector End = Start + this->GetActorForwardVector() * 80.f;*/
-	FVector Start = MainCamera->GetComponentLocation(); // 카메라 위치에서 시작
-	FVector End = Start + (MainCamera->GetForwardVector() * 250.0f);
-
-	TArray<FOverlapResult> OverlapResults;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);
-
-	float SphereRadius = 45.0f;
-	FCollisionShape SphereShape = FCollisionShape::MakeSphere(SphereRadius);
-
-	bool bOverlap = GetWorld()->OverlapMultiByChannel(
-		OverlapResults,
-		End,               // 구체의 중심 위치
-		FQuat::Identity,
-		ECC_Visibility,
-		SphereShape,
-		Params
-	);
-
-	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 5.0f, 0, 1.0f);
-	DrawDebugSphere(GetWorld(), End, SphereRadius, 16, bOverlap ? FColor::Green : FColor::Red, false, 5.0f);
-
-	if (!bOverlap || OverlapResults.Num() == 0)
+	if (!ClosestInteractableActor)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("구체 내에 겹친 오브젝트가 없음"));
+		UE_LOG(LogTemp, Warning, TEXT("구체 내에 상호작용 가능한 물체는 없음."));
 		return;
 	}
 
-	AActor* ClosestInteractableActor = nullptr;
-	float MinDistanceSquared = MAX_FLT;
-	FVector PlayerLoc = GetActorLocation();
+	UE_LOG(LogTemp, Warning, TEXT("최종 선택된 상호작용 타겟: %s"), *ClosestInteractableActor->GetActorNameOrLabel());
 
-	for (const FOverlapResult& Overlap : OverlapResults)
+	// 종류별 상호작용 실행
+	if (ClosestInteractableActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
 	{
-		AActor* OverlapActor = Overlap.GetActor();
-		if (!OverlapActor) continue;
+		EInteractionType Type = IInteractionBase::Execute_GetInteractionType(ClosestInteractableActor);
 
-		UE_LOG(LogTemp, Warning, TEXT("현재 확인된 타겟: %s"), *OverlapActor->GetActorNameOrLabel());
-
-		bool bIsValidInteractable = false;
-
-		if (OverlapActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+		if (Type == EInteractionType::Door)
 		{
-			if (IInteractionBase::Execute_CanBeInteracted(OverlapActor))
-			{
-				bIsValidInteractable = true;
-			}
+			HandleDoorInteraction(ClosestInteractableActor);
 		}
-		else if (OverlapActor->ActorHasTag(TEXT("SavePoint")))
+		else if (Type == EInteractionType::Ammo || Type == EInteractionType::Heal || Type == EInteractionType::Key)
 		{
-			bIsValidInteractable = true;
-		}
-
-		if (bIsValidInteractable)
-		{
-			float DistSquared = FVector::DistSquared(PlayerLoc, OverlapActor->GetActorLocation());
-			if (DistSquared < MinDistanceSquared)
-			{
-				MinDistanceSquared = DistSquared;
-				ClosestInteractableActor = OverlapActor;
-			}
+			HandleItemInteraction(ClosestInteractableActor);
 		}
 	}
-
-	if (ClosestInteractableActor)
+	else if (ClosestInteractableActor->ActorHasTag(TEXT("SavePoint")))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("최종 선택된 상호작용 타겟: %s"), *ClosestInteractableActor->GetActorNameOrLabel());
-
-		if (ClosestInteractableActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+		if (APlayerController* PC = Cast<APlayerController>(GetController()))
 		{
-			EInteractionType Type = IInteractionBase::Execute_GetInteractionType(ClosestInteractableActor);
-
-			if (Type == EInteractionType::Door)
+			if (USaveSubsystem* SaveSub = PC->GetLocalPlayer()->GetSubsystem<USaveSubsystem>())
 			{
-				// 방금 조작했던 문인지 확인
-				bool bIsSameDoor = (ClosestInteractableActor == LastInteractedDoorActor);
-
-				float CurrentTime = GetWorld()->GetTimeSeconds();
-
-				// 쿨다운 체크 (문이 움직이는 도중 연속 클릭 방지, 약 2.5초~3초)
-				if (bIsSameDoor && (CurrentTime - LastDoorInteractTime) < 2.5f)
-				{
-					return;
-				}
-
-				// 최근 상호작용한 문 데이터 갱신
-				LastInteractedDoorActor = ClosestInteractableActor;
-				LastDoorInteractTime = CurrentTime;
-
-				if (bIsInteractingDoor) return;
-				bIsInteractingDoor = true;
-
-				PendingDoorActor = ClosestInteractableActor;
-				CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(PendingDoorActor);
-
-				// 충돌 무시
-				GetCapsuleComponent()->IgnoreActorWhenMoving(PendingDoorActor, true);
-
-				if (MotionWarpingComp)
-				{
-					if (bIsSameDoor)
-					{
-						// 워핑 타겟을 내 현재 위치와 회전값으로 설정
-						MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(
-							TEXT("DoorWarp"), GetActorLocation(), GetActorRotation());
-					}
-					else // 처음 여는 문 
-					{
-						// 워핑 거리 계산
-						FVector DirectionToPlayer = (GetActorLocation() - CurrentPickupLocation).GetSafeNormal2D();
-						FVector TargetWarpLocation = CurrentPickupLocation + (DirectionToPlayer * 65.0f);
-						FRotator TargetWarpRotation = PendingDoorActor->GetActorForwardVector().Rotation();
-
-						MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(
-							TEXT("DoorWarp"), TargetWarpLocation, TargetWarpRotation);
-					}
-				}
-
-				if (AnimData && AnimData->OpenDoorMontage)
-				{
-					float AnimDuration = PlayAnimMontage(AnimData->OpenDoorMontage);
-					AActor* SafeDoorActor = PendingDoorActor;
-
-					FTimerHandle DoorTimer;
-					GetWorldTimerManager().SetTimer(DoorTimer, [this, SafeDoorActor]()
-						{
-							bIsInteractingDoor = false;
-							if (APlayerController* PC = Cast<APlayerController>(GetController()))
-							{
-								EnableInput(PC);
-							}
-
-							// 애니메이션 종료 1.5초 후 콜리전 원상 복구
-							if (SafeDoorActor)
-							{
-								FTimerHandle CollisionRestoreTimer;
-								GetWorldTimerManager().SetTimer(CollisionRestoreTimer, FTimerDelegate::CreateLambda([this, SafeDoorActor]()
-									{
-										if (IsValid(this) && IsValid(SafeDoorActor))
-										{
-											GetCapsuleComponent()->IgnoreActorWhenMoving(SafeDoorActor, false);
-										}
-									}), 1.5f, false);
-							}
-						}, AnimDuration, false);
-				}
-
-				IInteractionBase::Execute_OnIneracted(ClosestInteractableActor, this);
-			}
-			else if (Type == EInteractionType::Ammo || Type == EInteractionType::Heal || Type == EInteractionType::Key)
-			{
-				if (CurrentInteractingItem)
-				{
-					ConsumeInteractingItem();
-				}
-
-				CurrentInteractingItem = ClosestInteractableActor;
-				CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(CurrentInteractingItem);
-
-				FVector LocalItemPos = GetActorTransform().InverseTransformPosition(CurrentPickupLocation);
-				UAnimMontage* MontageToPlay = (LocalItemPos.Z < -50.0f) ? AnimData->PickupLowMontage : AnimData->PickupHighMontage;
-
-				if (MontageToPlay)
-				{
-					PlayAnimMontage(MontageToPlay);
-				}
+				SaveSub->ShowSaveUI();
 			}
 		}
-		else if (ClosestInteractableActor->ActorHasTag(TEXT("SavePoint")))
-		{
-			APlayerController* PC = Cast<APlayerController>(GetController());
-			if (PC && PC->GetLocalPlayer())
-			{
-				if (USaveSubsystem* SaveSub = PC->GetLocalPlayer()->GetSubsystem<USaveSubsystem>())
-				{
-					SaveSub->ShowSaveUI();
-				}
-			}
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("구체 내에 일반 물체만 있고, 상호작용 가능한 물체는 없음."));
 	}
 }
 void APrototypeCharacter::PerformQuickTurn180()
@@ -795,7 +586,7 @@ float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 	// 데미지 적용 (HP 감소 및 사망 판정)
 	float ActualDamage = StatusComp->ApplyDamage(DamageAmount);
 
-	// 피격 당할시 화면 흔들림
+	// 피격 화면 흔들림
 	if (HitCameraShakeClass)
 	{
 		if (APlayerController* PC = Cast<APlayerController>(GetController()))
@@ -804,43 +595,12 @@ float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 		}
 	}
 
-	// AI 위치 파악
-	FVector AttackerLocation;
-	bool bAttackerFound = false;
+	// 방향 벡터 계산 (분리된 헬퍼 함수 호출)
+	FVector ToAttackerDir = GetAttackerDirection(EventInstigator, DamageCauser);
 
-	if (EventInstigator && EventInstigator->GetPawn())
-	{
-		AttackerLocation = EventInstigator->GetPawn()->GetActorLocation();
-		bAttackerFound = true;
-	}
-	else if (DamageCauser)
-	{
-		AttackerLocation = DamageCauser->GetActorLocation();
-		bAttackerFound = true;
-	}
-
-	// 방향 벡터 계산 
-	FVector ToAttackerDir;
-	if (bAttackerFound)
-	{
-		ToAttackerDir = (AttackerLocation - GetActorLocation());
-	}
-	else
-	{
-		ToAttackerDir = GetActorForwardVector();
-	}
-
-	ToAttackerDir.Z = 0.0f;
-	ToAttackerDir.Normalize();
-
-	if (!StatusComp->IsDead())
-	{
-		PlayHitReaction(ToAttackerDir);
-	}
-	else
-	{
-		PlayDeathReaction(ToAttackerDir);
-	}
+	// 애니메이션 리액션 재생
+	if (!StatusComp->IsDead()) PlayHitReaction(ToAttackerDir);
+	else PlayDeathReaction(ToAttackerDir);
 
 	return ActualDamage;
 }
@@ -913,32 +673,19 @@ void APrototypeCharacter::PlayDeathReaction(const FVector& ToAttackerDir)
 
 void APrototypeCharacter::UpdateBodyRotation(float DeltaTime)
 {
-	if (IsEquipping()) return;
-
 	// 캐릭터 몸체 회전 (비조준 / 조준)
-	if (CombatComp && CombatComp->IsAiming())
+	bool bIsAiming = CombatComp && CombatComp->IsAiming();
+
+	// 조준 중이거나 달리는 중이면 물리 컴포넌트(CharacterMovement)가 자동 처리하므로 연산 패스
+	if (bIsAiming || bIsRunning) return;
+
+	// 조준/달리기가 아닌 일반 이동(속도 100 이상)일 때만 부드러운 회전(보간) 연산 수행
+	if (GetVelocity().SizeSquared() > 100.0f)
 	{
-		bUseControllerRotationYaw = true;
-		GetCharacterMovement()->bOrientRotationToMovement = false;
-	}
-	else
-	{
-		bUseControllerRotationYaw = false;
-		if (bIsRunning)
-		{
-			GetCharacterMovement()->bOrientRotationToMovement = true;
-		}
-		else
-		{
-			GetCharacterMovement()->bOrientRotationToMovement = false;
-			if (GetVelocity().SizeSquared() > 100.0f)
-			{
-				FRotator TargetRot = FRotator(0.f, GetControlRotation().Yaw, 0.f);
-				FRotator CurrentRot = GetActorRotation();
-				FRotator NewRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaTime, 5.0f);
-				SetActorRotation(NewRot);
-			}
-		}
+		FRotator TargetRot = FRotator(0.f, GetControlRotation().Yaw, 0.f);
+		FRotator CurrentRot = GetActorRotation();
+		FRotator NewRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaTime, 5.0f);
+		SetActorRotation(NewRot);
 	}
 }
 
@@ -1045,47 +792,9 @@ void APrototypeCharacter::OnHealPoint()
 		StatusComp->Heal(StatusData->HealAmount);
 	}
 }
-void APrototypeCharacter::SpawnHealItemVisual()
-{
-	if (!HealItemClass) return;
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-
-	CurrHealItem = GetWorld()->SpawnActor<AActor>(HealItemClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-
-	if (CurrHealItem)
-	{
-		CurrHealItem->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("HealItemSocket"));
-		CurrHealItem->SetActorRelativeScale3D(FVector(0.5f, 0.5f, 0.5f));
-
-		AHealItemActor* HealProp = Cast<AHealItemActor>(CurrHealItem);
-		if (HealProp)
-		{
-			if (HealProp->MarkerPillar) HealProp->MarkerPillar->SetHiddenInGame(true);
-			if (HealProp->InteractWidget) HealProp->InteractWidget->SetVisibility(false);
-		}
-	}
-}
-void APrototypeCharacter::DestroyHealItemVisual()
-{
-	if (CurrHealItem)
-	{
-		CurrHealItem->Destroy();
-		CurrHealItem = nullptr;
-	}
-}
-void APrototypeCharacter::PopHealItemCap()
-{
-	if (CurrHealItem)
-	{
-		AHealItemActor* HealProp = Cast<AHealItemActor>(CurrHealItem);
-		if (HealProp && HealProp->CapMesh)
-		{
-			HealProp->CapMesh->SetHiddenInGame(true);
-		}
-	}
-}
+void APrototypeCharacter::SpawnHealItemVisual() { if (StatusComp) StatusComp->SpawnHealItemVisual(GetMesh()); }
+void APrototypeCharacter::DestroyHealItemVisual() { if (StatusComp) StatusComp->DestroyHealItemVisual(); }
+void APrototypeCharacter::PopHealItemCap() { if (StatusComp) StatusComp->PopHealItemCap(); }
 
 void APrototypeCharacter::PlayPickupAnimation(AActor* TargetItem)
 {
@@ -1117,8 +826,212 @@ void APrototypeCharacter::ConsumeInteractingItem()
 	}
 }
 
+AActor* APrototypeCharacter::FindClosestInteractable()
+{
+	FVector Start = MainCamera->GetComponentLocation();
+	FVector End = Start + (MainCamera->GetForwardVector() * 250.0f);
+
+	TArray<FOverlapResult> OverlapResults;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	float SphereRadius = 45.0f;
+	FCollisionShape SphereShape = FCollisionShape::MakeSphere(SphereRadius);
+
+	bool bOverlap = GetWorld()->OverlapMultiByChannel(OverlapResults, End, FQuat::Identity, ECC_Visibility, SphereShape, Params);
+
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 5.0f, 0, 1.0f);
+	DrawDebugSphere(GetWorld(), End, SphereRadius, 16, bOverlap ? FColor::Green : FColor::Red, false, 5.0f);
+
+	if (!bOverlap || OverlapResults.Num() == 0) return nullptr;
+
+	AActor* ClosestActor = nullptr;
+	float MinDistanceSquared = MAX_FLT;
+	FVector PlayerLoc = GetActorLocation();
+
+	for (const FOverlapResult& Overlap : OverlapResults)
+	{
+		AActor* OverlapActor = Overlap.GetActor();
+		if (!OverlapActor) continue;
+
+		bool bIsValidInteractable = false;
+
+		if (OverlapActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+		{
+			if (IInteractionBase::Execute_CanBeInteracted(OverlapActor)) bIsValidInteractable = true;
+		}
+		else if (OverlapActor->ActorHasTag(TEXT("SavePoint")))
+		{
+			bIsValidInteractable = true;
+		}
+
+		if (bIsValidInteractable)
+		{
+			float DistSquared = FVector::DistSquared(PlayerLoc, OverlapActor->GetActorLocation());
+			if (DistSquared < MinDistanceSquared)
+			{
+				MinDistanceSquared = DistSquared;
+				ClosestActor = OverlapActor;
+			}
+		}
+	}
+	return ClosestActor;
+}
+
+void APrototypeCharacter::HandleDoorInteraction(AActor* DoorActor)
+{
+	bool bIsSameDoor = (DoorActor == LastInteractedDoorActor);
+	float CurrentTime = GetWorld()->GetTimeSeconds();
+
+	if (bIsSameDoor && (CurrentTime - LastDoorInteractTime) < 2.5f) return;
+
+	LastInteractedDoorActor = DoorActor;
+	LastDoorInteractTime = CurrentTime;
+
+	if (bIsInteractingDoor) return;
+	bIsInteractingDoor = true;
+
+	PendingDoorActor = DoorActor;
+	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(PendingDoorActor);
+
+	GetCapsuleComponent()->IgnoreActorWhenMoving(PendingDoorActor, true);
+
+	if (MotionWarpingComp)
+	{
+		if (bIsSameDoor)
+		{
+			MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("DoorWarp"), GetActorLocation(), GetActorRotation());
+		}
+		else
+		{
+			FVector DirectionToPlayer = (GetActorLocation() - CurrentPickupLocation).GetSafeNormal2D();
+			FVector TargetWarpLocation = CurrentPickupLocation + (DirectionToPlayer * 65.0f);
+			FRotator TargetWarpRotation = PendingDoorActor->GetActorForwardVector().Rotation();
+
+			MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("DoorWarp"), TargetWarpLocation, TargetWarpRotation);
+		}
+	}
+
+	if (AnimData && AnimData->OpenDoorMontage)
+	{
+		float AnimDuration = PlayAnimMontage(AnimData->OpenDoorMontage);
+		AActor* SafeDoorActor = PendingDoorActor;
+
+		FTimerHandle DoorTimer;
+		GetWorldTimerManager().SetTimer(DoorTimer, [this, SafeDoorActor]()
+			{
+				bIsInteractingDoor = false;
+				if (APlayerController* PC = Cast<APlayerController>(GetController())) EnableInput(PC);
+
+				if (SafeDoorActor)
+				{
+					FTimerHandle CollisionRestoreTimer;
+					GetWorldTimerManager().SetTimer(CollisionRestoreTimer, FTimerDelegate::CreateLambda([this, SafeDoorActor]()
+						{
+							if (IsValid(this) && IsValid(SafeDoorActor)) GetCapsuleComponent()->IgnoreActorWhenMoving(SafeDoorActor, false);
+						}), 1.5f, false);
+				}
+			}, AnimDuration, false);
+	}
+
+	IInteractionBase::Execute_OnIneracted(DoorActor, this);
+}
+
+void APrototypeCharacter::HandleItemInteraction(AActor* ItemActor)
+{
+	if (CurrentInteractingItem) ConsumeInteractingItem();
+
+	CurrentInteractingItem = ItemActor;
+	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(CurrentInteractingItem);
+
+	FVector LocalItemPos = GetActorTransform().InverseTransformPosition(CurrentPickupLocation);
+	UAnimMontage* MontageToPlay = (LocalItemPos.Z < -50.0f) ? AnimData->PickupLowMontage : AnimData->PickupHighMontage;
+
+	if (MontageToPlay) PlayAnimMontage(MontageToPlay);
+}
+
+void APrototypeCharacter::SwitchWeaponByIndex(int32 WeaponIndex)
+{
+	if (GetIsReloading() || !CombatComp) return;
+
+	// 조준 중이었다면 강제 해제
+	if (GetIsAiming()) StopAiming(FInputActionValue());
+
+	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
+	if (!AnimInst) return;
+
+	// 이미 해당 무기를 들고 있는 상태라면 무기 집어넣기 (토글)
+	if (CombatComp->GetCurrentWeaponIndex() == WeaponIndex && CombatComp->IsWeaponDrawn())
+	{
+		ToggleEquip(FInputActionValue());
+		return;
+	}
+
+	// 무기 교체 
+	CombatComp->ChangeWeapon(WeaponIndex, AnimInst);
+
+	// 무기 교체 시 손전등 내리고 끄기 
+	if (FlashLightComp) FlashLightComp->SetFlashlightOff();
+
+	// 레이어 연결 및 손전등 상태 갱신
+	TSubclassOf<UAnimInstance> TargetLayer = (WeaponIndex == 1) ? PistolLayer : SMGLayer;
+	if (TargetLayer) AnimInst->LinkAnimClassLayers(TargetLayer);
+
+	if (FlashLightComp) FlashLightComp->UpdateFlashlight(0.0f);
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			if (UWeaponUISubsystem* WeaponUI = LP->GetSubsystem<UWeaponUISubsystem>())
+			{
+				WeaponUI->NotifyWeaponChanged(WeaponIndex, true);
+			}
+		}
+	}
+}
+
+FVector APrototypeCharacter::GetAttackerDirection(AController* EventInstigator, AActor* DamageCauser)
+{
+	FVector AttackerLocation;
+
+	if (EventInstigator && EventInstigator->GetPawn())
+	{
+		AttackerLocation = EventInstigator->GetPawn()->GetActorLocation();
+	}
+	else if (DamageCauser)
+	{
+		AttackerLocation = DamageCauser->GetActorLocation();
+	}
+	else
+	{
+		return GetActorForwardVector();
+	}
+
+	FVector Dir = (AttackerLocation - GetActorLocation());
+	Dir.Z = 0.0f;
+	return Dir.GetSafeNormal();
+}
+
 #pragma region 인터페이스 구현 
-// 인터페이스 함수 구현
+void APrototypeCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
+
+	if (CombatComp && CombatComp->IsWeaponDrawn())
+	{
+		CombatComp->HandleWeaponAttachment(true);
+	}
+}
+void APrototypeCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
+
+	if (CombatComp && CombatComp->IsWeaponDrawn())
+	{
+		CombatComp->HandleWeaponAttachment(true);
+	}
+}
 bool APrototypeCharacter::GetIsPistolEquipped() const { return CombatComp && CombatComp->IsPistolEquipped(); }
 bool APrototypeCharacter::GetIsGround() const { return GetCharacterMovement()->IsMovingOnGround(); }
 bool APrototypeCharacter::GetIsQuickTurning() const { return QuickTurnComp && QuickTurnComp->IsQuickTurning(); }
@@ -1154,6 +1067,7 @@ bool APrototypeCharacter::IsEquipping() const
 		return AI->Montage_IsPlaying(nullptr);
 	return false;
 }
+
 USkeletalMeshComponent* APrototypeCharacter::GetEquippedWeaponMesh()
 {
 	if (CombatComp)

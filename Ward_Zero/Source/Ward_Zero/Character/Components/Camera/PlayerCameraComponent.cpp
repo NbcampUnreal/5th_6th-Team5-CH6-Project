@@ -6,7 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Character/Data/Camera/CameraData.h"
 
-UPlayerCameraComponent::UPlayerCameraComponent() { PrimaryComponentTick.bCanEverTick = false; }
+UPlayerCameraComponent::UPlayerCameraComponent() { PrimaryComponentTick.bCanEverTick = true; }
 
 void UPlayerCameraComponent::Initialize(USpringArmComponent* InBoom, UCameraComponent* InCamera, UCameraData* InData)
 {
@@ -26,6 +26,13 @@ void UPlayerCameraComponent::Initialize(USpringArmComponent* InBoom, UCameraComp
         OriginalSocketOffset = CameraBoom->SocketOffset;
         OriginalTargetOffset = CameraBoom->TargetOffset;
     }
+}
+
+void UPlayerCameraComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+    UpdateCamera(DeltaTime);
 }
 
 void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
@@ -67,11 +74,6 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
         if (OwnerCharacter->bIsCrouched)
         {
             TargetSocketOffset = (Combat->GetCurrentWeaponIndex() == 2) ? CameraData->CrouchedSMGAimSocketOffset : CameraData->CrouchedPistolAimSocketOffset;
-
-            if (Combat->GetCurrentWeaponIndex() == 1 && Speed > 10.0f)
-            {
-                TargetSocketOffset.Z += CameraData->CrouchedWalkAimZOffset;
-            }
         }
         else
         {

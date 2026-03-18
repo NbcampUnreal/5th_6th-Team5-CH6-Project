@@ -70,20 +70,15 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 
 	AWeapon* CurrentWeapon = Player->GetEquippedWeapon();
 
-	TArray<AActor*> AttachedActors;
-	Player->GetAttachedActors(AttachedActors);
-	for (AActor* Actor : AttachedActors)
+	if (CurrentWeapon)
 	{
-		if (AWeapon* WeaponActor = Cast<AWeapon>(Actor))
+		if (CurrentWeapon->SMGSpotLight)
 		{
-			if (WeaponActor->SMGSpotLight)
-			{
-				WeaponActor->SMGSpotLight->SetVisibility(false);
-			}
-			if (UMeshComponent* WMesh = WeaponActor->FindComponentByClass<UMeshComponent>())
-			{
-				WMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), 0.0f);
-			}
+			CurrentWeapon->SMGSpotLight->SetVisibility(false);
+		}
+		if (CurrentWeapon->WeaponMesh)
+		{
+			CurrentWeapon->WeaponMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), 0.0f);
 		}
 	}
 
@@ -122,10 +117,9 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 			FlashLightMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), bIsUnarmed ? TargetEmissive : 0.0f);
 		}
 
-		if (AnimIF->GetIsSMGEquipped() && CurrentWeapon)
+		if (AnimIF->GetIsSMGEquipped() && CurrentWeapon && CurrentWeapon->WeaponMesh)
 		{
-			if (UMeshComponent* WeaponMesh = CurrentWeapon->FindComponentByClass<UMeshComponent>())
-				WeaponMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), TargetEmissive);
+			CurrentWeapon->WeaponMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), TargetEmissive);
 		}
 
 		FlashLightSpot->SetUsingAbsoluteRotation(true);
@@ -156,8 +150,14 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 			CurrentWeapon->SMGSpotLight->SetIntensity(BaseIntensity);
 			CurrentWeapon->SMGSpotLight->SetOuterConeAngle(BaseOuterAngle);
 
-			if (UMeshComponent* WeaponMesh = CurrentWeapon->FindComponentByClass<UMeshComponent>())
-				WeaponMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), TargetEmissive);
+			CurrentWeapon->SMGSpotLight->SetAttenuationRadius(TargetData->AttenuationRadius);
+			CurrentWeapon->SMGSpotLight->SetInnerConeAngle(BaseOuterAngle * TargetData->InnerConeRatio);
+			CurrentWeapon->SMGSpotLight->SetCastShadows(TargetData->bCastShadows);
+
+			if (CurrentWeapon->WeaponMesh)
+			{
+				CurrentWeapon->WeaponMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), TargetEmissive);
+			}
 
 			ActiveSpot = CurrentWeapon->SMGSpotLight;
 		}
@@ -172,7 +172,6 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 
 			FName SocketName;
 
-			// [수정된 로직 적용]
 			if (bIsPistol && !bIsAiming)
 			{
 				// 권총 비조준 시: 어깨에 붙이고 메쉬는 숨김 (BodyLight 모드)

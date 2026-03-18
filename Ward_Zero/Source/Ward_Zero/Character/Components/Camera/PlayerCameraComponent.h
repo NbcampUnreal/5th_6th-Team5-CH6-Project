@@ -19,7 +19,7 @@ public:
 
 	// 초기화: 캐릭터에서 카메라 컴포넌트들을 넘겨받음
 	void Initialize(USpringArmComponent* InBoom, UCameraComponent* InCamera, UCameraData* InData);
-
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	// 매 틱 호출될 업데이트 로직
 	void UpdateCamera(float DeltaTime);
 
