@@ -209,10 +209,10 @@ void APrototypeCharacter::Move(const FInputActionValue& Value)
 	float SpeedModifier = 1.0f;
 
 	// 장전 중이면서 달리는 중이 아니면 속도 50% 감소
-	if (GetIsReloading())
-	{
-		SpeedModifier = 0.6f;
-	}
+	//if (GetIsReloading())
+	//{
+	//	SpeedModifier = 0.6f;
+	//}
 
 	const FRotator Rotation = Controller->GetControlRotation();
 	const FRotator YawRotation(0, Rotation.Yaw, 0);
@@ -439,6 +439,10 @@ void APrototypeCharacter::Reload(const FInputActionValue& Value)
 {
 	if (CombatComp)
 	{
+		//if (bIsRunning)
+		//{
+		//	EndRunning(Value);
+		//}
 		CombatComp->Reload();
 	}
 }
