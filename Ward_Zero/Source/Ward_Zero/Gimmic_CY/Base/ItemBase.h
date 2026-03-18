@@ -34,16 +34,16 @@ public:
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
 	virtual void PostActorCreated() override;
+	
 
 	// ===== SaveInterface =====
-	//virtual FGuid GetActorID() const override;
 	//virtual void SaveActorState(class UWardSaveGame* SaveData) override;
 	//virtual void LoadActorState(class UWardSaveGame* SaveData) override;
 
 	FVector GetInteractionTargetLocation_Implementation() const;
 
 	void HiddenActor();
-
+	void PostActorCreated();
 protected:
 	UPROPERTY(EditInstanceOnly)
 	FGuid ActorID;

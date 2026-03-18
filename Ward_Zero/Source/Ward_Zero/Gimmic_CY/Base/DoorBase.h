@@ -51,6 +51,16 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void ChangeColorLampGreen();
 
+	UFUNCTION()
+	virtual void UpdateTimelineComp(float Output);
+
+	bool bIsOpen = false;
+
+	UPROPERTY(VisibleAnywhere)
+	USceneComponent* PickUpPoint;
+
+	FVector GetInteractionTargetLocation_Implementation() const;
+
 public:
 	// ===== IGimmickInterface =====
 	virtual EInteractionType GetInteractionType_Implementation() const override;

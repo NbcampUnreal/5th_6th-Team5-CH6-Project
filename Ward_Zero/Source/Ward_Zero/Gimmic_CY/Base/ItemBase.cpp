@@ -94,18 +94,18 @@ void AItemBase::PostActorCreated()
 		UE_LOG(LogTemp, Warning, TEXT("New Item ID Generated: %s"), *ActorID.ToString());
 	}
 }
-//
-//void AItemBase::OnConstruction(const FTransform& Transform)
-//{
-//	Super::OnConstruction(Transform);
-//
-//	if (!ActorID.IsValid())
-//	{
-//		ActorID = FGuid::NewGuid();
-//	}
-//
-//	UE_LOG(LogTemp, Warning, TEXT("Item ID: %s"), *ActorID.ToString());
-//}
+
+void AItemBase::PostActorCreated()
+{
+	Super::PostActorCreated();
+
+	// 액터가 에디터에 배치되거나 스폰될 때 최초 1회만 GUID 생성
+	if (!ActorID.IsValid())
+	{
+		ActorID = FGuid::NewGuid();
+		UE_LOG(LogTemp, Warning, TEXT("New Item ID Generated: %s"), *ActorID.ToString());
+	}
+}
 
 //FGuid AItemBase::GetActorID() const
 //{
