@@ -67,28 +67,16 @@ void AObjectBase::PostActorCreated()
 {
 	Super::PostActorCreated();
 
-	// 액터가 에디터에 배치되거나 스폰될 때 최초 1회만 GUID 생
-	//if (!ActorID.IsValid())
-	//{
-	//	ActorID = FGuid::NewGuid();
-	//	UE_LOG(LogTemp, Warning, TEXT("New Item ID Generated: %s"), *ActorID.ToString());
-	//}
+	//액터가 에디터에 배치되거나 스폰될 때 최초 1회만 GUID 생
+	if (!ActorID.IsValid())
+	{
+		ActorID = FGuid::NewGuid();
+		UE_LOG(LogTemp, Warning, TEXT("New Item ID Generated: %s"), *ActorID.ToString());
+	}
 }
 
 FVector AObjectBase::GetInteractionTargetLocation_Implementation() const
 {
 	return GetActorLocation();
-}
-
-void AObjectBase::OnConstruction(const FTransform& Transform)
-{
-	Super::OnConstruction(Transform);
-
-	if (!ActorID.IsValid())
-	{
-		ActorID = FGuid::NewGuid();
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("Item ID: %s"), *ActorID.ToString());
 }
 
