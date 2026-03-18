@@ -25,21 +25,19 @@ public:
 
 protected:
 
-	float TargetYaw = 90.f;
+	float TargetYaw = -90.f;
 
 	FRotator InitialRotation;
 
-	//UFUNCTION()
-	//void UpdateTimelineComp(float Output);
+	
 
 	virtual void UpdateTimelineComp(float Output) override;
 
-	//UPROPERTY(VisibleAnywhere)
-	//USceneComponent* PickUpPoint;
-
-	//FVector GetInteractionTargetLocation_Implementation() const;
 
 public:
-	void OpenDoor();
-	void CloseDoor();
+	virtual void OpenDoor() override;
+	virtual void CloseDoor() override;
+	
+	UPROPERTY(VisibleAnywhere)
+	UNavModifierComponent* OpenDoorNavModifier;
 };

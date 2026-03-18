@@ -5,6 +5,20 @@ ASlidingDoor::ASlidingDoor()
 
 }
 
+void ASlidingDoor::OpenDoor()
+{
+	Super::OpenDoor();
+	DoorTimelineComp->Play();
+	bIsOpen = true;
+	bCanInteract = false;
+}
+
+void ASlidingDoor::CloseDoor()
+{
+	Super::CloseDoor();
+	DoorTimelineComp->Reverse();
+}
+
 void ASlidingDoor::BeginPlay()
 {
 	Super::BeginPlay();
@@ -15,23 +29,30 @@ void ASlidingDoor::BeginPlay()
 	{
 		DoorTimelineComp->AddInterpFloat(DoorTimelineFloatCurve, UpdateFunctionFloat);
 	}
+	//todo: bIsActivated = SaveManager->CheckActivated(ActorID)
+	//todo: bIsInteractable = SaveManager->CheckActivated(ActorId)
+	bool bIsActivated = false;
+	bool bIsInteractable = true;
+	if (bIsActivated)
+	{
+		OpenDoor();
+	}else if (bIsInteractable)
+	{
+		bCanInteract = true;
+	}
 }
 
 void ASlidingDoor::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
+	if (!bCanInteract)
+		return;
 	if (!DoorTimelineFloatCurve)
 		return;
 
 	if (!bIsOpen)
 	{
-		DoorTimelineComp->Play();
+		OpenDoor();
 	}
-	else
-	{
-		DoorTimelineComp->Reverse();
-	}
-
-	bIsOpen = !bIsOpen;
 }
 
 void ASlidingDoor::UpdateTimelineComp(float Output)

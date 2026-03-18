@@ -5,6 +5,7 @@
 #include "Gimmic_CY/Base/InteractionBase.h"
 #include "ItemBase.generated.h"
 
+class UWidgetComponent;
 class UStaticMeshComponent;
 class UBoxComponent;
 
@@ -35,12 +36,13 @@ public:
 	virtual bool GetBCanInteract() const override;
 	virtual void PostActorCreated() override;
 	
+	
 
 	// ===== SaveInterface =====
 	//virtual void SaveActorState(class UWardSaveGame* SaveData) override;
 	//virtual void LoadActorState(class UWardSaveGame* SaveData) override;
 
-	FVector GetInteractionTargetLocation_Implementation() const;
+	FVector GetInteractionTargetLocation_Implementation() const override;
 
 	void HiddenActor();
 protected:
@@ -53,6 +55,11 @@ protected:
 	// Mesh
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Mesh;
+	
+	
+	
+	UPROPERTY(VisibleAnywhere)
+	USceneComponent* PickUpPoint;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UBoxComponent* CollisionBox;

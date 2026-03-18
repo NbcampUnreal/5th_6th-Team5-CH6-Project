@@ -18,12 +18,16 @@ ADoorBase::ADoorBase()
 	PickUpPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickUpPoint"));
 	PickUpPoint->SetupAttachment(Mesh);
 	PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
+	NavModifier->SetAreaClass(UNavArea_Null::StaticClass());
+	
+	
+
 }
 
 void ADoorBase::BeginPlay()
 {
 	Super::BeginPlay();
-	NavModifier->SetAreaClass(UNavArea_Null::StaticClass());
+	
 }
 
 void ADoorBase::Tick(float DeltaTime)
@@ -44,6 +48,20 @@ void ADoorBase::ChangeColorLampRed_Implementation()
 void ADoorBase::ChangeColorLampGreen_Implementation()
 {
 
+}
+
+void ADoorBase::OpenDoor()
+{
+	if (bIsOpen)
+		return;
+	NavModifier->SetAreaClass(UNavArea_Default::StaticClass());
+}
+
+void ADoorBase::CloseDoor()
+{
+	if (!bIsOpen)
+		return;
+	NavModifier->SetAreaClass(UNavArea_Null::StaticClass());
 }
 
 void ADoorBase::UpdateTimelineComp(float Value)

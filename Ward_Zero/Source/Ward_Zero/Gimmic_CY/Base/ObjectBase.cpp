@@ -18,7 +18,8 @@ AObjectBase::AObjectBase()
 
 void AObjectBase::BeginPlay()
 {
-	Super::BeginPlay();	
+	Super::BeginPlay();
+	
 }
 
 void AObjectBase::Tick(float DeltaTime)
@@ -67,7 +68,7 @@ void AObjectBase::PostActorCreated()
 {
 	Super::PostActorCreated();
 
-	//¾×ÅÍ°¡ ¿¡µðÅÍ¿¡ ¹èÄ¡µÇ°Å³ª ½ºÆùµÉ ¶§ ÃÖÃÊ 1È¸¸¸ GUID »ý
+	//ï¿½ï¿½ï¿½Í°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ ï¿½ï¿½Ä¡ï¿½Ç°Å³ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ 1È¸ï¿½ï¿½ GUID ï¿½ï¿½
 	if (!ActorID.IsValid())
 	{
 		ActorID = FGuid::NewGuid();

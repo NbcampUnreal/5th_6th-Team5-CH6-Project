@@ -4,11 +4,35 @@
 
 ALever::ALever()
 {
+	LeverHandle = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LeverHandle"));
+	LeverHandle->SetupAttachment(RootComponent);
+	
+	LeverTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("DoorTimeline"));
+}
+
+void ALever::BeginPlay()
+{
+	Super::BeginPlay();
+	InitialRotation = LeverHandle->GetRelativeRotation();
+	UpdateFunctionFloat.BindDynamic(this,&ALever::UpdateTimelineFunction);
+	
+	if (LeverTimelineFloatCurve)
+	{
+		LeverTimelineComp->AddInterpFloat(LeverTimelineFloatCurve, UpdateFunctionFloat);
+	}
+	//todo: bIsActivated = SaveManager->CheckActivated(ActorID)
+	bool bIsActivated = false;
+	
+	if (bIsActivated)
+	{
+		ActivateLever();
+	}
+	
 }
 
 void ALever::LeverOpenDoor()
 {
-	for (ASingleDoor* doorActor : DoorsForOpen)
+	for (ADoorBase* doorActor : DoorsForOpen)
 	{
 		if (doorActor)
 		{
@@ -19,7 +43,7 @@ void ALever::LeverOpenDoor()
 
 void ALever::LeverCloseDoor()
 {
-	for (ASingleDoor* doorActor : DoorsForOpen)
+	for (ADoorBase* doorActor : DoorsForClose)
 	{
 		if (doorActor)
 		{
@@ -52,13 +76,24 @@ void ALever::LeverUnLockInteraction()
 	}
 }
 
+void ALever::UpdateTimelineFunction(float Output)
+{
+	float NewRoll = FMath::Lerp(StartRoll, TargetRoll, Output);
+
+	FRotator NewRotation = InitialRotation;
+	NewRotation.Roll = NewRoll;
+	//FRotator NewRotation(0.f, Output, 0.f);
+	LeverHandle->SetRelativeRotation(NewRotation);
+}
+
+EInteractionType ALever::GetInteractionType_Implementation() const
+{
+	return EInteractionType::Door;
+}
+
 void ALever::ActivateLever()
 {
-	LeverOpenDoor();
-	LeverUnLockInteraction();
-	LeverCloseDoor();
-	LeverLockInteraction();
-
+	LeverTimelineComp->Play();
 	bCanInteract = false;
 }
 
@@ -66,11 +101,10 @@ void ALever::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
 	if (bCanInteract)
 	{
+		ActivateLever();
 		LeverOpenDoor();
-		LeverLockInteraction();
-		LeverCloseDoor();
 		LeverUnLockInteraction();
+		LeverCloseDoor();
+		LeverLockInteraction();
 	}
-
-	bCanInteract = false;
 }

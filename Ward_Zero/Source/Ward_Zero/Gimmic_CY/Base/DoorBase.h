@@ -17,6 +17,11 @@ class WARD_ZERO_API ADoorBase : public AObjectBase
 	
 public:
 	ADoorBase();
+	UFUNCTION(BlueprintCallable)
+	virtual void OpenDoor();
+	
+	UFUNCTION(BlueprintCallable)
+	virtual void CloseDoor();
 
 protected:
 	virtual void BeginPlay() override;
@@ -41,6 +46,8 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UNavModifierComponent* NavModifier;
 
+	
+	
 	// Lamp Mesh
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Lamp;

@@ -11,6 +11,9 @@ class WARD_ZERO_API ADoubleDoor : public ADoorBase
 	
 public:
 	ADoubleDoor();
+	
+	virtual void OpenDoor() override;
+	virtual void CloseDoor() override;
 
 protected:
 	virtual void BeginPlay() override;

@@ -1,5 +1,6 @@
 #include "ItemBase.h"
 #include "Components/BoxComponent.h"
+#include "Components/WidgetComponent.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
 
 AItemBase::AItemBase()
@@ -17,11 +18,25 @@ AItemBase::AItemBase()
 	Mesh->SetCollisionResponseToAllChannels(ECR_Block);
 	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	Mesh->SetupAttachment(CollisionBox);
+	
+
+	PickUpPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickUpPoint"));
+	PickUpPoint->SetupAttachment(Mesh); 
+	PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
+	
+	
 }
 
 void AItemBase::BeginPlay()
 {
 	Super::BeginPlay();	
+	//to do: bIsActivate = SaveManager(ActorID)
+	bool bIsActivate = true;
+	if (!bIsActivate)
+	{
+		bCanInteract = false;
+		HiddenActor();
+	}
 }
 
 void AItemBase::Tick(float DeltaTime)
@@ -55,7 +70,7 @@ void AItemBase::HandleInteraction_Implementation(APrototypeCharacter* Character)
 
 	HiddenActor();
 
-	bCanInteract = false;
+	
 	///GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Blue, "HiidenActor");
 }
 
@@ -67,6 +82,8 @@ EInteractionType AItemBase::GetInteractionType_Implementation() const
 bool AItemBase::SetBCanInteract(bool IsCanInteract)
 {
 	bCanInteract = IsCanInteract;
+	
+	//todo: SaveManager->SetActorInteractable(ActorId,bCanInteract)
 	return bCanInteract;
 }
 
@@ -87,7 +104,7 @@ void AItemBase::PostActorCreated()
 {
 	Super::PostActorCreated();
 
-	// ¾×ÅÍ°¡ ¿¡µðÅÍ¿¡ ¹èÄ¡µÇ°Å³ª ½ºÆùµÉ ¶§ ÃÖÃÊ 1È¸¸¸ GUID »ý¼º
+	// ï¿½ï¿½ï¿½Í°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ ï¿½ï¿½Ä¡ï¿½Ç°Å³ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ 1È¸ï¿½ï¿½ GUID ï¿½ï¿½ï¿½ï¿½
 	if (!ActorID.IsValid())
 	{
 		ActorID = FGuid::NewGuid();

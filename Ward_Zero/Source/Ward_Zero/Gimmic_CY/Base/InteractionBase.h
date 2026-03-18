@@ -15,7 +15,8 @@ enum class EInteractionType : uint8
 	Document,  
 	Save,
 	Key,
-	Heal
+	Heal,
+	Lever
 };
 
 UINTERFACE(MinimalAPI)

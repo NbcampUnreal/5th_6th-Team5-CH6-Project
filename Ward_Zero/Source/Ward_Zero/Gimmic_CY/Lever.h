@@ -1,10 +1,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/TimelineComponent.h"
 #include "Gimmic_CY/Base/ObjectBase.h"
 #include "Lever.generated.h"
 
-class ASingleDoor;
+class UTimelineComponent;
+class ADoorBase;
 
 UCLASS()
 class WARD_ZERO_API ALever : public AObjectBase
@@ -14,25 +16,55 @@ class WARD_ZERO_API ALever : public AObjectBase
 public:
 	ALever();
 
+	void BeginPlay() override;
+	
 private:
 	void LeverOpenDoor();
 	void LeverCloseDoor();
 	void LeverLockInteraction();
 	void LeverUnLockInteraction();
+	
+	FOnTimelineFloat UpdateFunctionFloat;
+	
+	UFUNCTION()
+	void UpdateTimelineFunction(float Output);
+	
+	UPROPERTY(EditAnywhere)
+	UCurveFloat* LeverTimelineFloatCurve;
+	
+	UPROPERTY(VisibleAnywhere)
+	UTimelineComponent* LeverTimelineComp;
+	
+	FRotator InitialRotation;
+	
+	
 
 
 public:
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<ASingleDoor*> DoorsForOpen;
+	float TargetRoll = 80;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float StartRoll = -80;
+	
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* LeverHandle;
+	
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<ADoorBase*> DoorsForOpen;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<ASingleDoor*> DoorsForClose;
+	TArray<ADoorBase*> DoorsForClose;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<AActor*> InteractionActors;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<AActor*> UnInteractionActors;
+	
+	EInteractionType GetInteractionType_Implementation() const override;
 
 public:
 
