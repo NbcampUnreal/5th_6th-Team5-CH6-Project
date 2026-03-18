@@ -43,7 +43,6 @@ public:
 	FVector GetInteractionTargetLocation_Implementation() const;
 
 	void HiddenActor();
-	void PostActorCreated();
 protected:
 	UPROPERTY(EditInstanceOnly)
 	FGuid ActorID;

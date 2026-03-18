@@ -35,8 +35,6 @@ public:
 	virtual void PostActorCreated() override;
 
 	FVector GetInteractionTargetLocation_Implementation() const;
-
-	void OnConstruction(const FTransform& Transform);
 	// Mesh
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Mesh;
