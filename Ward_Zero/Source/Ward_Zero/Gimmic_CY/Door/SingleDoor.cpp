@@ -6,9 +6,9 @@
 
 ASingleDoor::ASingleDoor()
 {
-	PickUpPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickUpPoint"));
-	PickUpPoint->SetupAttachment(Mesh);
-	PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
+	//PickUpPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickUpPoint"));
+	//PickUpPoint->SetupAttachment(Mesh);
+	//PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
 }
 
 void ASingleDoor::BeginPlay()
@@ -70,17 +70,44 @@ void ASingleDoor::HandleInteraction_Implementation(APrototypeCharacter* Characte
 
 }
 
-FVector ASingleDoor::GetInteractionTargetLocation_Implementation() const {
-	return PickUpPoint->GetComponentLocation();
-}
-
 void ASingleDoor::UpdateTimelineComp(float Output)
 {
 	float NewYaw = FMath::Lerp(0.f, TargetYaw, Output);
 
 	FRotator NewRotation = InitialRotation;
 	NewRotation.Yaw += NewYaw;
-
 	//FRotator NewRotation(0.f, Output, 0.f);
 	Mesh->SetRelativeRotation(NewRotation);
 }
+
+void ASingleDoor::OpenDoor()
+{
+	if (bIsOpen)
+		return;
+	else
+	{
+		TargetYaw = 90.f;
+		DoorTimelineComp->Play();
+		NavModifier->SetAreaClass(UNavArea_Default::StaticClass()); // 통과 가능
+		bIsOpen = true;
+	}
+}
+
+void ASingleDoor::CloseDoor()
+{
+	if (!bIsOpen)
+		return;
+	else
+	{
+		DoorTimelineComp->Reverse();
+		NavModifier->SetAreaClass(UNavArea_Null::StaticClass()); // 다시 막힘
+		bIsOpen = false;
+	}
+}
+
+//FVector ASingleDoor::GetInteractionTargetLocation_Implementation() const {
+//	
+//	return PickUpPoint->GetComponentLocation();
+//	
+//}
+

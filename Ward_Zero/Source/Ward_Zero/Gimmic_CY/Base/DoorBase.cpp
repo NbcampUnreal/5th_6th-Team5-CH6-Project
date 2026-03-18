@@ -14,6 +14,10 @@ ADoorBase::ADoorBase()
 	DoorTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("DoorTimeline"));
 
 	NavModifier = CreateDefaultSubobject<UNavModifierComponent>(TEXT("NavModifier"));
+
+	PickUpPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickUpPoint"));
+	PickUpPoint->SetupAttachment(Mesh);
+	PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
 }
 
 void ADoorBase::BeginPlay()
@@ -40,4 +44,14 @@ void ADoorBase::ChangeColorLampRed_Implementation()
 void ADoorBase::ChangeColorLampGreen_Implementation()
 {
 
+}
+
+void ADoorBase::UpdateTimelineComp(float Value)
+{
+	
+}
+
+FVector ADoorBase::GetInteractionTargetLocation_Implementation() const {
+	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Blue, "Enable PickupPoint");
+	return PickUpPoint->GetComponentLocation();
 }

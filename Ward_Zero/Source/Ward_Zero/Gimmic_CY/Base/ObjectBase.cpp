@@ -80,3 +80,15 @@ FVector AObjectBase::GetInteractionTargetLocation_Implementation() const
 	return GetActorLocation();
 }
 
+void AObjectBase::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	if (!ActorID.IsValid())
+	{
+		ActorID = FGuid::NewGuid();
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Item ID: %s"), *ActorID.ToString());
+}
+

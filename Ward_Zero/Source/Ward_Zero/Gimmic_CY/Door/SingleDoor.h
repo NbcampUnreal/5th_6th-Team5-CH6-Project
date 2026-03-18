@@ -25,17 +25,21 @@ public:
 
 protected:
 
-	UPROPERTY(VisibleAnywhere)
-	USceneComponent* PickUpPoint;
-
 	float TargetYaw = 90.f;
-
-	bool bIsOpen = false;
-
-	FVector GetInteractionTargetLocation_Implementation() const;
 
 	FRotator InitialRotation;
 
-	UFUNCTION()
-	void UpdateTimelineComp(float Output);
+	//UFUNCTION()
+	//void UpdateTimelineComp(float Output);
+
+	virtual void UpdateTimelineComp(float Output) override;
+
+	//UPROPERTY(VisibleAnywhere)
+	//USceneComponent* PickUpPoint;
+
+	//FVector GetInteractionTargetLocation_Implementation() const;
+
+public:
+	void OpenDoor();
+	void CloseDoor();
 };

@@ -36,10 +36,14 @@ public:
 
 	FVector GetInteractionTargetLocation_Implementation() const;
 
+	void OnConstruction(const FTransform& Transform);
 	// Mesh
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Mesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UBoxComponent* CollisionBox;
+
+	UPROPERTY(EditInstanceOnly)
+	FGuid ActorID;
 };
