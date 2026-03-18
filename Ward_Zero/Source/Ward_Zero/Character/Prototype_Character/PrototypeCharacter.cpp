@@ -241,7 +241,7 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 
 	FVector LastInput = GetLastMovementInputVector();
 	FVector LocalInput = GetActorRotation().UnrotateVector(LastInput);
-	if (LocalInput.X < 0.1f) return;
+	if (LocalInput.X < -0.1f) return;
 
 	if (bIsRunning)
 	{
@@ -403,10 +403,10 @@ void APrototypeCharacter::CheckRunState()
 		}
 
 		float ForwardDot = FVector::DotProduct(GetActorForwardVector(), AccelNormal);
-		if (ForwardDot < 0.2f)
+		if (ForwardDot < -0.3f)
 		{
 			EndRunning(FInputActionValue());
-		}
+		} //107도 
 	}
 }
 

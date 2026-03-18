@@ -70,6 +70,18 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 
 	AWeapon* CurrentWeapon = Player->GetEquippedWeapon();
 
+	if (LastEquippedWeapon && LastEquippedWeapon != CurrentWeapon)
+	{
+		if (LastEquippedWeapon->SMGSpotLight)
+		{
+			LastEquippedWeapon->SMGSpotLight->SetVisibility(false);
+		}
+		if (LastEquippedWeapon->WeaponMesh)
+		{
+			LastEquippedWeapon->WeaponMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), 0.0f);
+		}
+	}
+	LastEquippedWeapon = CurrentWeapon;
 	if (CurrentWeapon)
 	{
 		if (CurrentWeapon->SMGSpotLight)
