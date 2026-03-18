@@ -24,12 +24,6 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
-protected:
-	UPROPERTY(EditDefaultsOnly, Category = "Heal")
-	TSubclassOf<AActor> HealItemClass;
-
-	UPROPERTY()
-	AActor* CurrHealItem;
 public:
 #pragma region 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components") class UPlayerStatusComponent* StatusComp;
@@ -81,6 +75,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* EquipSlot1Action;
 	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* EquipSlot2Action;
 	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* HealAction;
+	UPROPERTY(EditAnywhere, Category = "Input") class UInputAction* PauseAction;
 #pragma endregion
 
 #pragma region 애니메이션 레이어
@@ -134,6 +129,7 @@ public:
 	void ToggleFlashLight(const FInputActionValue& Value);
 	void SelectWeapon1(const FInputActionValue& Value);
 	void SelectWeapon2(const FInputActionValue& Value);
+	void TogglePauseMenu(const FInputActionValue& Value);
 
 	void CheckRunState();
 	void PerformQuickTurn180();
@@ -141,6 +137,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void PlayFootstepSound(FName FootBoneName);
+
+protected:
+	virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+	virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
 
 public:
 	EPlayerHitDirection GetHitDirection(const FVector& ToAttackerDir);
@@ -211,4 +211,14 @@ public:
 	AActor* LastInteractedDoorActor = nullptr;
 
 	float LastDoorInteractTime = 0.0f;
+
+private:
+	AActor* FindClosestInteractable();
+	void HandleDoorInteraction(AActor* DoorActor);
+	void HandleItemInteraction(AActor* ItemActor);
+
+	void SwitchWeaponByIndex(int32 WeaponIndex);
+
+		// 피격 시 공격자 방향 계산 분리
+	FVector GetAttackerDirection(AController* EventInstigator, AActor* DamageCauser);
 };

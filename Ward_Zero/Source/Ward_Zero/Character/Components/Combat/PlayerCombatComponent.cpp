@@ -22,6 +22,9 @@ void UPlayerCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	CachedOwnerCharacter = Cast<ACharacter>(GetOwner());
+	if (!CachedOwnerCharacter) return;
+
 	InitializeProjectilePool();
 
 	// CombatData 에셋 참조 및 수치 동기화
@@ -228,10 +231,9 @@ void UPlayerCombatComponent::HandleRecoil(float DeltaTime)
 
 void UPlayerCombatComponent::UpdateSpread(float DeltaTime)
 {
-	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
-	if (!OwnerCharacter) return;
+	if (!CachedOwnerCharacter) return;
 
-	float Speed = OwnerCharacter->GetVelocity().Size();
+	float Speed = CachedOwnerCharacter->GetVelocity().Size();
 	if (Speed > 10.0f) CurrentSpread = FMath::FInterpTo(CurrentSpread, MaxSpread, DeltaTime, SpreadExpandRate);
 	else CurrentSpread = FMath::FInterpTo(CurrentSpread, MinSpread, DeltaTime, SpreadShrinkRate);
 }
@@ -289,7 +291,7 @@ void UPlayerCombatComponent::SetCameraPitchLimit(bool IsAiming)
 	APrototypeCharacter* OwnerChar = Cast<APrototypeCharacter>(GetOwner());
 	
 	if (!OwnerChar || !OwnerChar->CameraConfig) return;
-
+	
 	if (APlayerController* PC = Cast<APlayerController>(OwnerChar->GetController()))
 	{
 		if (PC->PlayerCameraManager)
@@ -309,17 +311,42 @@ void UPlayerCombatComponent::SetCameraPitchLimit(bool IsAiming)
 	}
 }
 
+UAnimMontage* UPlayerCombatComponent::GetSelectedFireMontage() const
+{
+	if (!CachedOwnerCharacter) return nullptr;
+
+	bool bIsCrouched = CachedOwnerCharacter->bIsCrouched;
+
+	if (CurrentWeaponIndex == 1) // Pistol
+	{
+		return bIsCrouched ? Pistol_CrouchFireMontage : Pistol_FireMontage;
+	}
+	else if (CurrentWeaponIndex == 2) // SMG
+	{
+		return bIsCrouched ? SMG_CrouchFireMontage : SMG_FireMontage;
+	}
+
+	return nullptr;
+}
+
 void UPlayerCombatComponent::PlayFireEffects(UAnimMontage* FireMontage, UAnimInstance* AnimInst, TSubclassOf<UCameraShakeBase> CamShake)
 {
-	// 애니메이션
-	UAnimMontage* MontageToPlay = FireMontage ? FireMontage : ((CurrentWeaponIndex == 1) ? Pistol_FireMontage : SMG_FireMontage);
-	if (AnimInst && MontageToPlay) AnimInst->Montage_Play(MontageToPlay);
+	UAnimMontage* MontageToPlay = FireMontage ? FireMontage : GetSelectedFireMontage();
+	if (AnimInst && MontageToPlay)
+	{
+		AnimInst->Montage_Play(MontageToPlay);
+	}
 
-	// 카메라 쉐이크
-	if (CamShake) UGameplayStatics::PlayWorldCameraShake(GetWorld(), CamShake, PlayerCamera->GetComponentLocation(), 0.f, 500.f);
+	// 카메라 쉐이크 및 무기 이펙트 재생
+	if (CamShake)
+	{
+		UGameplayStatics::PlayWorldCameraShake(GetWorld(), CamShake, PlayerCamera->GetComponentLocation(), 0.f, 500.f);
+	}
 
-	// 무기 자체 이펙트 (총구 화염, 사운드 등)
-	EquippedWeapon->FireEffectsOnly();
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->FireEffectsOnly();
+	}
 }
 
 void UPlayerCombatComponent::CalculateShotRecoil()
@@ -431,24 +458,17 @@ void UPlayerCombatComponent::StopAiming()
 
 void UPlayerCombatComponent::CalculateAimOffset()
 {
-	ACharacter* Owner = Cast<ACharacter>(GetOwner());
-	if (!Owner || !PlayerCamera) return;
+	if (!CachedOwnerCharacter || !PlayerCamera) return;
 
-	FRotator ControlRot = Owner->GetControlRotation();
-	FRotator ActorRot = Owner->GetActorRotation();
+	FRotator ControlRot = CachedOwnerCharacter->GetControlRotation();
+	FRotator ActorRot = CachedOwnerCharacter->GetActorRotation();
 
 	// 두 회전의 차이 계산
 	FRotator Delta = UKismetMathLibrary::NormalizedDeltaRotator(ControlRot, ActorRot);
 
-	// 에임 오프셋 값 업데이트 (애니메이션 에셋 범위에 맞춰 클램프 권장)
 	// 보통 Pitch는 -90~90, Yaw는 -90~90 혹은 그 이상
 	AimYaw = FMath::Clamp(Delta.Yaw, -180.f, 180.f);
 	AimPitch = FMath::Clamp(Delta.Pitch, -90.f, 90.f);
-	if (!bIsAiming)
-	{
-		// 비조준 시 상체가 정면을 보게 부드럽게 보간 (선택 사항)
-		// AimYaw = FMath::FInterpTo(AimYaw, 0.f, GetWorld()->GetDeltaSeconds(), 5.f);
-	}
 }
 
 void UPlayerCombatComponent::UpdateHandIK() { if (EquippedWeapon) HandIKTargetLocation = EquippedWeapon->GetLaserTargetLocation(); }
@@ -567,17 +587,29 @@ void UPlayerCombatComponent::HandleWeaponAttachment(bool bToHand)
 	{
 		FName TargetSocketName;
 
-        if (CurrentWeaponIndex == 1) // 권총(Pistol)인 경우
-        {
-            TargetSocketName = bIsAiming ? TEXT("WeaponSocket") : TEXT("PistolRelaxSocket");
-        }
-        else // SMG인 경우
-        {
-            TargetSocketName = TEXT("SMG_Socket");
-        }
+		if (CurrentWeaponIndex == 1) // Pistol
+		{
+			if (bIsAiming)
+			{
+				TargetSocketName = OwnerChar->bIsCrouched ? TEXT("WeaponSocket_Crouch") : TEXT("WeaponSocket");
+			}
+			else
+			{
+				TargetSocketName = TEXT("PistolRelaxSocket");
+			}
+		}
+		else // SMG
+		{
+			TargetSocketName = TEXT("SMG_Socket");
+		}
 
-        EquippedWeapon->AttachToComponent(OwnerChar->GetMesh(), 
-            FAttachmentTransformRules::SnapToTargetNotIncludingScale, TargetSocketName);
+		EquippedWeapon->AttachToComponent(OwnerChar->GetMesh(),
+			FAttachmentTransformRules::SnapToTargetNotIncludingScale, TargetSocketName);
+
+		if (EquippedWeapon->WeaponMesh)
+		{
+			EquippedWeapon->WeaponMesh->SetRelativeRotation(FRotator::ZeroRotator);
+		}
 	}
 	else
 	{

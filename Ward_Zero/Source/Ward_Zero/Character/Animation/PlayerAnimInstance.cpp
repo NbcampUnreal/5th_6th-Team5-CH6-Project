@@ -12,6 +12,8 @@ void UPlayerAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
 	Character = Cast<ACharacter>(TryGetPawnOwner());
+	CachedCharacter = Cast<APrototypeCharacter>(Character);
+
 	if (Character)
 	{
 		MovementComp = Character->GetCharacterMovement();
@@ -100,16 +102,16 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	}
 
 	// 아이템 픽업 IK 
-	if (APrototypeCharacter* Player = Cast<APrototypeCharacter>(TryGetPawnOwner()))
+	if (CachedCharacter)
 	{
-		PickupTargetLocation = Player->CurrentPickupLocation;
+		PickupTargetLocation = CachedCharacter->CurrentPickupLocation;
 		float PickupCurveValue = GetCurveValue(TEXT("PickupIK"));
 		PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, PickupCurveValue, DeltaSeconds, 15.0f);
 
 		if (PickupIKAlpha > 0.1f)
 		{
 			FVector NewJointTarget;
-			FVector LocalTargetPos = Player->GetActorTransform().InverseTransformPosition(PickupTargetLocation);
+			FVector LocalTargetPos = CachedCharacter->GetActorTransform().InverseTransformPosition(PickupTargetLocation);
 			if (LocalTargetPos.Z < -50.0f) NewJointTarget = FVector(-20.0f, -60.0f, 40.0f);
 			else if (LocalTargetPos.Z < 30.0f) NewJointTarget = FVector(-50.0f, -50.0f, 0.0f);
 			else NewJointTarget = FVector(-40.0f, -40.0f, -30.0f);
@@ -184,18 +186,26 @@ void UPlayerAnimInstance::UpdateMovementDirection()
 void UPlayerAnimInstance::UpdateOrientationWarping(float DeltaSeconds)
 {
 	float TargetAngle = 0.0f;
-	switch (CurrentDir)
+
+	// 달리기가 아닐 때만 방향에 따른 각도를 계산합니다.
+	if (!bIsRunning)
 	{
-	case ELocomotionDirection::Forward:  TargetAngle = 0.0f; break;
-	case ELocomotionDirection::Right:    TargetAngle = 90.0f; break;
-	case ELocomotionDirection::Left:     TargetAngle = -90.0f; break;
-	case ELocomotionDirection::Backward: TargetAngle = (LocomotionAngle > 0) ? 180.0f : -180.0f; break;
+		switch (CurrentDir)
+		{
+		case ELocomotionDirection::Forward:  TargetAngle = 0.0f; break;
+		case ELocomotionDirection::Right:    TargetAngle = 90.0f; break;
+		case ELocomotionDirection::Left:     TargetAngle = -90.0f; break;
+		case ELocomotionDirection::Backward: TargetAngle = (LocomotionAngle > 0) ? 180.0f : -180.0f; break;
+		}
 	}
+	// bIsRunning일 때는 TargetAngle이 0이 되므로, 
+	// LocomotionAngle(캡슐과 이동방향의 차이)만큼만 최소한으로 보정하게 됩니다.
 
 	OrientationWarpingAngle = FRotator::NormalizeAxis(LocomotionAngle - TargetAngle);
 
-	const float TargetAlpha = bHasVelocity ? 1.0f : 0.0f;
-	OrientationWarpingAlpha = FMath::FInterpTo(OrientationWarpingAlpha, TargetAlpha, DeltaSeconds, 6.0f);
+	// 달리기 중에는 Warping 기능을 완전히 끕니다 (Alpha = 0)
+	const float TargetAlpha = (bHasVelocity && !bIsRunning) ? 1.0f : 0.0f;
+	OrientationWarpingAlpha = FMath::FInterpTo(OrientationWarpingAlpha, TargetAlpha, DeltaSeconds, 10.0f);
 }
 
 void UPlayerAnimInstance::UpdateLocomotionState(ELocomotionState StateName)
@@ -226,16 +236,16 @@ void UPlayerAnimInstance::AnimNotify_HealEffect()
 
 void UPlayerAnimInstance::AnimNotify_AttachItem()
 {
-	if (APrototypeCharacter* Player = Cast<APrototypeCharacter>(TryGetPawnOwner()))
+	if (CachedCharacter)
 	{
-		Player->AttachInteractingItem();
+		CachedCharacter->AttachInteractingItem();
 	}
 }
 
 void UPlayerAnimInstance::AnimNotify_ConsumeItem()
 {
-	if (APrototypeCharacter* Player = Cast<APrototypeCharacter>(TryGetPawnOwner()))
+	if (CachedCharacter)
 	{
-		Player->ConsumeInteractingItem();
+		CachedCharacter->ConsumeInteractingItem();
 	}
 }

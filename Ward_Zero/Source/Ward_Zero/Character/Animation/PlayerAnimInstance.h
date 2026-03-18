@@ -222,4 +222,8 @@ private:
 	void UpdateMovementCalculations(float DeltaSeconds);
 	void UpdateOrientationWarping(float DeltaSeconds);
 	void UpdateMovementDirection();
+
+protected:
+	UPROPERTY(BlueprintReadOnly, Category = "Ref")
+	TObjectPtr<class APrototypeCharacter> CachedCharacter;
 };
