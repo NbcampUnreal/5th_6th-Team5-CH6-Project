@@ -241,7 +241,7 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 
 	FVector LastInput = GetLastMovementInputVector();
 	FVector LocalInput = GetActorRotation().UnrotateVector(LastInput);
-	if (LocalInput.X < -0.1f) return;
+	if (LocalInput.X < -0.2f) return;
 
 	if (bIsRunning)
 	{
@@ -439,10 +439,6 @@ void APrototypeCharacter::Reload(const FInputActionValue& Value)
 {
 	if (CombatComp)
 	{
-		if (bIsRunning)
-		{
-			EndRunning(Value);
-		}
 		CombatComp->Reload();
 	}
 }
@@ -686,7 +682,7 @@ void APrototypeCharacter::UpdateBodyRotation(float DeltaTime)
 		FRotator CurrentRot = GetActorRotation();
 		FRotator NewRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaTime, 5.0f);
 		SetActorRotation(NewRot);
-	}
+	} 
 }
 
 void APrototypeCharacter::Revive()
