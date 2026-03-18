@@ -80,7 +80,7 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 		{
 			LastEquippedWeapon->WeaponMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), 0.0f);
 		}
-	}
+	} 
 	LastEquippedWeapon = CurrentWeapon;
 	if (CurrentWeapon)
 	{

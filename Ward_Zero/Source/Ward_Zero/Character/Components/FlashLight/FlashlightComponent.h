@@ -59,5 +59,5 @@ public:
 	TObjectPtr<class UPlayerCombatComponent> CachedCombatComp;
 
 	UPROPERTY()
-	TObjectPtr<class AWeapon> LastEquippedWeapon;
+	TObjectPtr<class AWeapon> LastEquippedWeapon; 
 };
