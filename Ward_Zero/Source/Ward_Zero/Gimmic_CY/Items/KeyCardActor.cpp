@@ -7,24 +7,32 @@ AKeyCardActor::AKeyCardActor()
 	PrimaryActorTick.bCanEverTick = false;
 }
 
-//void AKeyCardActor::OnIneracted_Implementation(APrototypeCharacter* Character)
-//{
-//	Super::OnIneracted_Implementation(Character);
-//}
-//
-//void AKeyCardActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
-//{
-//	if (!Character || !bCanInteract) return;
-//
-//	// 플레이어에게 카드키 지급
-//	Character->GiveKeyCard();
-//	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Blue, "Key Card Acquired");
-//
-//	// 카드키 제거
-//	Destroy();
-//}
+void AKeyCardActor::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
+
+void AKeyCardActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
+{
+	Super::HandleInteraction_Implementation(Character);
+	if (!bCanInteract)
+		return;
+	
+	for (AActor* Actor : TargetActors)
+	{
+		IInteractionBase* InteractableActor = Cast<IInteractionBase>(Actor);
+		if (InteractableActor)
+		{
+			InteractableActor->SetBCanInteract(true);
+		}
+	}
+	SetBCanInteract(false);
+}
+
 
 EInteractionType AKeyCardActor::GetInteractionType_Implementation() const
 {
     return EInteractionType::Key;
 }
+

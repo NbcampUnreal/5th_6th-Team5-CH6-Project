@@ -23,27 +23,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ammo Loot")
 	int32 AmmoAmount = 15;
 
-	// ¾î¶² ¹«±âÀÇ ÃÑ¾ËÀÎÁö? (1: ±ÇÃÑ, 2: SMG)
+	// ï¿½î¶² ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½? (1: ï¿½ï¿½ï¿½ï¿½, 2: SMG)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ammo Loot")
 	int32 TargetWeaponIndex = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
 	EInteractionType InteractType = EInteractionType::Ammo;
-
-	// [Ãß°¡!] ¸Ö¸®¼­ º¸ÀÌ´Â »ó½Ã »¡°£ ±âµÕ (¿¡µðÅÍ¿¡¼­ ¿ø±âµÕ ÁöÁ¤)
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	UStaticMeshComponent* MarkerPillar;
-
-	// [Ãß°¡!] °¡±îÀÌ °¡¸é ¶ß´Â »óÈ£ÀÛ¿ë µ¿±×¶ó¹Ì À§Á¬
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	UWidgetComponent* InteractWidget;
+	
 
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
 	virtual EInteractionType GetInteractionType_Implementation() const override;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<USceneComponent> PickUpPoint;
-
-	FVector GetInteractionTargetLocation_Implementation() const;
+	
 };

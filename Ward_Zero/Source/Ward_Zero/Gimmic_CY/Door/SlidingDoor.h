@@ -13,6 +13,8 @@ class WARD_ZERO_API ASlidingDoor : public ADoorBase
 	
 public: 
 	ASlidingDoor();
+	virtual void OpenDoor() override;
+	virtual void CloseDoor() override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -22,7 +24,7 @@ protected:
 
 	virtual void UpdateTimelineComp(float Output) override;
 
-	// À§Ä¡
+	// ï¿½ï¿½Ä¡
 	FVector ClosedLocation;
 
 	UPROPERTY(EditAnywhere)

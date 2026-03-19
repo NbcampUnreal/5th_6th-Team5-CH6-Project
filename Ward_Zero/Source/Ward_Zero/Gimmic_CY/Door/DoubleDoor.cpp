@@ -13,6 +13,20 @@ ADoubleDoor::ADoubleDoor()
 	RightDoor->SetupAttachment(CollisionBox);
 }
 
+void ADoubleDoor::OpenDoor()
+{
+	Super::OpenDoor();
+	DoorTimelineComp->Play();
+	SetBCanInteract(false);
+}
+
+void ADoubleDoor::CloseDoor()
+{
+	Super::CloseDoor();
+	DoorTimelineComp->Reverse();
+
+}
+
 void ADoubleDoor::BeginPlay()
 {
 	Super::BeginPlay();
@@ -23,39 +37,15 @@ void ADoubleDoor::BeginPlay()
 	{
 		DoorTimelineComp->AddInterpFloat(DoorTimelineFloatCurve, UpdateFunctionFloat);
 	}
+	
 }
 
 void ADoubleDoor::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
 	if (!Character) return;
+	if (!bCanInteract) return;
 
-	//if (bRequireKeyCard)
-	//{
-	//	// 카드키 체크
-	//	if (!Character->HasKeyCard())
-	//	{
-	//		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, "Need your Key Card ");
-	//		return;
-	//	}
-	//}
-
-
-	if (!DoorTimelineFloatCurve) return;
-
-	if (bIsOpen)
-	{
-		DoorTimelineComp->Reverse();
-
-		NavModifier->SetAreaClass(UNavArea_Default::StaticClass()); // 통과 가능
-	}
-	else
-	{
-		DoorTimelineComp->Play();
-
-		NavModifier->SetAreaClass(UNavArea_Null::StaticClass()); // 다시 막힘
-	}
-
-	bIsOpen = !bIsOpen;
+	Activate();
 }
 
 void ADoubleDoor::UpdateTimelineComp(float Output)

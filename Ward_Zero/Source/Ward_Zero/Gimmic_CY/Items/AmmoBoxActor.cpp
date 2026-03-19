@@ -9,26 +9,12 @@
 AAmmoBoxActor::AAmmoBoxActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
-
-	PickUpPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickUpPoint"));
-	PickUpPoint->SetupAttachment(Mesh);
-	PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
 }
 
 void AAmmoBoxActor::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (InteractWidget)
-	{
-		InteractWidget->SetVisibility(false);
-	}
-
-	if (CollisionBox)
-	{
-		//CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &AAmmoBoxActor::OnOverlapBegin);
-		//CollisionBox->OnComponentEndOverlap.AddDynamic(this, &AAmmoBoxActor::OnOverlapEnd);
-	}
+	
 }
 
 void AAmmoBoxActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
@@ -36,7 +22,9 @@ void AAmmoBoxActor::HandleInteraction_Implementation(APrototypeCharacter* Charac
 	if (!Character) return;
 
 	Super::HandleInteraction_Implementation(Character);
-
+	
+	if (!bCanInteract)
+		return;
 	UPlayerCombatComponent* CombatComp = Character->FindComponentByClass<UPlayerCombatComponent>();
 	if (CombatComp)
 	{
@@ -54,6 +42,7 @@ void AAmmoBoxActor::HandleInteraction_Implementation(APrototypeCharacter* Charac
 			
 		}
 	}
+	SetBCanInteract(false);
 }
 
 EInteractionType AAmmoBoxActor::GetInteractionType_Implementation() const
@@ -61,11 +50,3 @@ EInteractionType AAmmoBoxActor::GetInteractionType_Implementation() const
 	return EInteractionType::Ammo;
 }
 
-FVector AAmmoBoxActor::GetInteractionTargetLocation_Implementation() const
-{
-	if (PickUpPoint)
-	{
-		return PickUpPoint->GetComponentLocation();
-	}
-	return GetActorLocation();
-}

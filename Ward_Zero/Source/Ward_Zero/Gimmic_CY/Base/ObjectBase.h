@@ -33,6 +33,8 @@ public:
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
 	virtual void PostActorCreated() override;
+	
+	virtual void Activate();
 
 	FVector GetInteractionTargetLocation_Implementation() const;
 	// Mesh
@@ -44,4 +46,7 @@ public:
 
 	UPROPERTY(EditInstanceOnly)
 	FGuid ActorID;
+	
+	UPROPERTY(EditInstanceOnly)
+	bool bDefaultInteractable = true;
 };

@@ -6,9 +6,8 @@
 
 ASingleDoor::ASingleDoor()
 {
-	//PickUpPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickUpPoint"));
-	//PickUpPoint->SetupAttachment(Mesh);
-	//PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
+	OpenDoorNavModifier = CreateDefaultSubobject<UNavModifierComponent>(TEXT("OpenDoorNavModifier"));
+	OpenDoorNavModifier->SetAreaClass(UNavArea_Null::StaticClass());
 }
 
 void ASingleDoor::BeginPlay()
@@ -22,24 +21,22 @@ void ASingleDoor::BeginPlay()
 	{
 		DoorTimelineComp->AddInterpFloat(DoorTimelineFloatCurve, UpdateFunctionFloat);
 	}
+	
 }
 
 void ASingleDoor::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
 	if (!DoorTimelineFloatCurve || !Character || !bCanInteract)
 		return;
-
-	bCanInteract = false;
+	
 	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 
 	FTimerHandle InteractionTimer;
 	TWeakObjectPtr<ASingleDoor> WeakThis(this);
 	GetWorld()->GetTimerManager().SetTimer(InteractionTimer, FTimerDelegate::CreateLambda([WeakThis]() {
-		WeakThis->bCanInteract = true;
 		WeakThis->Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 		}), 1.0f, false);
 
-	//
 	FVector DoorLocation = GetActorLocation();
 	FVector PlayerLocation = Character->GetActorLocation();
 
@@ -48,22 +45,11 @@ void ASingleDoor::HandleInteraction_Implementation(APrototypeCharacter* Characte
 
 	float Dot = FVector::DotProduct(DoorForward, ToPlayer);
 
-	//
-	//TargetYaw = (Dot >= 0.f) ? 90.f : -90.f;
-	//DoorTimelineComp->SetPlayRate(2.0f);
+	
 
 	if (!bIsOpen)
 	{
-		TargetYaw = (Dot >= 0.f) ? 90.f : -90.f;
-
-		NavModifier->SetAreaClass(UNavArea_Default::StaticClass()); // 통과 가능
-		DoorTimelineComp->Play();
-	}
-	else
-	{
-		DoorTimelineComp->Reverse();
-
-		NavModifier->SetAreaClass(UNavArea_Null::StaticClass()); // 다시 막힘
+		Activate();
 	}
 
 	bIsOpen = !bIsOpen;
@@ -76,38 +62,23 @@ void ASingleDoor::UpdateTimelineComp(float Output)
 
 	FRotator NewRotation = InitialRotation;
 	NewRotation.Yaw += NewYaw;
-	//FRotator NewRotation(0.f, Output, 0.f);
 	Mesh->SetRelativeRotation(NewRotation);
 }
 
 void ASingleDoor::OpenDoor()
 {
-	if (bIsOpen)
-		return;
-	else
-	{
-		TargetYaw = 90.f;
-		DoorTimelineComp->Play();
-		NavModifier->SetAreaClass(UNavArea_Default::StaticClass()); // 통과 가능
-		bIsOpen = true;
-	}
+	Super::OpenDoor();
+	TargetYaw = -90.f;
+	DoorTimelineComp->Play();
+	
 }
 
 void ASingleDoor::CloseDoor()
 {
-	if (!bIsOpen)
-		return;
-	else
-	{
-		DoorTimelineComp->Reverse();
-		NavModifier->SetAreaClass(UNavArea_Null::StaticClass()); // 다시 막힘
-		bIsOpen = false;
-	}
+	
+	Super::CloseDoor();
+	
+	DoorTimelineComp->Reverse();
+	bIsOpen = false;
+	
 }
-
-//FVector ASingleDoor::GetInteractionTargetLocation_Implementation() const {
-//	
-//	return PickUpPoint->GetComponentLocation();
-//	
-//}
-

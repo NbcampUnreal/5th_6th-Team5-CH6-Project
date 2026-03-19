@@ -23,15 +23,7 @@ void ASafeActor::BeginPlay()
     {
         DoorTimelineComp->AddInterpFloat(DoorTimelineFloatCurve, UpdateFunctionFloat);
     }
-
-    for (AActor* Item : Items)
-    {
-        IInteractionBase* interactionBaseItem = Cast<IInteractionBase>(Item);
-        if (interactionBaseItem)
-        {
-            interactionBaseItem->SetBCanInteract(false);
-        }
-    }
+   
 }
 
 void ASafeActor::UpdateTimelineComp(float Output)
@@ -46,6 +38,22 @@ void ASafeActor::UpdateTimelineComp(float Output)
 
 void ASafeActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
+    if (!bCanInteract)
+        return;
+    Activate();
+    for (AActor* Item : Items)
+    {
+        IInteractionBase* interactionBaseItem = Cast<IInteractionBase>(Item);
+        if (interactionBaseItem)
+        {
+            interactionBaseItem->SetBCanInteract(true);
+        }
+    }
+}
+
+void ASafeActor::Activate()
+{
+    Super::Activate();
     if (!DoorTimelineComp)
         return;
 
@@ -53,15 +61,7 @@ void ASafeActor::HandleInteraction_Implementation(APrototypeCharacter* Character
     {
         DoorTimelineComp->Play();
         bIsOpen = true;
-
-        for (AActor* Item : Items)
-        {
-            IInteractionBase* interactionBaseItem = Cast<IInteractionBase>(Item);
-            if (interactionBaseItem)
-            {
-                interactionBaseItem->SetBCanInteract(true);
-            }
-        }
         Mesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
     }
+    SetBCanInteract(false);
 }

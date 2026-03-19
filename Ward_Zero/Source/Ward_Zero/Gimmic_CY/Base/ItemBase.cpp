@@ -1,5 +1,6 @@
 #include "ItemBase.h"
 #include "Components/BoxComponent.h"
+#include "Components/WidgetComponent.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
 
 AItemBase::AItemBase()
@@ -17,11 +18,31 @@ AItemBase::AItemBase()
 	Mesh->SetCollisionResponseToAllChannels(ECR_Block);
 	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	Mesh->SetupAttachment(CollisionBox);
+	
+
+	PickUpPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickUpPoint"));
+	PickUpPoint->SetupAttachment(Mesh); 
+	PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
+	
+	
 }
 
 void AItemBase::BeginPlay()
 {
-	Super::BeginPlay();	
+	Super::BeginPlay();
+	
+	SetBCanInteract(bDefaultInteractable);
+	//todo: bIsActivated = SaveManager->CheckActivated(ActorID)
+	//todo: bIsInterActable = SaveManager->CheckInterActable(ActorID)
+	/*bool bIsActivated = false;
+	bool bIsInteractable = true;
+	if (bIsActivated)
+	{
+		HiddenActor();
+	}else
+	{
+		SetBCanInteract(bIsInteractable);
+	}*/
 }
 
 void AItemBase::Tick(float DeltaTime)
@@ -55,8 +76,8 @@ void AItemBase::HandleInteraction_Implementation(APrototypeCharacter* Character)
 
 	HiddenActor();
 
-	bCanInteract = false;
-	///GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Blue, "HiidenActor");
+	//todo: SaveManager->SetActorActivated(ActorID)
+	
 }
 
 EInteractionType AItemBase::GetInteractionType_Implementation() const
@@ -67,6 +88,8 @@ EInteractionType AItemBase::GetInteractionType_Implementation() const
 bool AItemBase::SetBCanInteract(bool IsCanInteract)
 {
 	bCanInteract = IsCanInteract;
+	
+	//todo: SaveManager->SetActorInteractable(ActorId,bCanInteract)
 	return bCanInteract;
 }
 
@@ -80,14 +103,14 @@ void AItemBase::HiddenActor()
 	CollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Mesh->SetVisibility(false);
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Blue, "SetVisibility(false)");
+	SetBCanInteract(false);
 }
 
 void AItemBase::PostActorCreated()
 {
 	Super::PostActorCreated();
 
-	// ¾×ÅÍ°¡ ¿¡µðÅÍ¿¡ ¹èÄ¡µÇ°Å³ª ½ºÆùµÉ ¶§ ÃÖÃÊ 1È¸¸¸ GUID »ý¼º
+	// ï¿½ï¿½ï¿½Í°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ ï¿½ï¿½Ä¡ï¿½Ç°Å³ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ 1È¸ï¿½ï¿½ GUID ï¿½ï¿½ï¿½ï¿½
 	if (!ActorID.IsValid())
 	{
 		ActorID = FGuid::NewGuid();
@@ -95,26 +118,6 @@ void AItemBase::PostActorCreated()
 	}
 }
 
-//FGuid AItemBase::GetActorID() const
-//{
-//	return ActorID;
-//}
-//
-//void AItemBase::SaveActorState(UWardSaveGame* SaveData)
-//{
-//	//if (bCollected)
-//	//{
-//	//	SaveData->CollectedItems.Add(ActorID);
-//	//}
-//}
-//
-//void AItemBase::LoadActorState(UWardSaveGame* SaveData)
-//{
-//	//if (SaveData->CollectedItems.Contains(ActorID))
-//	//{
-//	//	Destroy();
-//	//}
-//}
 
 FVector AItemBase::GetInteractionTargetLocation_Implementation() const
 {
