@@ -58,7 +58,7 @@ APrototypeCharacter::APrototypeCharacter()
 
 	// 물리 설정 
 	bUseControllerRotationYaw = false;
-	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 240.0f, 0.0f);
 	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
 
@@ -241,7 +241,7 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 
 	FVector LastInput = GetLastMovementInputVector();
 	FVector LocalInput = GetActorRotation().UnrotateVector(LastInput);
-	if (LocalInput.X < -0.2f) return;
+	//if (LocalInput.X < -0.2f) return;
 
 	if (bIsRunning)
 	{
@@ -252,7 +252,6 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 		bIsRunning = true;
 		GetCharacterMovement()->MaxWalkSpeed = MovementData->RunSpeed;
 		bUseControllerRotationYaw = false;
-		GetCharacterMovement()->bOrientRotationToMovement = true;
 		FlashLightComp->UpdateFlashlight(0.0f);
 	}
 }
@@ -268,7 +267,7 @@ void APrototypeCharacter::EndRunning(const FInputActionValue& Value)
 
 	bIsRunning = false;
 	GetCharacterMovement()->MaxWalkSpeed = MovementData->WalkSpeed;
-	GetCharacterMovement()->bOrientRotationToMovement = false; // Strafe 모드로 복구
+	GetCharacterMovement()->bOrientRotationToMovement = true; 
 	FlashLightComp->UpdateFlashlight(0.0f); //달리기 종료 시 원래 소켓으로 복구
 }
 
@@ -673,20 +672,17 @@ void APrototypeCharacter::PlayDeathReaction(const FVector& ToAttackerDir)
 
 void APrototypeCharacter::UpdateBodyRotation(float DeltaTime)
 {
-	// 캐릭터 몸체 회전 (비조준 / 조준)
 	bool bIsAiming = CombatComp && CombatComp->IsAiming();
 
-	// 조준 중이거나 달리는 중이면 물리 컴포넌트(CharacterMovement)가 자동 처리하므로 연산 패스
 	if (bIsAiming || bIsRunning) return;
 
-	// 조준/달리기가 아닌 일반 이동(속도 100 이상)일 때만 부드러운 회전(보간) 연산 수행
 	if (GetVelocity().SizeSquared() > 100.0f)
 	{
 		FRotator TargetRot = FRotator(0.f, GetControlRotation().Yaw, 0.f);
 		FRotator CurrentRot = GetActorRotation();
 		FRotator NewRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaTime, 5.0f);
 		SetActorRotation(NewRot);
-	} 
+	}
 }
 
 void APrototypeCharacter::Revive()
