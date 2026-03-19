@@ -5,7 +5,8 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/LocalPlayerSubsystem.h"
-#include "UI_KWJ/Save/SaveTypes.h"          // ← FSaveFileInfo
+#include "UI_KWJ/Save/SaveTypes.h"
+#include "UI_KWJ/Save/WardSaveGame.h"
 #include "SaveSubsystem.generated.h"
 
 class UWardSaveGame;
@@ -70,6 +71,26 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Save")
 	bool IsLoadUIOpen() const;
 
+	// ══════════════════════════════════════════
+	//  오브젝트 상태 (GUID 기반)
+	// ══════════════════════════════════════════
+
+	/** 로드 대기 중인 세이브 데이터 (액터 BeginPlay에서 접근) */
+	UFUNCTION(BlueprintPure, Category = "Save")
+	UWardSaveGame* GetPendingSaveData() const { return PendingSaveData; }
+
+	/** 오브젝트 상태 기록 */
+	UFUNCTION(BlueprintCallable, Category = "Save")
+	void SetObjectState(const FGuid& SaveID, bool bActive, bool bCanInteract);
+
+	/** 오브젝트 상태 조회 (없으면 기본값: Active=false, CanInteract=true) */
+	UFUNCTION(BlueprintPure, Category = "Save")
+	FObjectSaveData GetObjectState(const FGuid& SaveID) const;
+
+	/** 해당 GUID가 저장된 적 있는지 확인 */
+	UFUNCTION(BlueprintPure, Category = "Save")
+	bool HasObjectState(const FGuid& SaveID) const;
+
 private:
 
 	UWardSaveGame* CollectCurrentGameState();
@@ -110,4 +131,7 @@ private:
 	int32 CachedScreenshotHeight = 0;
 
 	static const FString SavePrefix;
+
+	/** 런타임 오브젝트 상태 캐시 */
+	TMap<FGuid, FObjectSaveData> RuntimeObjectStates;
 };

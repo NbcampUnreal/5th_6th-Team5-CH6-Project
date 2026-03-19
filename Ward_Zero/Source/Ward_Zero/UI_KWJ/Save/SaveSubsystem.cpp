@@ -152,31 +152,17 @@ bool USaveSubsystem::LoadGame(const FString& SlotName)
 		LoadingSys->ShowLoading(FText::FromString(TEXT("Loading...")));
 	}
 
+	// 항상 ServerTravel — 맵 리로드로 모든 액터 BeginPlay 보장
+	// → 각 액터가 PendingSaveData에서 자기 GUID로 상태 복원
+	PendingSaveData = SaveData;
+
 	FName CurrentLevel = FName(*UGameplayStatics::GetCurrentLevelName(GetWorld()));
-	if (SaveData->CurrentLevelName != NAME_None && SaveData->CurrentLevelName != CurrentLevel)
-	{
-		// 다른 레벨이면 전환 후 OnLevelLoaded에서 ApplyGameState 호출
-		UE_LOG(LogWard_Zero, Log, TEXT("레벨 전환: %s → %s"),
-			*CurrentLevel.ToString(), *SaveData->CurrentLevelName.ToString());
+	FString TravelURL = (SaveData->CurrentLevelName != NAME_None)
+		? SaveData->CurrentLevelName.ToString()
+		: CurrentLevel.ToString();
 
-		PendingSaveData = SaveData;
-
-		FString TravelURL = SaveData->CurrentLevelName.ToString();
-		GetWorld()->ServerTravel(TravelURL, true);
-	}
-	else
-	{
-		// 같은 레벨이면 바로 적용
-		ApplyGameState(SaveData);
-
-		// 로딩 화면 숨기기
-		if (ULoadingScreenSubsystem* LoadingSys = GetLocalPlayer()->GetSubsystem<ULoadingScreenSubsystem>())
-		{
-			LoadingSys->HideLoading();
-		}
-
-		UE_LOG(LogWard_Zero, Log, TEXT("세이브 로드 완료: %s"), *SlotName);
-	}
+	UE_LOG(LogWard_Zero, Log, TEXT("세이브 로드 → ServerTravel: %s"), *TravelURL);
+	GetWorld()->ServerTravel(TravelURL, true);
 
 	return true;
 }
@@ -321,6 +307,9 @@ UWardSaveGame* USaveSubsystem::CollectCurrentGameState()
 	SaveData->SaveDateTime = FDateTime::Now();
 	SaveData->PlayTimeSeconds = 0.f; // TODO: 별도 추적
 
+	// 오브젝트 상태 (런타임 캐시 → 세이브 데이터)
+	SaveData->ObjectStates = RuntimeObjectStates;
+
 	return SaveData;
 }
 
@@ -386,6 +375,10 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 		*SaveData->PlayerLocation.ToString(),
 		SaveData->CurrentHealth, SaveData->MaxHealth,
 		SaveData->CurrentStamina, SaveData->MaxStamina);
+
+	// 오브젝트 상태 런타임 캐시에 로드
+	RuntimeObjectStates = SaveData->ObjectStates;
+	UE_LOG(LogWard_Zero, Log, TEXT("오브젝트 상태 복원: %d개"), RuntimeObjectStates.Num());
 }
 
 // ════════════════════════════════════════════════════════
@@ -596,6 +589,53 @@ void USaveSubsystem::HideLoadUI()
 bool USaveSubsystem::IsLoadUIOpen() const
 {
 	return LoadWidgetInstance && LoadWidgetInstance->IsVisible();
+}
+
+// ════════════════════════════════════════════════════════
+//  오브젝트 상태 (GUID 기반)
+// ════════════════════════════════════════════════════════
+
+void USaveSubsystem::SetObjectState(const FGuid& SaveID, bool bActive, bool bCanInteract)
+{
+	if (!SaveID.IsValid()) return;
+
+	FObjectSaveData Data;
+	Data.bActive = bActive;
+	Data.bCanInteract = bCanInteract;
+	RuntimeObjectStates.Add(SaveID, Data);
+}
+
+FObjectSaveData USaveSubsystem::GetObjectState(const FGuid& SaveID) const
+{
+	if (!SaveID.IsValid()) return FObjectSaveData();
+
+	// 1차: 런타임 캐시
+	if (const FObjectSaveData* Data = RuntimeObjectStates.Find(SaveID))
+	{
+		return *Data;
+	}
+
+	// 2차: 로드 대기 중인 세이브 데이터 (액터 BeginPlay에서 접근 시)
+	if (PendingSaveData)
+	{
+		if (const FObjectSaveData* Data = PendingSaveData->ObjectStates.Find(SaveID))
+		{
+			return *Data;
+		}
+	}
+
+	return FObjectSaveData(); // 기본값: Active=false, CanInteract=true
+}
+
+bool USaveSubsystem::HasObjectState(const FGuid& SaveID) const
+{
+	if (!SaveID.IsValid()) return false;
+
+	if (RuntimeObjectStates.Contains(SaveID)) return true;
+
+	if (PendingSaveData && PendingSaveData->ObjectStates.Contains(SaveID)) return true;
+
+	return false;
 }
 
 // ════════════════════════════════════════════════════════
