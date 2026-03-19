@@ -54,3 +54,10 @@ EInteractionType AHealItemActor::GetInteractionType_Implementation() const
 	return EInteractionType::Heal;
 }
 
+void AHealItemActor::HiddenActor()
+{
+	Super::HiddenActor();
+	CapMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CapMesh->SetVisibility(false);
+}
+

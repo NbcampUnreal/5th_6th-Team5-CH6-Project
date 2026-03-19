@@ -44,10 +44,12 @@ public:
 
 	FVector GetInteractionTargetLocation_Implementation() const override;
 
-	void HiddenActor();
+	virtual void HiddenActor();
 	
 	UPROPERTY(EditInstanceOnly)
 	bool bDefaultInteractable = true;
+	
+	FRotator GetInHandTransform() const { return InHandRotator; }
 	
 protected:
 	UPROPERTY(EditInstanceOnly)
@@ -59,6 +61,9 @@ protected:
 	// Mesh
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Mesh;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Setting")
+	FRotator InHandRotator;
 	
 	
 	

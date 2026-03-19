@@ -31,6 +31,7 @@ public:
 	// 오버랩 이벤트 함수
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	virtual EInteractionType GetInteractionType_Implementation() const override;
+	virtual void HiddenActor() override;
 	
 };
 
