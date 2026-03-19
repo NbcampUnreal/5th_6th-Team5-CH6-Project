@@ -2,13 +2,33 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "EnvironmentDataAsset.h"
 #include "EnvManager.generated.h"
 
-class ADirectionalLight;
-class AExponentialHeightFog;
+class USoundBase;
+class UAudioComponent;
+class ALight;
 class APostProcessVolume;
-class ARectLight; 
+
+UENUM(BlueprintType)
+enum class EEnvZone : uint8
+{
+    B1F, F1, F2, BossRoom, None
+};
+
+USTRUCT(BlueprintType)
+struct FZoneConfig
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, Category = "Zone")
+    EEnvZone ZoneType = EEnvZone::None;
+
+    UPROPERTY(EditAnywhere, Category = "Zone")
+    TArray<ALight*> ZoneLights;
+
+    UPROPERTY(EditAnywhere, Category = "Zone")
+    APostProcessVolume* ZonePostProcess;
+};
 
 UCLASS()
 class WARD_ZERO_API AEnvManager : public AActor
@@ -22,30 +42,41 @@ protected:
     virtual void BeginPlay() override;
 
 public:
-    // 적용할 데이터 에셋
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Environment")
-    UEnvironmentDataAsset* ActiveEnvAsset;
-
-    // 컨트롤 대상 액터들 (단일)
-    UPROPERTY(EditAnywhere, Category = "Environment|Targets")
-    ADirectionalLight* TargetSun;
-
-    UPROPERTY(EditAnywhere, Category = "Environment|Targets")
-    AExponentialHeightFog* TargetFog;
-
-    UPROPERTY(EditAnywhere, Category = "Environment|Targets")
-    APostProcessVolume* TargetPostProcess;
-
-    // 컨트롤 대상 (태그 기반 RectLight 배열)
-    UPROPERTY(EditAnywhere, Category = "Environment|Targets")
-    TArray<ARectLight*> TargetRectLights;
+    
+    UPROPERTY(EditAnywhere, Category = "Environment")
+    TArray<FZoneConfig> ZoneConfigs;
 
     
-    // 태그 "RectLight"를 가진 액터를 모두 찾아 배열에 추가
-    UFUNCTION(BlueprintCallable, CallInEditor, Category = "Environment")
-    void FindRectLightsByTag();
+    UPROPERTY(EditAnywhere, Category = "Environment|Sound")
+    USoundBase* BaseNormalBGM; 
 
-    // 데이터 에셋의 수치를 모든 타겟에 적용
-    UFUNCTION(BlueprintCallable, CallInEditor, Category = "Environment")
-    void ApplyEnvironment();
+    UPROPERTY(EditAnywhere, Category = "Environment|Sound")
+    USoundBase* HutonBGM;
+
+    UPROPERTY(EditAnywhere, Category = "Environment|Sound")
+    USoundBase* TentacleBGM;
+
+    
+    UFUNCTION(BlueprintCallable, Category = "Environment")
+    void SwitchZone(EEnvZone NewZone);
+
+    // AI 호출용 BGM 함수들 
+    UFUNCTION(BlueprintCallable, Category = "Environment|Sound")
+    void PlayHutonBGM();
+
+    UFUNCTION(BlueprintCallable, Category = "Environment|Sound")
+    void PlayTentacleBGM();
+
+    UFUNCTION(BlueprintCallable, Category = "Environment|Sound")
+    void RestoreNormalBGM();
+
+private:
+    UPROPERTY(VisibleAnywhere, Category = "Environment")
+    EEnvZone CurrentZone = EEnvZone::None;
+
+    UPROPERTY(VisibleAnywhere, Category = "Environment")
+    UAudioComponent* BGMComponent;
+
+    FZoneConfig* GetConfig(EEnvZone Zone);
+    void PlayFadeMusic(USoundBase* NewMusic);
 };
