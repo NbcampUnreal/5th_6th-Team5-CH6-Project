@@ -74,6 +74,11 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
         if (OwnerCharacter->bIsCrouched)
         {
             TargetSocketOffset = (Combat->GetCurrentWeaponIndex() == 2) ? CameraData->CrouchedSMGAimSocketOffset : CameraData->CrouchedPistolAimSocketOffset;
+
+            if (Combat->GetCurrentWeaponIndex() == 1 && Speed > 10.0f)
+            {
+                TargetSocketOffset.Z += CameraData->CrouchedWalkAimZOffset;
+            }
         }
         else
         {
@@ -115,7 +120,7 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
         {
             TargetArmLength = CameraData->CrouchedArmLength;
 
-            float VerticalBase = (Speed > 10.f) ? CameraData->CrouchedWalkCameraHeight : CameraData->CrouchedCameraHeight;
+            float VerticalBase = (Speed > 10.f && Combat->GetCurrentWeaponIndex() != 2) ? CameraData->CrouchedWalkCameraHeight : CameraData->CrouchedCameraHeight;
             TargetSocketOffset.Z = VerticalBase + 20.0f;
         }
 
