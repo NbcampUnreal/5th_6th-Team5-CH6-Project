@@ -20,6 +20,19 @@ void AObjectBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	SetBCanInteract(bDefaultInteractable);
+	//todo: bIsActivated = SaveManager->CheckActivated(ActorID)
+	//todo: bIsInterActable = SaveManager->CheckInterActable(ActorID)
+	/*bool bIsActivated = false;
+	bool bIsInteractable = true;
+	if (bIsActivated)
+	{
+		HiddenActor();
+	}else
+	{
+		SetBCanInteract(bIsInteractable);
+	}*/
+	
 }
 
 void AObjectBase::Tick(float DeltaTime)
@@ -56,6 +69,7 @@ EInteractionType AObjectBase::GetInteractionType_Implementation() const
 bool AObjectBase::SetBCanInteract(bool IsCanInteract)
 {
 	bCanInteract = IsCanInteract;
+	//todo: SaveManager->SetActorInteractable(ActorId,bCanInteract)
 	return bCanInteract;
 }
 
@@ -74,6 +88,12 @@ void AObjectBase::PostActorCreated()
 		ActorID = FGuid::NewGuid();
 		UE_LOG(LogTemp, Warning, TEXT("New Item ID Generated: %s"), *ActorID.ToString());
 	}
+}
+
+void AObjectBase::Activate()
+{
+	//todo: SaveManager->SetActorActivated(ActorID)
+	SetBCanInteract(false);
 }
 
 FVector AObjectBase::GetInteractionTargetLocation_Implementation() const

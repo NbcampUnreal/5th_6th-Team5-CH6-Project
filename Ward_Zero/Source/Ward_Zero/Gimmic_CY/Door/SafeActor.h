@@ -34,5 +34,5 @@ public:
 	// ===== IGimmickInterface =====
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	
-	void Activate();
+	virtual void Activate() override;
 };

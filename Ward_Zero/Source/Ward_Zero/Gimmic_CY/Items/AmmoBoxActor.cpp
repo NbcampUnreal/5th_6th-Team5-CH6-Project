@@ -15,13 +15,6 @@ void AAmmoBoxActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	//todo: bIsActivated = SaveManager->CheckActivated(ActorID)
-	bool bIsActivated = false;
-	if (bIsActivated)
-	{
-		HiddenActor();
-	}
-	
 }
 
 void AAmmoBoxActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
@@ -49,7 +42,7 @@ void AAmmoBoxActor::HandleInteraction_Implementation(APrototypeCharacter* Charac
 			
 		}
 	}
-	bCanInteract = false;
+	SetBCanInteract(false);
 }
 
 EInteractionType AAmmoBoxActor::GetInteractionType_Implementation() const

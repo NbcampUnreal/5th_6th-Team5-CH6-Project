@@ -17,7 +17,7 @@ void ADoubleDoor::OpenDoor()
 {
 	Super::OpenDoor();
 	DoorTimelineComp->Play();
-	bCanInteract = false;
+	SetBCanInteract(false);
 }
 
 void ADoubleDoor::CloseDoor()
@@ -38,20 +38,6 @@ void ADoubleDoor::BeginPlay()
 		DoorTimelineComp->AddInterpFloat(DoorTimelineFloatCurve, UpdateFunctionFloat);
 	}
 	
-	//todo: bIsActivated = SaveManager->CheckActivated(ActorId)
-	//todo: bIsInteractable = SaveManager->CheckInteractable(ActorId)
-	bool bIsActivated = false;
-	bool bIsInteractable = false;
-	
-	if (bIsActivated)
-	{
-		OpenDoor();
-	}else if (bIsInteractable)
-	{
-		bCanInteract = true;
-	}
-	bCanInteract = false;
-	
 }
 
 void ADoubleDoor::HandleInteraction_Implementation(APrototypeCharacter* Character)
@@ -59,17 +45,7 @@ void ADoubleDoor::HandleInteraction_Implementation(APrototypeCharacter* Characte
 	if (!Character) return;
 	if (!bCanInteract) return;
 
-
-	if (!DoorTimelineFloatCurve) return;
-
-	
-	DoorTimelineComp->Play();
-
-	NavModifier->SetAreaClass(UNavArea_Default::StaticClass()); // ��� ����
-	
-
-	bIsOpen = !bIsOpen;
-	bCanInteract = false;
+	Activate();
 }
 
 void ADoubleDoor::UpdateTimelineComp(float Output)

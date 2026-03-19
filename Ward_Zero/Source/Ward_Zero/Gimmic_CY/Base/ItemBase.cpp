@@ -29,14 +29,20 @@ AItemBase::AItemBase()
 
 void AItemBase::BeginPlay()
 {
-	Super::BeginPlay();	
-	//to do: bIsActivate = SaveManager(ActorID)
-	bool bIsActivate = true;
-	if (!bIsActivate)
+	Super::BeginPlay();
+	
+	SetBCanInteract(bDefaultInteractable);
+	//todo: bIsActivated = SaveManager->CheckActivated(ActorID)
+	//todo: bIsInterActable = SaveManager->CheckInterActable(ActorID)
+	/*bool bIsActivated = false;
+	bool bIsInteractable = true;
+	if (bIsActivated)
 	{
-		bCanInteract = false;
 		HiddenActor();
-	}
+	}else
+	{
+		SetBCanInteract(bIsInteractable);
+	}*/
 }
 
 void AItemBase::Tick(float DeltaTime)
@@ -70,8 +76,8 @@ void AItemBase::HandleInteraction_Implementation(APrototypeCharacter* Character)
 
 	HiddenActor();
 
+	//todo: SaveManager->SetActorActivated(ActorID)
 	
-	///GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Blue, "HiidenActor");
 }
 
 EInteractionType AItemBase::GetInteractionType_Implementation() const
@@ -97,7 +103,7 @@ void AItemBase::HiddenActor()
 	CollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Mesh->SetVisibility(false);
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Blue, "SetVisibility(false)");
+	SetBCanInteract(false);
 }
 
 void AItemBase::PostActorCreated()
@@ -112,26 +118,6 @@ void AItemBase::PostActorCreated()
 	}
 }
 
-//FGuid AItemBase::GetActorID() const
-//{
-//	return ActorID;
-//}
-//
-//void AItemBase::SaveActorState(UWardSaveGame* SaveData)
-//{
-//	//if (bCollected)
-//	//{
-//	//	SaveData->CollectedItems.Add(ActorID);
-//	//}
-//}
-//
-//void AItemBase::LoadActorState(UWardSaveGame* SaveData)
-//{
-//	//if (SaveData->CollectedItems.Contains(ActorID))
-//	//{
-//	//	Destroy();
-//	//}
-//}
 
 FVector AItemBase::GetInteractionTargetLocation_Implementation() const
 {

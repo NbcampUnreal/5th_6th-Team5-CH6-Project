@@ -22,6 +22,10 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	virtual void CloseDoor();
+	
+	virtual bool SetBCanInteract(bool IsCanInteract) override;
+	
+	virtual void Activate() override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -45,7 +49,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	UNavModifierComponent* NavModifier;
-
 	
 	
 	// Lamp Mesh

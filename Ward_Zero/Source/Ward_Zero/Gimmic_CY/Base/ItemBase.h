@@ -45,6 +45,10 @@ public:
 	FVector GetInteractionTargetLocation_Implementation() const override;
 
 	void HiddenActor();
+	
+	UPROPERTY(EditInstanceOnly)
+	bool bDefaultInteractable = true;
+	
 protected:
 	UPROPERTY(EditInstanceOnly)
 	FGuid ActorID;

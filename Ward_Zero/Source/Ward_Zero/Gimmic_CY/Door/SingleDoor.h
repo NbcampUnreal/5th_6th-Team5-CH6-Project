@@ -22,6 +22,7 @@ public:
 	// ===== IGimmickInterface =====
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
+	
 
 protected:
 

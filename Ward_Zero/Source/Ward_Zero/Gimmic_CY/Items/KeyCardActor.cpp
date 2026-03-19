@@ -10,18 +10,12 @@ AKeyCardActor::AKeyCardActor()
 void AKeyCardActor::BeginPlay()
 {
 	Super::BeginPlay();
-
-	//todo: bIsActivated = SaveManager->CheckActivated(ActorID)
-	bool bIsActivated = false;
-	if (bIsActivated)
-	{
-		HiddenActor();
-	}
 }
 
 
 void AKeyCardActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
+	Super::HandleInteraction_Implementation(Character);
 	if (!bCanInteract)
 		return;
 	
@@ -33,7 +27,7 @@ void AKeyCardActor::HandleInteraction_Implementation(APrototypeCharacter* Charac
 			InteractableActor->SetBCanInteract(true);
 		}
 	}
-	bCanInteract = false;
+	SetBCanInteract(false);
 }
 
 

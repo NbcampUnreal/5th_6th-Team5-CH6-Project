@@ -94,7 +94,7 @@ EInteractionType ALever::GetInteractionType_Implementation() const
 void ALever::ActivateLever()
 {
 	LeverTimelineComp->Play();
-	bCanInteract = false;
+	SetBCanInteract(false);
 }
 
 void ALever::HandleInteraction_Implementation(APrototypeCharacter* Character)

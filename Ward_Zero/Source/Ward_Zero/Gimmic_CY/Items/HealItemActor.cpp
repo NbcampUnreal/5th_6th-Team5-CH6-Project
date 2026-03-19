@@ -28,13 +28,6 @@ void AHealItemActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	//todo: bIsActivated = SaveManager->CheckActivated(ActorID)
-	bool bIsActivated = false;
-	if (bIsActivated)
-	{
-		HiddenActor();
-	}
-	
 }
 
 

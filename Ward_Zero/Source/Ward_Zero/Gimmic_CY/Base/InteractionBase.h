@@ -57,6 +57,8 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
 	FVector GetInteractionTargetLocation() const;
+	
+	
 
 protected:
 

@@ -40,16 +40,6 @@ EInteractionType ADoorBase::GetInteractionType_Implementation() const
 	return EInteractionType::Door;
 }
 
-void ADoorBase::ChangeColorLampRed_Implementation()
-{
-
-}
-
-void ADoorBase::ChangeColorLampGreen_Implementation()
-{
-
-}
-
 void ADoorBase::OpenDoor()
 {
 	if (bIsOpen)
@@ -64,6 +54,8 @@ void ADoorBase::CloseDoor()
 	NavModifier->SetAreaClass(UNavArea_Null::StaticClass());
 }
 
+
+
 void ADoorBase::UpdateTimelineComp(float Value)
 {
 	
@@ -72,4 +64,31 @@ void ADoorBase::UpdateTimelineComp(float Value)
 FVector ADoorBase::GetInteractionTargetLocation_Implementation() const {
 	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Blue, "Enable PickupPoint");
 	return PickUpPoint->GetComponentLocation();
+}
+
+bool ADoorBase::SetBCanInteract(bool IsCanInteract)
+{
+	
+	if (IsCanInteract)
+	{
+		ChangeColorLampGreen();
+	}else
+	{
+		ChangeColorLampRed();
+	}
+	return Super::SetBCanInteract(IsCanInteract);
+}
+
+void ADoorBase::Activate()
+{
+	Super::Activate();
+	OpenDoor();
+}
+
+void ADoorBase::ChangeColorLampRed_Implementation()
+{
+}
+
+void ADoorBase::ChangeColorLampGreen_Implementation()
+{
 }

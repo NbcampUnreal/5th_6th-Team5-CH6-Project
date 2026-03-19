@@ -10,7 +10,6 @@ void ASlidingDoor::OpenDoor()
 	Super::OpenDoor();
 	DoorTimelineComp->Play();
 	bIsOpen = true;
-	bCanInteract = false;
 }
 
 void ASlidingDoor::CloseDoor()
@@ -29,17 +28,6 @@ void ASlidingDoor::BeginPlay()
 	{
 		DoorTimelineComp->AddInterpFloat(DoorTimelineFloatCurve, UpdateFunctionFloat);
 	}
-	//todo: bIsActivated = SaveManager->CheckActivated(ActorID)
-	//todo: bIsInteractable = SaveManager->CheckActivated(ActorId)
-	bool bIsActivated = false;
-	bool bIsInteractable = true;
-	if (bIsActivated)
-	{
-		OpenDoor();
-	}else if (bIsInteractable)
-	{
-		bCanInteract = true;
-	}
 }
 
 void ASlidingDoor::HandleInteraction_Implementation(APrototypeCharacter* Character)
@@ -51,7 +39,7 @@ void ASlidingDoor::HandleInteraction_Implementation(APrototypeCharacter* Charact
 
 	if (!bIsOpen)
 	{
-		OpenDoor();
+		Activate();
 	}
 }
 
