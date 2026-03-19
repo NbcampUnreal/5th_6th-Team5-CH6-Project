@@ -242,6 +242,10 @@ void ABaseZombie_AIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimu
 
 bool ABaseZombie_AIController::Activate()
 {
+	if (StatusComp->GetIsDead())
+	{
+		return false;
+	}
 	if (BT_BaseZombie != nullptr)
 	{
 		RunBehaviorTree(BT_BaseZombie);
