@@ -123,6 +123,7 @@ float ABaseZombie::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 		CombatComponent->HandleAllDamage(ActualDamage, DamageEvent, EventInstigator, DamageCauser);
 	}else
 	{
+		CombatComponent->SpawnHitEffect(DamageEvent);
 		if (StatusComponent->ApplyDamage(ActualDamage,true) <= 0.f)
 		{
 			OnDeath();
@@ -263,7 +264,7 @@ void ABaseZombie::Activate()
 				}
 			}
 		}
-	}), 4.0f, false);
+	}), 2.8f, false);
 	
 }
 

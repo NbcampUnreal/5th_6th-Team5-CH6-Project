@@ -25,6 +25,8 @@ public:
 	void Attack();
 	bool GetIsAttacking();
 	void SetIsAttacking(bool isAttacking);
+	
+	void SpawnHitEffect(FDamageEvent const& DamageEvent);
 
 protected:
 	// Called when the game starts

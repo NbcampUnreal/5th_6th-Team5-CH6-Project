@@ -240,6 +240,30 @@ void UCombatComponent::SetIsAttacking(bool isAttacking)
 	bIsAttacking = isAttacking;
 }
 
+void UCombatComponent::SpawnHitEffect(FDamageEvent const& DamageEvent)
+{
+	const FPointDamageEvent* PointDamageEvent = static_cast<const FPointDamageEvent*>(&DamageEvent);
+	FHitResult HitInfo = PointDamageEvent->HitInfo;
+	if (MonsterData)
+	{
+		if (MonsterData->BloodEffectSystem)
+		{
+			FRotator BloodRotation = HitInfo.ImpactNormal.Rotation();
+
+			UGameplayStatics::SpawnEmitterAtLocation(
+				GetWorld(),
+				MonsterData->BloodEffectSystem,
+				HitInfo.ImpactPoint, 
+				BloodRotation        
+			);
+		}
+		if (MonsterData->BulletHitSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, MonsterData->BulletHitSound, HitInfo.ImpactPoint);
+		}
+	}
+}
+
 void UCombatComponent::ProcessDamageLogic(float Damage, EHitPart HitPart, const FVector& AttackDir,
                                           const UWZDamageType* DamageType, AActor* DamageCauser)
 {
@@ -288,25 +312,8 @@ void UCombatComponent::HandleAllDamage(float Damage, FDamageEvent const& DamageE
 		
 		const FPointDamageEvent* PointDamageEvent = static_cast<const FPointDamageEvent*>(&DamageEvent);
 		FHitResult HitInfo = PointDamageEvent->HitInfo;
-		//TO Do: 나이아가라 이펙트 구현
-		if (MonsterData)
-		{
-			if (MonsterData->BloodEffectSystem)
-			{
-				FRotator BloodRotation = HitInfo.ImpactNormal.Rotation();
-
-				UGameplayStatics::SpawnEmitterAtLocation(
-					GetWorld(),
-					MonsterData->BloodEffectSystem,
-					HitInfo.ImpactPoint, 
-					BloodRotation        
-				);
-			}
-			if (MonsterData->BulletHitSound)
-			{
-				UGameplayStatics::PlaySoundAtLocation(this, MonsterData->BulletHitSound, HitInfo.ImpactPoint);
-			}
-		}
+		
+		SpawnHitEffect(DamageEvent);
 		
 		
 		if (UTagPhysicalMaterial* PM = Cast<UTagPhysicalMaterial>(PointDamageEvent->HitInfo.PhysMaterial.Get()))
