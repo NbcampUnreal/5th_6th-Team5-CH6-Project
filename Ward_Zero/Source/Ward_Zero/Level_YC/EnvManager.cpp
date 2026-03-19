@@ -1,82 +1,122 @@
-#include "Level_YC/EnvManager.h"
-#include "Engine/DirectionalLight.h"
-#include "Components/DirectionalLightComponent.h"
-#include "Engine/ExponentialHeightFog.h"
-#include "Components/ExponentialHeightFogComponent.h"
+#include "EnvManager.h"
+#include "Components/AudioComponent.h"
+#include "Sound/SoundBase.h"
+#include "Engine/Light.h"
+#include "Components/LightComponent.h"
 #include "Engine/PostProcessVolume.h"
-#include "Engine/RectLight.h"          
-#include "Components/RectLightComponent.h" 
-#include "Kismet/GameplayStatics.h"   
 
 AEnvManager::AEnvManager()
 {
     PrimaryActorTick.bCanEverTick = false;
+
+    RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
+    BGMComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("BGMComponent"));
+    BGMComponent->bAutoActivate = false;
+    BGMComponent->SetupAttachment(RootComponent);
 }
 
 void AEnvManager::BeginPlay()
 {
     Super::BeginPlay();
-    ApplyEnvironment();
-}
 
-void AEnvManager::FindRectLightsByTag()
-{
-    TargetRectLights.Empty();
-
-    TArray<AActor*> FoundActors;
-    // 월드 내의 모든 RectLight를 검색
-    UGameplayStatics::GetAllActorsOfClass(GetWorld(), ARectLight::StaticClass(), FoundActors);
-
-    for (AActor* Actor : FoundActors)
+    for (FZoneConfig& Config : ZoneConfigs)
     {
-        // 태그가 "RectLight"인 경우만 리스트에 추가
-        if (Actor && Actor->ActorHasTag(FName("RectLight")))
+        if (Config.ZonePostProcess)
         {
-            TargetRectLights.Add(Cast<ARectLight>(Actor));
+            Config.ZonePostProcess->bEnabled = false;
         }
-    }
-} 
 
-void AEnvManager::ApplyEnvironment()
-{
-    if (!ActiveEnvAsset) return;
-
-    const FEnvironmentSettings& Settings = ActiveEnvAsset->Settings;
-
-    // 1. 태양광 설정
-    if (TargetSun && TargetSun->GetLightComponent())
-    {
-        TargetSun->GetLightComponent()->SetIntensity(Settings.SunIntensity);
-        TargetSun->GetLightComponent()->SetLightColor(Settings.SunColor);
-    }
-
-    // 2. 안개 설정
-    if (TargetFog && TargetFog->GetComponent())
-    {
-        TargetFog->GetComponent()->SetFogDensity(Settings.FogDensity);
-        TargetFog->GetComponent()->SetFogInscatteringColor(Settings.FogColor);
-    }
-
-    // 3. 포스트 프로세스 설정
-    if (TargetPostProcess)
-    {
-        TargetPostProcess->Settings.bOverride_BloomIntensity = true;
-        TargetPostProcess->Settings.BloomIntensity = Settings.BloomIntensity;
-    }
-
-    // 4. RectLight 설정 (배열 순회)
-    for (ARectLight* RectLight : TargetRectLights)
-    {
-        if (RectLight && RectLight->GetLightComponent())
+        for (ALight* Light : Config.ZoneLights)
         {
-            URectLightComponent* RectComp = Cast<URectLightComponent>(RectLight->GetLightComponent());
-            if (RectComp)
+            if (Light && Light->GetLightComponent())
             {
-                RectComp->SetIntensity(Settings.RectIntensity);
-                RectComp->SetLightColor(Settings.RectColor);
-                RectComp->SetSourceWidth(Settings.RectSourceWidth);
-                RectComp->SetSourceHeight(Settings.RectSourceHeight);
+                ULightComponent* LightComp = Light->GetLightComponent();
+
+               
+                LightComp->bAffectsWorld = false;
+                LightComp->SetCastShadows(false);
+                LightComp->SetVisibility(false);
+
+                
+                LightComp->MarkRenderStateDirty();
             }
         }
     }
-} 
+
+    
+    if (BaseNormalBGM) PlayFadeMusic(BaseNormalBGM);
+
+    
+    SwitchZone(EEnvZone::B1F);
+}
+
+void AEnvManager::SwitchZone(EEnvZone NewZone)
+{
+    if (CurrentZone == NewZone) return;
+
+    
+    if (FZoneConfig* OldConfig = GetConfig(CurrentZone))
+    {
+        if (OldConfig->ZonePostProcess) OldConfig->ZonePostProcess->bEnabled = false;
+
+        for (ALight* Light : OldConfig->ZoneLights)
+        {
+            if (Light && Light->GetLightComponent())
+            {
+                ULightComponent* LightComp = Light->GetLightComponent();
+                LightComp->bAffectsWorld = false;
+                LightComp->SetCastShadows(false);
+                LightComp->SetVisibility(false);
+                LightComp->MarkRenderStateDirty();
+            }
+        }
+    }
+
+    
+    CurrentZone = NewZone;
+
+    
+    if (FZoneConfig* NewConfig = GetConfig(CurrentZone))
+    {
+        if (NewConfig->ZonePostProcess)
+        {
+            NewConfig->ZonePostProcess->bEnabled = true;
+            NewConfig->ZonePostProcess->Priority = 10.0f;
+        }
+
+        for (ALight* Light : NewConfig->ZoneLights)
+        {
+            if (Light && Light->GetLightComponent())
+            {
+                ULightComponent* LightComp = Light->GetLightComponent();
+                LightComp->bAffectsWorld = true;
+                LightComp->SetCastShadows(true);
+                LightComp->SetVisibility(true);
+                LightComp->MarkRenderStateDirty();
+            }
+        }
+    }
+}
+
+void AEnvManager::PlayHutonBGM() { PlayFadeMusic(HutonBGM); }
+void AEnvManager::PlayTentacleBGM() { PlayFadeMusic(TentacleBGM); }
+void AEnvManager::RestoreNormalBGM() { PlayFadeMusic(BaseNormalBGM); }
+
+FZoneConfig* AEnvManager::GetConfig(EEnvZone Zone)
+{
+    for (FZoneConfig& Config : ZoneConfigs)
+    {
+        if (Config.ZoneType == Zone) return &Config;
+    }
+    return nullptr;
+}
+
+void AEnvManager::PlayFadeMusic(USoundBase* NewMusic)
+{
+    if (!NewMusic || !BGMComponent) return;
+    if (BGMComponent->IsPlaying() && BGMComponent->GetSound() == NewMusic) return;
+
+    BGMComponent->FadeOut(1.5f, 0.0f);
+    BGMComponent->SetSound(NewMusic);
+    BGMComponent->FadeIn(1.5f, 1.0f, 0.0f);
+}
