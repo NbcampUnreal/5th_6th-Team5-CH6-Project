@@ -65,12 +65,8 @@ void UGameOverWidget::OnLoadLastSaveClicked()
 	ULocalPlayer* LP = GetOwningLocalPlayer();
 	if (!LP) return;
 
-	// GameOver UI 닫기 (일시정지 해제 포함)
-	UGameOverSubsystem* GameOverSys = LP->GetSubsystem<UGameOverSubsystem>();
-	if (GameOverSys)
-	{
-		GameOverSys->HideGameOver();
-	}
+	// GameOver UI만 숨기기 (일시정지는 유지 — LoadGame에서 ServerTravel 시 해제)
+	SetVisibility(ESlateVisibility::Collapsed);
 
 	// 마지막 세이브 로드
 	USaveSubsystem* SaveSys = LP->GetSubsystem<USaveSubsystem>();
@@ -87,17 +83,14 @@ void UGameOverWidget::OnLoadSaveClicked()
 	ULocalPlayer* LP = GetOwningLocalPlayer();
 	if (!LP) return;
 
-	// GameOver UI 숨기기 (SaveUI zOrder 150 < GameOver 300)
+	// GameOver UI 숨기기 (일시정지 유지)
 	SetVisibility(ESlateVisibility::Collapsed);
-
-	// 일시정지 해제 (Save UI가 작동하려면 해제 필요)
-	UGameplayStatics::SetGamePaused(GetWorld(), false);
 
 	// Load UI 열기
 	USaveSubsystem* SaveSys = LP->GetSubsystem<USaveSubsystem>();
 	if (SaveSys)
 	{
-		SaveSys->ShowLoadUI(true); // 게임오버에서 열림 → 나가기 숨김
+		SaveSys->ShowLoadUI(true);
 	}
 }
 

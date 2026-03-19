@@ -75,15 +75,15 @@ bool UMainMenuSubsystem::IsMainMenuOpen() const
 
 UMainMenuWidget* UMainMenuSubsystem::GetOrCreateMenu()
 {
-	if (IsValid(MenuWidget))
+	// ServerTravel 후 뷰포트에서 분리된 위젯은 재사용하지 않음
+	// (내부 OptionsWidget 등 참조가 이전 월드에 묶여있어서)
+	if (IsValid(MenuWidget) && MenuWidget->IsInViewport())
 	{
-		// ServerTravel 후 뷰포트에서 분리됐으면 다시 추가
-		if (!MenuWidget->IsInViewport())
-		{
-			MenuWidget->AddToViewport(200);
-		}
 		return MenuWidget;
 	}
+
+	// 새로 생성
+	MenuWidget = nullptr;
 
 	if (!MenuWidgetClass)
 	{

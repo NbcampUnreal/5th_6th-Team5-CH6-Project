@@ -48,6 +48,7 @@ private:
 	UFUNCTION()
 	void OnAmmoChanged(int32 Current, int32 Max, int32 Reserve);
 
-	/** 바인딩 여부 */
-	bool bAmmoBindingDone = false;
+	/** 현재 바인딩된 StatusComp (재바인딩 시 이전 것 해제용) */
+	UPROPERTY()
+	class UPlayerStatusComponent* BoundStatusComp = nullptr;
 };

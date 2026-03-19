@@ -7,8 +7,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/PlayerController.h"
-#include "UI_KWJ/Options/OptionsWidget.h"
 #include "UI_KWJ/Loading/LoadingScreenSubsystem.h"
+#include "UI_KWJ/Save/SaveSubsystem.h"
 #include "Ward_Zero.h"
 
 void UMainMenuWidget::NativeOnInitialized()
@@ -22,11 +22,11 @@ void UMainMenuWidget::NativeOnInitialized()
 		BTN_Start->OnHovered.AddDynamic(this, &UMainMenuWidget::OnStartHovered);
 		BTN_Start->OnUnhovered.AddDynamic(this, &UMainMenuWidget::OnStartUnhovered);
 	}
-	if (BTN_Settings)
+	if (BTN_Load)
 	{
-		BTN_Settings->OnClicked.AddDynamic(this, &UMainMenuWidget::OnSettingsClicked);
-		BTN_Settings->OnHovered.AddDynamic(this, &UMainMenuWidget::OnSettingsHovered);
-		BTN_Settings->OnUnhovered.AddDynamic(this, &UMainMenuWidget::OnSettingsUnhovered);
+		BTN_Load->OnClicked.AddDynamic(this, &UMainMenuWidget::OnLoadClicked);
+		BTN_Load->OnHovered.AddDynamic(this, &UMainMenuWidget::OnLoadHovered);
+		BTN_Load->OnUnhovered.AddDynamic(this, &UMainMenuWidget::OnLoadUnhovered);
 	}
 	if (BTN_Quit)
 	{
@@ -42,8 +42,31 @@ void UMainMenuWidget::NativeConstruct()
 
 	// 버튼 초기 색상 (살짝 어둡게 — 호버 시 밝아짐)
 	if (BTN_Start)    BTN_Start->SetColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.7f, 1.0f));
-	if (BTN_Settings) BTN_Settings->SetColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.7f, 1.0f));
+	if (BTN_Load)     BTN_Load->SetColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.7f, 1.0f));
 	if (BTN_Quit)     BTN_Quit->SetColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.7f, 1.0f));
+
+	// 세이브 파일 없으면 불러오기 비활성화
+	if (BTN_Load)
+	{
+		APlayerController* TempPC = GetOwningPlayer();
+		if (TempPC)
+		{
+			if (ULocalPlayer* LP = TempPC->GetLocalPlayer())
+			{
+				USaveSubsystem* SaveSys = LP->GetSubsystem<USaveSubsystem>();
+				if (SaveSys)
+				{
+					bool bHasSaves = SaveSys->GetSaveFileList().Num() > 0;
+					BTN_Load->SetIsEnabled(bHasSaves);
+					if (!bHasSaves)
+					{
+						// 회색 + 반투명으로 비활성화 표시
+						BTN_Load->SetColorAndOpacity(FLinearColor(0.4f, 0.4f, 0.4f, 0.4f));
+					}
+				}
+			}
+		}
+	}
 
 	APlayerController* PC = GetOwningPlayer();
 	if (PC)
@@ -114,42 +137,21 @@ void UMainMenuWidget::HideMenuAndPlay()
 	}
 }
 
-
-void UMainMenuWidget::OnSettingsClicked()
+void UMainMenuWidget::OnLoadClicked()
 {
-	UE_LOG(LogWard_Zero, Log, TEXT("메인메뉴: 설정 클릭"));
+	UE_LOG(LogWard_Zero, Log, TEXT("메인메뉴: 불러오기 클릭"));
 	PlayUISound(ClickSound);
 
-	if (!OptionsWidget)
+	APlayerController* PC = GetOwningPlayer();
+	if (!PC) return;
+
+	ULocalPlayer* LP = PC->GetLocalPlayer();
+	if (!LP) return;
+
+	USaveSubsystem* SaveSys = LP->GetSubsystem<USaveSubsystem>();
+	if (SaveSys)
 	{
-		if (!OptionsWidgetClass)
-		{
-			OptionsWidgetClass = LoadClass<UOptionsWidget>(
-				nullptr,
-				TEXT("/Game/UI/Option/WBP_Options.WBP_Options_C")
-			);
-		}
-
-		if (!OptionsWidgetClass)
-		{
-			UE_LOG(LogWard_Zero, Error, TEXT("WBP_Options를 찾을 수 없습니다!"));
-			return;
-		}
-
-		APlayerController* PC = GetOwningPlayer();
-		if (!PC) return;
-
-		OptionsWidget = CreateWidget<UOptionsWidget>(PC, OptionsWidgetClass);
-		if (OptionsWidget)
-		{
-			OptionsWidget->bIsMainMenuMode = true;
-			OptionsWidget->AddToViewport(210); // 메인메뉴(200) 위에
-		}
-	}
-
-	if (OptionsWidget)
-	{
-		OptionsWidget->SetVisibility(ESlateVisibility::Visible);
+		SaveSys->ShowLoadUI();
 	}
 }
 
@@ -181,10 +183,11 @@ void UMainMenuWidget::OnStartHovered()
 	SetButtonHovered(BTN_Start, true);
 }
 
-void UMainMenuWidget::OnSettingsHovered()
+void UMainMenuWidget::OnLoadHovered()
 {
+	if (BTN_Load && !BTN_Load->GetIsEnabled()) return;
 	PlayUISound(HoverSound);
-	SetButtonHovered(BTN_Settings, true);
+	SetButtonHovered(BTN_Load, true);
 }
 
 void UMainMenuWidget::OnQuitHovered()
@@ -198,9 +201,9 @@ void UMainMenuWidget::OnStartUnhovered()
 	SetButtonHovered(BTN_Start, false);
 }
 
-void UMainMenuWidget::OnSettingsUnhovered()
+void UMainMenuWidget::OnLoadUnhovered()
 {
-	SetButtonHovered(BTN_Settings, false);
+	SetButtonHovered(BTN_Load, false);
 }
 
 void UMainMenuWidget::OnQuitUnhovered()

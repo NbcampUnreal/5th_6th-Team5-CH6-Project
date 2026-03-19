@@ -10,7 +10,16 @@
 
 void ULoadingScreenSubsystem::ShowLoading(const FText& Message)
 {
-	if (bIsLoading) return;
+	// 이전 로딩이 자동 완료됐으면 정리
+	if (bIsLoading)
+	{
+		if (LoadingScreenWidget)
+		{
+			LoadingScreenWidget->RemoveFromRoot();
+			LoadingScreenWidget = nullptr;
+		}
+		bIsLoading = false;
+	}
 
 	IGameMoviePlayer* MoviePlayer = GetMoviePlayer();
 	if (!MoviePlayer) 

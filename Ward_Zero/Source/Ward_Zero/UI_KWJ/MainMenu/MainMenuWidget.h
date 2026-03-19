@@ -11,7 +11,6 @@ class UButton;
 class UTextBlock;
 class UImage;
 class UCanvasPanel;
-class UOptionsWidget;
 class USoundBase;
 
 UCLASS(BlueprintType, Blueprintable)
@@ -35,9 +34,9 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UButton* BTN_Start;
 
-	/** 설정 버튼 */
-	UPROPERTY(meta = (BindWidget))
-	UButton* BTN_Settings;
+	/** 불러오기 버튼 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	UButton* BTN_Load;
 
 	/** 종료 버튼 */
 	UPROPERTY(meta = (BindWidget))
@@ -74,17 +73,17 @@ private:
 	void OnStartClicked();
 
 	UFUNCTION()
-	void OnSettingsClicked();
+	void OnLoadClicked();
 
 	UFUNCTION()
 	void OnQuitClicked();
 
 	// ── 버튼 호버 콜백 ──
 	UFUNCTION() void OnStartHovered();
-	UFUNCTION() void OnSettingsHovered();
+	UFUNCTION() void OnLoadHovered();
 	UFUNCTION() void OnQuitHovered();
 	UFUNCTION() void OnStartUnhovered();
-	UFUNCTION() void OnSettingsUnhovered();
+	UFUNCTION() void OnLoadUnhovered();
 	UFUNCTION() void OnQuitUnhovered();
 
 	/** 메뉴 숨기고 게임 입력 모드로 전환 */
@@ -105,11 +104,4 @@ private:
 	/** 버튼 클릭 시 효과음 */
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	USoundBase* ClickSound;
-
-	/** 옵션 위젯 생성/관리 */
-	UPROPERTY()
-	UOptionsWidget* OptionsWidget;
-
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UOptionsWidget> OptionsWidgetClass;
 };

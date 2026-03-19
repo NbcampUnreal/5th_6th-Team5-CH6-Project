@@ -32,13 +32,20 @@ void UWeaponUISubsystem::Deinitialize()
 
 void UWeaponUISubsystem::BindToStatusComponent(UPlayerStatusComponent* StatusComp)
 {
-	if (!StatusComp || bAmmoBindingDone) return;
+	if (!StatusComp) return;
 
-	// 권총/SMG 양쪽 다 같은 콜백으로 받음
+	// 이전 바인딩 해제 (ServerTravel 후 새 캐릭터에 재바인딩)
+	if (BoundStatusComp && IsValid(BoundStatusComp))
+	{
+		BoundStatusComp->OnPistolAmmoChanged.RemoveDynamic(this, &UWeaponUISubsystem::OnAmmoChanged);
+		BoundStatusComp->OnSMGAmmoChanged.RemoveDynamic(this, &UWeaponUISubsystem::OnAmmoChanged);
+	}
+
+	// 새 StatusComp에 바인딩
 	StatusComp->OnPistolAmmoChanged.AddDynamic(this, &UWeaponUISubsystem::OnAmmoChanged);
 	StatusComp->OnSMGAmmoChanged.AddDynamic(this, &UWeaponUISubsystem::OnAmmoChanged);
 
-	bAmmoBindingDone = true;
+	BoundStatusComp = StatusComp;
 	UE_LOG(LogWard_Zero, Log, TEXT("WeaponUI: StatusComp 탄약 델리게이트 바인딩 완료"));
 }
 
