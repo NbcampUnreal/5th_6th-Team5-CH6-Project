@@ -47,12 +47,12 @@ void ASingleDoor::HandleInteraction_Implementation(APrototypeCharacter* Characte
 
 	
 
-	if (!bIsOpen)
-	{
-		Activate();
-	}
+	bIsOpen = true;
+	
+	Activate();
+	
 
-	bIsOpen = !bIsOpen;
+	
 
 }
 

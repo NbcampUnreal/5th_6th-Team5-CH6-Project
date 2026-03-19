@@ -1,5 +1,6 @@
 #include "Gimmic_CY/Base/ObjectBase.h"
 #include "Components/BoxComponent.h"
+#include "Components/WidgetComponent.h"
 
 AObjectBase::AObjectBase()
 {
@@ -14,11 +15,23 @@ AObjectBase::AObjectBase()
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(CollisionBox);
 	Mesh->SetCollisionResponseToChannels(ECR_Block);
+	
+	InteractWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("InteractWidget"));
+	InteractWidget->SetupAttachment(RootComponent);
+	InteractWidget->SetWidgetSpace(EWidgetSpace::Screen);
+	InteractWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
+	InteractWidget->SetDrawSize(FVector2D(200.0f, 50.0f));
+	InteractWidget->SetVisibility(false);
 }
 
 void AObjectBase::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	
+	
+	
+	
 	
 	SetBCanInteract(bDefaultInteractable);
 	//todo: bIsActivated = SaveManager->CheckActivated(ActorID)
@@ -43,10 +56,12 @@ void AObjectBase::Tick(float DeltaTime)
 
 void AObjectBase::OnIneractionRangeEntered_Implementation()
 {
+	
 }
 
 void AObjectBase::OnIneractionRangeExited_Implementation()
 {
+	
 }
 
 void AObjectBase::OnIneracted_Implementation(APrototypeCharacter* Character)
@@ -88,6 +103,18 @@ void AObjectBase::PostActorCreated()
 		ActorID = FGuid::NewGuid();
 		UE_LOG(LogTemp, Warning, TEXT("New Item ID Generated: %s"), *ActorID.ToString());
 	}
+}
+
+void AObjectBase::ShowPressEWidget_Implementation()
+{
+	IInteractionBase::ShowPressEWidget_Implementation();
+	InteractWidget->SetVisibility(true);
+}
+
+void AObjectBase::HidePressEWidget_Implementation()
+{
+	IInteractionBase::HidePressEWidget_Implementation();
+	InteractWidget->SetVisibility(false);
 }
 
 void AObjectBase::Activate()

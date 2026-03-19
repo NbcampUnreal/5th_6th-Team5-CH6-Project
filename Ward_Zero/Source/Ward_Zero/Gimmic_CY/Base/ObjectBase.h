@@ -33,6 +33,9 @@ public:
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
 	virtual void PostActorCreated() override;
+	virtual void ShowPressEWidget_Implementation() override;
+	virtual void HidePressEWidget_Implementation() override;
+	
 	
 	virtual void Activate();
 
@@ -44,6 +47,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UBoxComponent* CollisionBox;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+	class UWidgetComponent* InteractWidget;
+	
 	UPROPERTY(EditInstanceOnly)
 	FGuid ActorID;
 	

@@ -72,7 +72,7 @@ bool ADoorBase::SetBCanInteract(bool IsCanInteract)
 	if (IsCanInteract)
 	{
 		ChangeColorLampGreen();
-	}else
+	}else if (!bIsOpen)
 	{
 		ChangeColorLampRed();
 	}
