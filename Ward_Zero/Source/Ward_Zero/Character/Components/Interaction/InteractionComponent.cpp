@@ -7,6 +7,7 @@
 #include "Character/Data/AnimData/CharacterAnimData.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/CapsuleComponent.h"
+#include "Gimmic_CY/Lever.h"
 
 UInteractionComponent::UInteractionComponent()
 {
@@ -172,6 +173,54 @@ void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)
 	UAnimMontage* MontageToPlay = (LocalItemPos.Z < -50.0f) ? OwnerCharacter->AnimData->PickupLowMontage : OwnerCharacter->AnimData->PickupHighMontage;
 
 	if (MontageToPlay) OwnerCharacter->PlayAnimMontage(MontageToPlay);
+}
+
+void APrototypeCharacter::HandleLeverInteraction(AActor* LeverActor)
+{
+	if (bIsInteractingDoor) return;
+	bIsInteractingDoor = true;
+
+	ALever* Lever = Cast<ALever>(LeverActor);
+	if (!Lever)
+	{
+		bIsInteractingDoor = false;
+		return;
+	}
+
+	// 워핑 및 IK를 위한 타겟 위치(PickUpPoint) 갱신
+	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(Lever);
+
+	// 재생할 몽타주 결정 
+	UAnimMontage* MontageToPlay = AnimData->LeverMontage;
+
+	if (MontageToPlay)
+	{
+		// 몽타주 재생 및 전체 재생 시간 확보
+		float AnimDuration = PlayAnimMontage(MontageToPlay);
+
+		// 실제 레버 작동 트리거 (애니메이션의 약 50% 시점에 실행)
+		FTimerHandle LeverTriggerTimer;
+		GetWorldTimerManager().SetTimer(LeverTriggerTimer, [Lever, this]()
+			{
+				if (IsValid(Lever))
+				{
+					IInteractionBase::Execute_OnIneracted(Lever, this);
+				}
+			}, AnimDuration * 0.5f, false);
+
+		// 상호작용 상태 해제 타이머
+		FTimerHandle EndTimer;
+		GetWorldTimerManager().SetTimer(EndTimer, [this]()
+			{
+				bIsInteractingDoor = false;
+			}, AnimDuration, false);
+	}
+	else
+	{
+		// 몽타주가 없을 경우 즉시 실행하고 상태 해제
+		IInteractionBase::Execute_OnIneracted(Lever, this);
+		bIsInteractingDoor = false;
+	}
 }
 
 void UInteractionComponent::AttachInteractingItem()

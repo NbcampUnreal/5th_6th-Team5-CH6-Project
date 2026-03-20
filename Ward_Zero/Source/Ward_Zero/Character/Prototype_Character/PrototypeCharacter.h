@@ -211,6 +211,7 @@ public:
 
 	float LastDoorInteractTime = 0.0f;
 
+	FVector CurrentPickupLocation;
 private:
 	AActor* FindClosestInteractable();
 	void HandleDoorInteraction(AActor* DoorActor);
