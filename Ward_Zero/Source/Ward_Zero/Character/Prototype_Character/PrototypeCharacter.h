@@ -7,6 +7,8 @@
 #include "Character/Animation/Interface/PlayerAnimInterface.h"
 #include "PrototypeCharacter.generated.h"
 
+class UBoxComponent;
+
 UENUM(BlueprintType)
 enum class EWeaponLayerType : uint8 { Unarmed, Pistol, SMG };
 
@@ -147,8 +149,6 @@ public:
 	void PlayHitReaction(const FVector& ToAttackerDir);
 	void PlayDeathReaction(const FVector& ToAttackerDir);
 
-	UPROPERTY()
-	AActor* PendingDoorActor;
 private:
 	bool bIsRunning = false;
 	float BobTime = 0.0f; // 카메라 밥 계산용
@@ -189,14 +189,10 @@ public:
 	void PopHealItemCap();
 
 public:
-	UPROPERTY(BlueprintReadOnly, Category = "Interaction")
-	FVector CurrentPickupLocation;
 
 	// 애니메이션 데이터 에셋에 픽업 몽타주가 있다고 가정 (AnimData에 추가 필요)
 	void PlayPickupAnimation(AActor* TargetItem);
 
-	UPROPERTY()
-	AActor* CurrentInteractingItem; // 현재 줍고 있는 아이템 저장
 
 	// 노티파이에서 호출할 함수
 	UFUNCTION(BlueprintCallable)
@@ -205,17 +201,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ConsumeInteractingItem();
 
-	bool bIsInteractingDoor = false;
-
-	UPROPERTY()
-	AActor* LastInteractedDoorActor = nullptr;
-
-	float LastDoorInteractTime = 0.0f;
-
-private:
-	AActor* FindClosestInteractable();
-	void HandleDoorInteraction(AActor* DoorActor);
-	void HandleItemInteraction(AActor* ItemActor);
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UBoxComponent* InteractableBox;
 
 	void SwitchWeaponByIndex(int32 WeaponIndex);
 

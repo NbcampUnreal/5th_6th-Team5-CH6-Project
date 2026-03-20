@@ -7,6 +7,7 @@
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Weapon/Weapon.h"
 #include "Animation/AnimNode_Inertialization.h" 
+#include "Character/Components/Interaction/InteractionComponent.h"
 
 void UPlayerAnimInstance::NativeInitializeAnimation()
 {
@@ -102,9 +103,9 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	}
 
 	// 아이템 픽업 IK 
-	if (CachedCharacter)
+	if (CachedCharacter && CachedCharacter->InteractionComp)
 	{
-		PickupTargetLocation = CachedCharacter->CurrentPickupLocation;
+		PickupTargetLocation = CachedCharacter->InteractionComp->CurrentPickupLocation;
 		float PickupCurveValue = GetCurveValue(TEXT("PickupIK"));
 		PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, PickupCurveValue, DeltaSeconds, 15.0f);
 
