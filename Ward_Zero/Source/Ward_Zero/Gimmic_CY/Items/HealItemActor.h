@@ -25,8 +25,6 @@ public:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* MarkerPillar;
-	UPROPERTY(VisibleAnywhere)
-	UWidgetComponent* InteractWidget;
 
 	// 오버랩 이벤트 함수
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;

@@ -36,7 +36,8 @@ public:
 	virtual bool GetBCanInteract() const override;
 	virtual void PostActorCreated() override;
 	
-	
+	virtual void ShowPressEWidget_Implementation() override;
+	virtual void HidePressEWidget_Implementation() override;
 
 	// ===== SaveInterface =====
 	//virtual void SaveActorState(class UWardSaveGame* SaveData) override;
@@ -49,7 +50,12 @@ public:
 	UPROPERTY(EditInstanceOnly)
 	bool bDefaultInteractable = true;
 	
+	bool bActivated = false;
+	
 	FRotator GetInHandTransform() const { return InHandRotator; }
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+	class UWidgetComponent* InteractWidget;
 	
 protected:
 	UPROPERTY(EditInstanceOnly)

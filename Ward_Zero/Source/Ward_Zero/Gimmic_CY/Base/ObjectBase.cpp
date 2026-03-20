@@ -22,6 +22,18 @@ AObjectBase::AObjectBase()
 	InteractWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
 	InteractWidget->SetDrawSize(FVector2D(200.0f, 50.0f));
 	InteractWidget->SetVisibility(false);
+	
+	static ConstructorHelpers::FClassFinder<UUserWidget> InteractWidgetClass(TEXT("/Game/Gimmick/Gimmick_CY/Widget/WB_PressE.WB_PressE_C"));
+	
+	if (InteractWidgetClass.Succeeded())
+	{
+		InteractWidget->SetWidgetClass(InteractWidgetClass.Class);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to find InteractWidget class!"));
+	}
+	
 }
 
 void AObjectBase::BeginPlay()
@@ -121,6 +133,7 @@ void AObjectBase::Activate()
 {
 	//todo: SaveManager->SetActorActivated(ActorID)
 	SetBCanInteract(false);
+	bActivated = true;
 }
 
 FVector AObjectBase::GetInteractionTargetLocation_Implementation() const

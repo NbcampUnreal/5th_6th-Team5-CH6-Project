@@ -38,6 +38,8 @@ public:
 	
 	
 	virtual void Activate();
+	
+	bool bActivated = false;
 
 	FVector GetInteractionTargetLocation_Implementation() const;
 	// Mesh
@@ -55,4 +57,5 @@ public:
 	
 	UPROPERTY(EditInstanceOnly)
 	bool bDefaultInteractable = true;
+	
 };
