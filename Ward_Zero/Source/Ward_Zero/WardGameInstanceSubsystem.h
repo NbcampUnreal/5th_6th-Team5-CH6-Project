@@ -7,10 +7,10 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
-#include "WardGameInstance.generated.h"
+#include "WardGameInstanceSubsystem.generated.h"
 
 UCLASS()
-class WARD_ZERO_API UWardGameInstance : public UGameInstanceSubsystem
+class WARD_ZERO_API UWardGameInstanceSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 

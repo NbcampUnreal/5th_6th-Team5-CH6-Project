@@ -1,6 +1,6 @@
 // WardGameInstance.cpp
 
-#include "WardGameInstance.h"
+#include "WardGameInstanceSubsystem.h"
 #include "AudioDevice.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundMix.h"
@@ -11,12 +11,12 @@
 //  PendingSaveData
 // ════════════════════════════════════════════════════════
 
-void UWardGameInstance::SetPendingSaveData(UWardSaveGame* SaveData)
+void UWardGameInstanceSubsystem::SetPendingSaveData(UWardSaveGame* SaveData)
 {
 	PendingSaveData = SaveData;
 }
 
-void UWardGameInstance::ClearPendingSaveData()
+void UWardGameInstanceSubsystem::ClearPendingSaveData()
 {
 	PendingSaveData = nullptr;
 }
@@ -25,7 +25,7 @@ void UWardGameInstance::ClearPendingSaveData()
 //  오브젝트 상태 (GUID 기반)
 // ════════════════════════════════════════════════════════
 
-void UWardGameInstance::SetObjectState(const FGuid& SaveID, bool bActive, bool bCanInteract)
+void UWardGameInstanceSubsystem::SetObjectState(const FGuid& SaveID, bool bActive, bool bCanInteract)
 {
 	if (!SaveID.IsValid()) return;
 
@@ -35,7 +35,7 @@ void UWardGameInstance::SetObjectState(const FGuid& SaveID, bool bActive, bool b
 	RuntimeObjectStates.Add(SaveID, Data);
 }
 
-FObjectSaveData UWardGameInstance::GetObjectState(const FGuid& SaveID) const
+FObjectSaveData UWardGameInstanceSubsystem::GetObjectState(const FGuid& SaveID) const
 {
 	if (!SaveID.IsValid()) return FObjectSaveData();
 
@@ -55,7 +55,7 @@ FObjectSaveData UWardGameInstance::GetObjectState(const FGuid& SaveID) const
 	return FObjectSaveData();
 }
 
-bool UWardGameInstance::HasObjectState(const FGuid& SaveID) const
+bool UWardGameInstanceSubsystem::HasObjectState(const FGuid& SaveID) const
 {
 	if (!SaveID.IsValid()) return false;
 	if (RuntimeObjectStates.Contains(SaveID)) return true;
@@ -63,7 +63,7 @@ bool UWardGameInstance::HasObjectState(const FGuid& SaveID) const
 	return false;
 }
 
-void UWardGameInstance::SetRuntimeObjectStates(const TMap<FGuid, FObjectSaveData>& States)
+void UWardGameInstanceSubsystem::SetRuntimeObjectStates(const TMap<FGuid, FObjectSaveData>& States)
 {
 	RuntimeObjectStates = States;
 	UE_LOG(LogWard_Zero, Log, TEXT("오브젝트 상태 복원: %d개"), RuntimeObjectStates.Num());
@@ -73,7 +73,7 @@ void UWardGameInstance::SetRuntimeObjectStates(const TMap<FGuid, FObjectSaveData
 //  옵션 적용
 // ════════════════════════════════════════════════════════
 
-void UWardGameInstance::ApplyOptions(UWorld* World)
+void UWardGameInstanceSubsystem::ApplyOptions(UWorld* World)
 {
 	if (!World) return;
 

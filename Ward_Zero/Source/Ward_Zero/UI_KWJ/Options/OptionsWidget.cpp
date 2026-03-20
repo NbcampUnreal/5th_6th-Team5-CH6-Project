@@ -1,7 +1,7 @@
 // OptionsWidget.cpp
 
 #include "UI_KWJ/Options/OptionsWidget.h"
-#include "WardGameInstance.h"
+#include "WardGameInstanceSubsystem.h"
 #include "Components/Slider.h"
 #include "Components/ComboBoxString.h"
 #include "Components/Button.h"
@@ -56,7 +56,7 @@ void UOptionsWidget::OnMasterVolumeChanged(float Value)
 		}
 
 		// GameInstance에 저장 (레벨 전환 시 유지)
-		if (UWardGameInstance* GI = World->GetGameInstance()->GetSubsystem<UWardGameInstance>())
+		if (UWardGameInstanceSubsystem* GI = World->GetGameInstance()->GetSubsystem<UWardGameInstanceSubsystem>())
 		{
 			GI->MasterVolume = Value;
 		}
@@ -74,7 +74,7 @@ void UOptionsWidget::OnBGMVolumeChanged(float Value)
 
 	if (UWorld* World = GetWorld())
 	{
-		if (UWardGameInstance* GI = World->GetGameInstance()->GetSubsystem<UWardGameInstance>())
+		if (UWardGameInstanceSubsystem* GI = World->GetGameInstance()->GetSubsystem<UWardGameInstanceSubsystem>())
 		{
 			GI->BGMVolume = Value;
 		}
@@ -92,7 +92,7 @@ void UOptionsWidget::OnSFXVolumeChanged(float Value)
 
 	if (UWorld* World = GetWorld())
 	{
-		if (UWardGameInstance* GI = World->GetGameInstance()->GetSubsystem<UWardGameInstance>())
+		if (UWardGameInstanceSubsystem* GI = World->GetGameInstance()->GetSubsystem<UWardGameInstanceSubsystem>())
 		{
 			GI->SFXVolume = Value;
 		}
@@ -131,7 +131,7 @@ void UOptionsWidget::OnGammaChanged(float Value)
 
 	if (UWorld* World = GetWorld())
 	{
-		if (UWardGameInstance* GI = World->GetGameInstance()->GetSubsystem<UWardGameInstance>())
+		if (UWardGameInstanceSubsystem* GI = World->GetGameInstance()->GetSubsystem<UWardGameInstanceSubsystem>())
 		{
 			GI->Gamma = Value;
 		}

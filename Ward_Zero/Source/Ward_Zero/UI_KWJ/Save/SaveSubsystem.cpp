@@ -2,7 +2,7 @@
 
 #include "UI_KWJ/Save/SaveSubsystem.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
-#include "WardGameInstance.h"
+#include "WardGameInstanceSubsystem.h"
 #include "UI_KWJ/Save/SaveWidget.h"
 #include "UI_KWJ/Save/LoadWidget.h"
 #include "UI_KWJ/GameOver/GameOverSubsystem.h"
@@ -43,7 +43,7 @@ void USaveSubsystem::OnLevelLoaded(UWorld* LoadedWorld)
 	UGameInstance* GI = GetLocalPlayer()->GetGameInstance();
 	if (!GI) return;
 
-	UWardGameInstance* SaveGI = GI->GetSubsystem<UWardGameInstance>();
+	UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>();
 	if (!SaveGI) return;
 
 	// 레벨 전환 시 옵션 값 재적용 (볼륨 등)
@@ -166,7 +166,7 @@ bool USaveSubsystem::LoadGame(const FString& SlotName)
 	UGameInstance* GI = GetLocalPlayer()->GetGameInstance();
 	if (GI)
 	{
-		if (UWardGameInstance* SaveGI = GI->GetSubsystem<UWardGameInstance>())
+		if (UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>())
 		{
 			SaveGI->SetPendingSaveData(SaveData);
 		}
@@ -327,7 +327,7 @@ UWardSaveGame* USaveSubsystem::CollectCurrentGameState()
 	UGameInstance* GI = GetLocalPlayer()->GetGameInstance();
 	if (GI)
 	{
-		if (UWardGameInstance* SaveGI = GI->GetSubsystem<UWardGameInstance>())
+		if (UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>())
 		{
 			SaveData->ObjectStates = SaveGI->GetRuntimeObjectStates();
 		}
@@ -403,7 +403,7 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 	UGameInstance* GI = GetLocalPlayer()->GetGameInstance();
 	if (GI)
 	{
-		if (UWardGameInstance* SaveGI = GI->GetSubsystem<UWardGameInstance>())
+		if (UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>())
 		{
 			SaveGI->SetRuntimeObjectStates(SaveData->ObjectStates);
 		}
