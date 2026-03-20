@@ -43,6 +43,8 @@ private:
 	UPROPERTY()
 	class USpotLightComponent* BodyRunLight;
 
+	FRotator CurrentLightRotation;
+
 public:
 	UPROPERTY(EditAnywhere, Category = "FlashLight|Montage")
 	TObjectPtr<UAnimMontage> RaiseLightMontage;

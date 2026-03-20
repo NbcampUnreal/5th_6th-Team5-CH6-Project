@@ -204,6 +204,18 @@ public:
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UBoxComponent* InteractableBox;
+	bool bIsInteractingDoor = false;
+
+	UPROPERTY()
+	AActor* LastInteractedDoorActor = nullptr;
+
+	float LastDoorInteractTime = 0.0f;
+
+private:
+	AActor* FindClosestInteractable();
+	void HandleDoorInteraction(AActor* DoorActor);
+	void HandleItemInteraction(AActor* ItemActor);
+	void HandleLeverInteraction(AActor* LeverActor);
 
 	void SwitchWeaponByIndex(int32 WeaponIndex);
 

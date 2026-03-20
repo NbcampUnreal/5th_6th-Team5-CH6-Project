@@ -48,6 +48,9 @@ public:
     UPROPERTY(EditAnywhere, Category = "Montage|Interaction")
     TObjectPtr<UAnimMontage> OpenDoorMontage;
 
+    UPROPERTY(EditAnywhere, Category = "Montage|Interaction")
+    TObjectPtr<UAnimMontage> LeverMontage; // 레버 내리는 몽타주
+
     UPROPERTY(EditAnywhere, Category = "Montage|Action")
     TObjectPtr<UAnimMontage> HealMontage;
 
