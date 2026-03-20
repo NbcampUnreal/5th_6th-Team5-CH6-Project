@@ -18,6 +18,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	
+	bool bGamePlay = false;
 
 public:	
 	virtual void Tick(float DeltaTime) override;
@@ -32,9 +34,22 @@ public:
 	virtual EInteractionType GetInteractionType_Implementation() const override;
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
+	virtual void ShowPressEWidget_Implementation() override;
+	virtual void HidePressEWidget_Implementation() override;
+	virtual void SaveActorState() const override;
+	
+	
 	virtual void PostActorCreated() override;
 	
+	/*UFUNCTION(CallInEditor,Category = "Editor",meta =(DisplayName = "Activate"))
+	void ActivateInEditor();
+	UFUNCTION(CallInEditor,Category = "Editor",meta =(DisplayName = "DeActivate"))
+	void DeActivateInEditor();*/
+	
+	
 	virtual void Activate();
+	
+	bool bActivated = false;
 
 	FVector GetInteractionTargetLocation_Implementation() const;
 	// Mesh
@@ -44,9 +59,13 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UBoxComponent* CollisionBox;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+	class UWidgetComponent* InteractWidget;
+	
 	UPROPERTY(EditInstanceOnly)
 	FGuid ActorID;
 	
 	UPROPERTY(EditInstanceOnly)
 	bool bDefaultInteractable = true;
+	
 };

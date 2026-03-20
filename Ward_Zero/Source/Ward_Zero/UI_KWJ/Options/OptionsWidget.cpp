@@ -1,6 +1,7 @@
 // OptionsWidget.cpp
 
 #include "UI_KWJ/Options/OptionsWidget.h"
+#include "WardGameInstanceSubsystem.h"
 #include "Components/Slider.h"
 #include "Components/ComboBoxString.h"
 #include "Components/Button.h"
@@ -46,13 +47,18 @@ void UOptionsWidget::NativeConstruct()
 
 void UOptionsWidget::OnMasterVolumeChanged(float Value)
 {
-	// 게임 월드의 오디오 디바이스에서 전체 볼륨 조절
 	if (UWorld* World = GetWorld())
 	{
 		FAudioDeviceHandle AudioDevice = World->GetAudioDevice();
 		if (AudioDevice.IsValid())
 		{
 			AudioDevice->SetTransientPrimaryVolume(Value);
+		}
+
+		// GameInstance에 저장 (레벨 전환 시 유지)
+		if (UWardGameInstanceSubsystem* GI = World->GetGameInstance()->GetSubsystem<UWardGameInstanceSubsystem>())
+		{
+			GI->MasterVolume = Value;
 		}
 	}
 
@@ -66,6 +72,14 @@ void UOptionsWidget::OnBGMVolumeChanged(float Value)
 {
 	ApplyVolume(BGMSoundClass, Value);
 
+	if (UWorld* World = GetWorld())
+	{
+		if (UWardGameInstanceSubsystem* GI = World->GetGameInstance()->GetSubsystem<UWardGameInstanceSubsystem>())
+		{
+			GI->BGMVolume = Value;
+		}
+	}
+
 	if (TXT_BGMValue)
 	{
 		TXT_BGMValue->SetText(FText::FromString(FString::Printf(TEXT("%d%%"), FMath::RoundToInt(Value * 100.f))));
@@ -75,6 +89,14 @@ void UOptionsWidget::OnBGMVolumeChanged(float Value)
 void UOptionsWidget::OnSFXVolumeChanged(float Value)
 {
 	ApplyVolume(SFXSoundClass, Value);
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UWardGameInstanceSubsystem* GI = World->GetGameInstance()->GetSubsystem<UWardGameInstanceSubsystem>())
+		{
+			GI->SFXVolume = Value;
+		}
+	}
 
 	if (TXT_SFXValue)
 	{
@@ -100,17 +122,24 @@ void UOptionsWidget::ApplyVolume(USoundClass* InSoundClass, float Volume)
 
 void UOptionsWidget::OnGammaChanged(float Value)
 {
-	// 슬라이더 0~1 → 감마 1.5~3.5 (기본 2.2)
-	float Gamma = FMath::Lerp(1.5f, 3.5f, Value);
+	float GammaValue = FMath::Lerp(1.5f, 3.5f, Value);
 
 	if (GEngine)
 	{
-		GEngine->DisplayGamma = Gamma;
+		GEngine->DisplayGamma = GammaValue;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UWardGameInstanceSubsystem* GI = World->GetGameInstance()->GetSubsystem<UWardGameInstanceSubsystem>())
+		{
+			GI->Gamma = Value;
+		}
 	}
 
 	if (TXT_GammaValue)
 	{
-		TXT_GammaValue->SetText(FText::FromString(FString::Printf(TEXT("%.1f"), Gamma)));
+		TXT_GammaValue->SetText(FText::FromString(FString::Printf(TEXT("%.1f"), GammaValue)));
 	}
 }
 

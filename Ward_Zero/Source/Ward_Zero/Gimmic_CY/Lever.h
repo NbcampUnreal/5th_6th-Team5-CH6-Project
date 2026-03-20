@@ -52,16 +52,16 @@ public:
 	UStaticMeshComponent* LeverHandle;
 	
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "Doors For Open"), Category="Interaction Actors")
 	TArray<ADoorBase*> DoorsForOpen;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (DisplayName = "Doors For Close"), Category="Interaction Actors")
 	TArray<ADoorBase*> DoorsForClose;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (DisplayName = "Actors For Lock Interaction"), Category="Interaction Actors")
 	TArray<AActor*> InteractionActors;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (DisplayName = "Actors For UnLock Interaction"), Category="Interaction Actors")
 	TArray<AActor*> UnInteractionActors;
 	
 	EInteractionType GetInteractionType_Implementation() const override;

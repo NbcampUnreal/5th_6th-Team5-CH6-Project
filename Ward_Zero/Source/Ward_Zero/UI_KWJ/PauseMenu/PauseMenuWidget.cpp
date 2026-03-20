@@ -28,9 +28,26 @@ void UPauseMenuWidget::NativeConstruct()
 
 FReply UPauseMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
-	// ESC로 메뉴 닫기
 	if (InKeyEvent.GetKey() == EKeys::Escape)
 	{
+		// 설정 창이 열려있으면 설정부터 닫기
+		if (OptionsWidget && OptionsWidget->IsVisible())
+		{
+			OptionsWidget->SetVisibility(ESlateVisibility::Collapsed);
+			return FReply::Handled();
+		}
+
+		// 로드 UI가 열려있으면 로드부터 닫기
+		USaveSubsystem* SaveSys = GetOwningLocalPlayer()->GetSubsystem<USaveSubsystem>();
+		if (SaveSys && SaveSys->IsLoadUIOpen())
+		{
+			SaveSys->HideLoadUI();
+			// PauseMenu 다시 보이게
+			SetVisibility(ESlateVisibility::Visible);
+			return FReply::Handled();
+		}
+
+		// 아무것도 안 열려있으면 PauseMenu 닫기
 		OnResumeClicked();
 		return FReply::Handled();
 	}
@@ -55,8 +72,7 @@ void UPauseMenuWidget::OnLoadClicked()
 {
 	UE_LOG(LogWard_Zero, Log, TEXT("일시정지: 불러오기"));
 
-	// 일시정지 해제 후 Load UI 열기
-	UGameplayStatics::SetGamePaused(GetWorld(), false);
+	// 일시정지 유지한 채 Load UI 열기 (게임 멈춘 상태로 세이브 파일 탐색)
 	SetVisibility(ESlateVisibility::Collapsed);
 
 	USaveSubsystem* SaveSys = GetOwningLocalPlayer()->GetSubsystem<USaveSubsystem>();

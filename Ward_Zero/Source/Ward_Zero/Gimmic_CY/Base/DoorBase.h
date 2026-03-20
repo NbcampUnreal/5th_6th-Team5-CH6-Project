@@ -64,6 +64,7 @@ protected:
 	UFUNCTION()
 	virtual void UpdateTimelineComp(float Output);
 
+	virtual void OnConstruction(const FTransform& Transform) override;
 	bool bIsOpen = false;
 
 	UPROPERTY(VisibleAnywhere)

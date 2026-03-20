@@ -34,9 +34,13 @@ public:
 	virtual EInteractionType GetInteractionType_Implementation() const override;
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
+	virtual void SaveActorState() const override;
+	
 	virtual void PostActorCreated() override;
 	
 	
+	virtual void ShowPressEWidget_Implementation() override;
+	virtual void HidePressEWidget_Implementation() override;
 
 	// ===== SaveInterface =====
 	//virtual void SaveActorState(class UWardSaveGame* SaveData) override;
@@ -49,7 +53,12 @@ public:
 	UPROPERTY(EditInstanceOnly)
 	bool bDefaultInteractable = true;
 	
+	bool bActivated = false;
+	
 	FRotator GetInHandTransform() const { return InHandRotator; }
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+	class UWidgetComponent* InteractWidget;
 	
 protected:
 	UPROPERTY(EditInstanceOnly)
@@ -58,6 +67,7 @@ protected:
 	UPROPERTY()
 	bool bCollected = false;
 
+	bool bGamePlay =false;
 	// Mesh
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Mesh;

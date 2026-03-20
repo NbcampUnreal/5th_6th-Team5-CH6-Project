@@ -14,6 +14,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void OnConstruction(const FTransform& Transform) override;
 
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Door;
@@ -27,9 +28,15 @@ protected:
 
 	virtual void UpdateTimelineComp(float Output) override;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "In Items"), Category = "Item")
 	TArray<AActor*> Items;
 
+	
+	bool bVanishMagic = false;
+	
+	UFUNCTION(CallInEditor, Category = "Editor")
+	void DoorVanishMagic();
+	
 public:
 	// ===== IGimmickInterface =====
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;

@@ -2,6 +2,7 @@
 
 #include "UI_KWJ/Save/SaveSubsystem.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
+#include "WardGameInstanceSubsystem.h"
 #include "UI_KWJ/Save/SaveWidget.h"
 #include "UI_KWJ/Save/LoadWidget.h"
 #include "UI_KWJ/GameOver/GameOverSubsystem.h"
@@ -39,17 +40,25 @@ void USaveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void USaveSubsystem::OnLevelLoaded(UWorld* LoadedWorld)
 {
-	if (!PendingSaveData) return;
+	UGameInstance* GI = GetLocalPlayer()->GetGameInstance();
+	if (!GI) return;
 
-	UWardSaveGame* DataToApply = PendingSaveData;
-	PendingSaveData = nullptr;
+	UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>();
+	if (!SaveGI) return;
+
+	// 레벨 전환 시 옵션 값 재적용 (볼륨 등)
+	SaveGI->ApplyOptions(LoadedWorld);
+
+	UWardSaveGame* DataToApply = SaveGI->GetPendingSaveData();
+	if (!DataToApply) return;
 
 	// 한 틱 뒤에 적용 (레벨 액터들이 완전히 초기화된 후)
 	if (UWorld* World = GetWorld())
 	{
-		World->GetTimerManager().SetTimerForNextTick([this, DataToApply]()
+		World->GetTimerManager().SetTimerForNextTick([this, SaveGI, DataToApply]()
 		{
 			ApplyGameState(DataToApply);
+			SaveGI->ClearPendingSaveData();
 			UE_LOG(LogWard_Zero, Log, TEXT("레벨 전환 후 세이브 데이터 적용 완료"));
 		});
 	}
@@ -152,31 +161,24 @@ bool USaveSubsystem::LoadGame(const FString& SlotName)
 		LoadingSys->ShowLoading(FText::FromString(TEXT("Loading...")));
 	}
 
-	FName CurrentLevel = FName(*UGameplayStatics::GetCurrentLevelName(GetWorld()));
-	if (SaveData->CurrentLevelName != NAME_None && SaveData->CurrentLevelName != CurrentLevel)
+	// 항상 ServerTravel — 맵 리로드로 모든 액터 BeginPlay 보장
+	// → 각 액터가 GameInstanceSubsystem에서 자기 GUID로 상태 복원
+	UGameInstance* GI = GetLocalPlayer()->GetGameInstance();
+	if (GI)
 	{
-		// 다른 레벨이면 전환 후 OnLevelLoaded에서 ApplyGameState 호출
-		UE_LOG(LogWard_Zero, Log, TEXT("레벨 전환: %s → %s"),
-			*CurrentLevel.ToString(), *SaveData->CurrentLevelName.ToString());
-
-		PendingSaveData = SaveData;
-
-		FString TravelURL = SaveData->CurrentLevelName.ToString();
-		GetWorld()->ServerTravel(TravelURL, true);
-	}
-	else
-	{
-		// 같은 레벨이면 바로 적용
-		ApplyGameState(SaveData);
-
-		// 로딩 화면 숨기기
-		if (ULoadingScreenSubsystem* LoadingSys = GetLocalPlayer()->GetSubsystem<ULoadingScreenSubsystem>())
+		if (UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>())
 		{
-			LoadingSys->HideLoading();
+			SaveGI->SetPendingSaveData(SaveData);
 		}
-
-		UE_LOG(LogWard_Zero, Log, TEXT("세이브 로드 완료: %s"), *SlotName);
 	}
+
+	FName CurrentLevel = FName(*UGameplayStatics::GetCurrentLevelName(GetWorld()));
+	FString TravelURL = (SaveData->CurrentLevelName != NAME_None)
+		? SaveData->CurrentLevelName.ToString()
+		: CurrentLevel.ToString();
+
+	UE_LOG(LogWard_Zero, Log, TEXT("세이브 로드 → ServerTravel: %s"), *TravelURL);
+	GetWorld()->ServerTravel(TravelURL, true);
 
 	return true;
 }
@@ -321,6 +323,16 @@ UWardSaveGame* USaveSubsystem::CollectCurrentGameState()
 	SaveData->SaveDateTime = FDateTime::Now();
 	SaveData->PlayTimeSeconds = 0.f; // TODO: 별도 추적
 
+	// 오브젝트 상태 (GameInstanceSubsystem → 세이브 데이터)
+	UGameInstance* GI = GetLocalPlayer()->GetGameInstance();
+	if (GI)
+	{
+		if (UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>())
+		{
+			SaveData->ObjectStates = SaveGI->GetRuntimeObjectStates();
+		}
+	}
+
 	return SaveData;
 }
 
@@ -386,6 +398,16 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 		*SaveData->PlayerLocation.ToString(),
 		SaveData->CurrentHealth, SaveData->MaxHealth,
 		SaveData->CurrentStamina, SaveData->MaxStamina);
+
+	// 오브젝트 상태 → GameInstanceSubsystem에 전달
+	UGameInstance* GI = GetLocalPlayer()->GetGameInstance();
+	if (GI)
+	{
+		if (UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>())
+		{
+			SaveGI->SetRuntimeObjectStates(SaveData->ObjectStates);
+		}
+	}
 }
 
 // ════════════════════════════════════════════════════════
@@ -583,14 +605,6 @@ void USaveSubsystem::HideLoadUI()
 	{
 		LoadWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
 	}
-
-	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
-	if (PC)
-	{
-		FInputModeGameOnly InputMode;
-		PC->SetInputMode(InputMode);
-		PC->SetShowMouseCursor(false);
-	}
 }
 
 bool USaveSubsystem::IsLoadUIOpen() const
@@ -651,7 +665,7 @@ ULoadWidget* USaveSubsystem::GetOrCreateLoadUI()
 	{
 		if (!LoadWidgetInstance->IsInViewport())
 		{
-			LoadWidgetInstance->AddToViewport(150);
+			LoadWidgetInstance->AddToViewport(210);
 			LoadWidgetInstance->SetAnchorsInViewport(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
 			LoadWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
 		}
@@ -680,7 +694,7 @@ ULoadWidget* USaveSubsystem::GetOrCreateLoadUI()
 	LoadWidgetInstance = CreateWidget<ULoadWidget>(PC, LoadWidgetClass);
 	if (LoadWidgetInstance)
 	{
-		LoadWidgetInstance->AddToViewport(150);
+		LoadWidgetInstance->AddToViewport(210);
 		LoadWidgetInstance->SetAnchorsInViewport(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
 		LoadWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
 	}

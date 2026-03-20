@@ -5,7 +5,8 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/LocalPlayerSubsystem.h"
-#include "UI_KWJ/Save/SaveTypes.h"          // ← FSaveFileInfo
+#include "UI_KWJ/Save/SaveTypes.h"
+#include "UI_KWJ/Save/WardSaveGame.h"
 #include "SaveSubsystem.generated.h"
 
 class UWardSaveGame;
@@ -74,9 +75,6 @@ private:
 
 	UWardSaveGame* CollectCurrentGameState();
 	void ApplyGameState(UWardSaveGame* SaveData);
-
-	UPROPERTY()
-	UWardSaveGame* PendingSaveData = nullptr;
 
 	FDelegateHandle OnLevelLoadedHandle;
 	void OnLevelLoaded(UWorld* LoadedWorld);

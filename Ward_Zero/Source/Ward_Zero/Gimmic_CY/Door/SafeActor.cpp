@@ -9,6 +9,8 @@ ASafeActor::ASafeActor()
 
     Door = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Door"));
     Door->SetupAttachment(Pivot);
+    
+    
 }
 
 void ASafeActor::BeginPlay()
@@ -26,6 +28,20 @@ void ASafeActor::BeginPlay()
    
 }
 
+void ASafeActor::OnConstruction(const FTransform& Transform)
+{
+    Super::OnConstruction(Transform);
+    if (bVanishMagic)
+    {
+        Door->SetVisibility(false);
+    }else
+    {
+        Door->SetVisibility(true);
+    }
+
+    
+}
+
 void ASafeActor::UpdateTimelineComp(float Output)
 {
     float NewYaw = FMath::Lerp(0.f, TargetYaw, Output);
@@ -34,6 +50,12 @@ void ASafeActor::UpdateTimelineComp(float Output)
     NewRot.Yaw += NewYaw;
 
     Pivot->SetRelativeRotation(NewRot);
+}
+
+void ASafeActor::DoorVanishMagic()
+{
+    bVanishMagic = !bVanishMagic;
+    OnConstruction(GetActorTransform());
 }
 
 void ASafeActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
@@ -54,6 +76,7 @@ void ASafeActor::HandleInteraction_Implementation(APrototypeCharacter* Character
 void ASafeActor::Activate()
 {
     Super::Activate();
+   
     if (!DoorTimelineComp)
         return;
 

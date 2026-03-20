@@ -54,6 +54,14 @@ public:
 	virtual bool SetBCanInteract(bool IsCanInteract) = 0;
 
 	virtual bool GetBCanInteract() const  = 0;
+	
+	virtual void SaveActorState() const = 0;
+	
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void ShowPressEWidget();
+	
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void HidePressEWidget();
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
 	FVector GetInteractionTargetLocation() const;

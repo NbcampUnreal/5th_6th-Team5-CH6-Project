@@ -61,6 +61,12 @@ void ADoorBase::UpdateTimelineComp(float Value)
 	
 }
 
+void ADoorBase::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+	bIsOpen = false;
+}
+
 FVector ADoorBase::GetInteractionTargetLocation_Implementation() const {
 	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Blue, "Enable PickupPoint");
 	return PickUpPoint->GetComponentLocation();
@@ -72,7 +78,7 @@ bool ADoorBase::SetBCanInteract(bool IsCanInteract)
 	if (IsCanInteract)
 	{
 		ChangeColorLampGreen();
-	}else
+	}else if (!bIsOpen)
 	{
 		ChangeColorLampRed();
 	}

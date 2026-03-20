@@ -7,6 +7,21 @@
 #include "GameFramework/SaveGame.h"
 #include "WardSaveGame.generated.h"
 
+/** 오브젝트 저장 데이터 — GUID와 함께 저장 */
+USTRUCT(BlueprintType)
+struct FObjectSaveData
+{
+	GENERATED_BODY()
+
+	/** 활성화 여부 (레버 당김, 벽 파괴, 아이템 습득 등) */
+	UPROPERTY(VisibleAnywhere)
+	bool bActive = false;
+
+	/** 상호작용 가능 여부 */
+	UPROPERTY(VisibleAnywhere)
+	bool bCanInteract = true;
+};
+
 UCLASS()
 class WARD_ZERO_API UWardSaveGame : public USaveGame
 {
@@ -87,23 +102,14 @@ public:
 	int32 CurrentSubPart = 0;
 
 	// ══════════════════════════════════════════
-	//  오브젝트 상태 (ID 기반)
-	//  맵에 배치된 오브젝트에 고유 ID를 부여하고
-	//  해당 오브젝트의 상태를 bool로 저장
-	//
-	//  ID 접두어 규칙 (팀 협의에 따라 변경 가능):
-	//    "lv_"  = 레버 (예: "lv_01", "lv_02")
-	//    "hl_"  = 힐 아이템 (예: "hl_01", "hl_02")
-	//    "dr_"  = 잠긴 문 (예: "dr_01")
-	//    "st_"  = 셔터 (예: "st_01")
-	//
-	//  저장 시: 맵에서 ID가 있는 오브젝트를 순회 → 상태 수집
-	//  로드 시: 맵에서 ID 매칭 → 저장된 상태 적용
-	//           매칭 안 되면 스킵 (맵에 없는 오브젝트)
+	//  오브젝트 상태 (GUID 기반)
+	//  각 액터가 GUID + Active/Interaction 상태를 저장
+	//  Active: 활성화 여부 (레버 당김, 벽 파괴 등)
+	//  CanInteract: 상호작용 가능 여부
 	// ══════════════════════════════════════════
 
 	UPROPERTY(VisibleAnywhere, Category = "SaveData|Objects")
-	TMap<FString, bool> SavedObjectStates;
+	TMap<FGuid, FObjectSaveData> ObjectStates;
 
 	// ══════════════════════════════════════════
 	//  메타 정보

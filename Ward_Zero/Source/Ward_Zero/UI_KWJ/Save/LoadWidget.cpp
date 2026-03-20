@@ -3,6 +3,7 @@
 #include "UI_KWJ/Save/LoadWidget.h"
 #include "UI_KWJ/Save/SaveSubsystem.h"
 #include "UI_KWJ/Save/SaveSlotItem.h"
+#include "UI_KWJ/PauseMenu/PauseMenuSubsystem.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "Components/ScrollBox.h"
@@ -105,10 +106,18 @@ void ULoadWidget::OnCloseClicked()
 	ULocalPlayer* LP = PC->GetLocalPlayer();
 	if (!LP) return;
 
+	// Load UI 숨기기
 	USaveSubsystem* SaveSub = LP->GetSubsystem<USaveSubsystem>();
 	if (SaveSub)
 	{
 		SaveSub->HideLoadUI();
+	}
+
+	// PauseMenu 다시 표시
+	UPauseMenuSubsystem* PauseSys = LP->GetSubsystem<UPauseMenuSubsystem>();
+	if (PauseSys)
+	{
+		PauseSys->ShowPauseMenu();
 	}
 }
 
@@ -208,4 +217,19 @@ void ULoadWidget::SetCloseButtonVisible(bool bVisible)
 	{
 		BTN_Close->SetVisibility(bVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
+}
+
+FReply ULoadWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (InKeyEvent.GetKey() == EKeys::Escape)
+	{
+		// 나가기 버튼이 보이면 (게임오버가 아니면) ESC로 닫기
+		if (BTN_Close && BTN_Close->IsVisible())
+		{
+			OnCloseClicked();
+			return FReply::Handled();
+		}
+	}
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }

@@ -1,4 +1,6 @@
 #include "ItemBase.h"
+
+#include "WardGameInstanceSubsystem.h"
 #include "Components/BoxComponent.h"
 #include "Components/WidgetComponent.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
@@ -24,13 +26,31 @@ AItemBase::AItemBase()
 	PickUpPoint->SetupAttachment(Mesh); 
 	PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
 	
+	InteractWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("InteractWidget"));
+	InteractWidget->SetupAttachment(RootComponent);
+	InteractWidget->SetWidgetSpace(EWidgetSpace::Screen);
+	InteractWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 10.0f));
+	InteractWidget->SetDrawSize(FVector2D(200.0f, 50.0f));
+	InteractWidget->SetVisibility(false);
+	
+	static ConstructorHelpers::FClassFinder<UUserWidget> InteractWidgetClass(TEXT("/Game/Gimmick/Gimmick_CY/Widget/WB_PressE.WB_PressE_C"));
+	
+	if (InteractWidgetClass.Succeeded())
+	{
+		InteractWidget->SetWidgetClass(InteractWidgetClass.Class);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to find InteractWidget class!"));
+	}
+	
 	
 }
 
 void AItemBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	bGamePlay = true;
 	SetBCanInteract(bDefaultInteractable);
 	//todo: bIsActivated = SaveManager->CheckActivated(ActorID)
 	//todo: bIsInterActable = SaveManager->CheckInterActable(ActorID)
@@ -76,7 +96,7 @@ void AItemBase::HandleInteraction_Implementation(APrototypeCharacter* Character)
 
 	HiddenActor();
 
-	//todo: SaveManager->SetActorActivated(ActorID)
+	SaveActorState();
 	
 }
 
@@ -88,8 +108,7 @@ EInteractionType AItemBase::GetInteractionType_Implementation() const
 bool AItemBase::SetBCanInteract(bool IsCanInteract)
 {
 	bCanInteract = IsCanInteract;
-	
-	//todo: SaveManager->SetActorInteractable(ActorId,bCanInteract)
+	SaveActorState();
 	return bCanInteract;
 }
 
@@ -98,12 +117,31 @@ bool AItemBase::GetBCanInteract() const
 	return bCanInteract;
 }
 
+void AItemBase::SaveActorState() const
+{
+	if (!bGamePlay)
+	{
+		return;
+	}
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UWardGameInstanceSubsystem* WardGISubSys = GI->GetSubsystem<UWardGameInstanceSubsystem>())
+			{
+				WardGISubSys->SetObjectState(ActorID,bActivated,bCanInteract);
+			}
+		}
+	}
+}
+
 void AItemBase::HiddenActor()
 {
 	CollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Mesh->SetVisibility(false);
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SetBCanInteract(false);
+	bActivated = true;
 }
 
 void AItemBase::PostActorCreated()
@@ -116,6 +154,18 @@ void AItemBase::PostActorCreated()
 		ActorID = FGuid::NewGuid();
 		UE_LOG(LogTemp, Warning, TEXT("New Item ID Generated: %s"), *ActorID.ToString());
 	}
+}
+
+void AItemBase::ShowPressEWidget_Implementation()
+{
+	IInteractionBase::ShowPressEWidget_Implementation();
+	InteractWidget->SetVisibility(true);
+}
+
+void AItemBase::HidePressEWidget_Implementation()
+{
+	IInteractionBase::HidePressEWidget_Implementation();
+	InteractWidget->SetVisibility(false);
 }
 
 
