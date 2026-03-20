@@ -1,243 +1,245 @@
-﻿// InteractionComponent.cpp
-
-#include "Character/Components/Interaction/InteractionComponent.h"
+﻿#include "Character/Components/Interaction/InteractionComponent.h"
+#include "Components/BoxComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
-#include "Character/Data/AnimData/CharacterAnimData.h"
-#include "Objects/Interface/Interact.h"
 #include "Gimmic_CY/Base/InteractionBase.h"
-#include "UI_KWJ/Save/SavePointComponent.h"
 #include "UI_KWJ/Save/SaveSubsystem.h"
-#include "UI_KWJ/GameClear/GameClearComponent.h"
-#include "UI_KWJ/GameClear/GameClearSubsystem.h"
-#include "Components/WidgetComponent.h"
-#include "Blueprint/UserWidget.h"
-#include "Camera/CameraComponent.h"
-#include "Ward_Zero.h"
+#include "MotionWarpingComponent.h"
+#include "Character/Data/AnimData/CharacterAnimData.h"
+#include "GameFramework/PlayerController.h"
+#include "Components/CapsuleComponent.h"
+#include "Gimmic_CY/Lever.h"
 
 UInteractionComponent::UInteractionComponent()
 {
-	PrimaryComponentTick.bCanEverTick = true;
-	FocusedActor = nullptr;
-	PromptWidgetComp = nullptr;
+	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UInteractionComponent::BeginPlay()
+void UInteractionComponent::Initialize(APrototypeCharacter* InCharacter, UBoxComponent* InBox)
 {
-	Super::BeginPlay();
-
-	// 프롬프트 위젯 컴포넌트 동적 생성
-	if (PromptWidgetClass)
-	{
-		PromptWidgetComp = NewObject<UWidgetComponent>(GetOwner(), TEXT("InteractPrompt"));
-		if (PromptWidgetComp)
-		{
-			PromptWidgetComp->RegisterComponent();
-			PromptWidgetComp->SetWidgetSpace(EWidgetSpace::Screen);
-			PromptWidgetComp->SetWidgetClass(PromptWidgetClass);
-			PromptWidgetComp->SetDrawAtDesiredSize(true);
-			PromptWidgetComp->SetVisibility(false);
-			PromptWidgetComp->AttachToComponent(
-				GetOwner()->GetRootComponent(),
-				FAttachmentTransformRules::KeepRelativeTransform
-			);
-		}
-	}
+	OwnerCharacter = InCharacter;
+	InteractableBox = InBox;
 }
-
-void UInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	PerformTrace();
-	UpdatePromptLocation();
-}
-
-// ══════════════════════════════════════════
-//  라인 트레이스
-// ══════════════════════════════════════════
-
-void UInteractionComponent::PerformTrace()
-{
-	APrototypeCharacter* Player = Cast<APrototypeCharacter>(GetOwner());
-	if (!Player) return;
-
-	// 카메라 기준 트레이스
-	UCameraComponent* Camera = Player->FindComponentByClass<UCameraComponent>();
-	if (!Camera) return;
-
-	FVector Start = Camera->GetComponentLocation();
-	FVector End = Start + (Camera->GetForwardVector() * InteractionRange);
-
-	FHitResult Hit;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(Player);
-
-	AActor* HitActor = nullptr;
-
-	FCollisionShape SphereShape = FCollisionShape::MakeSphere(InteractionRadius);
-
-	// FQuat::Identity는 회전값이 없다는 뜻입니다. (공 모양이므로 회전이 의미 없음)
-	if (GetWorld()->SweepSingleByChannel(Hit, Start, End, FQuat::Identity, TraceChannel, SphereShape, Params))
-	{
-		AActor* Actor = Hit.GetActor();
-		if (Actor && IsInteractable(Actor))
-		{
-			HitActor = Actor;
-		}
-	}
-
-	SetFocusedActor(HitActor);
-}
-
-// ══════════════════════════════════════════
-//  포커스 관리
-// ══════════════════════════════════════════
-
-void UInteractionComponent::SetFocusedActor(AActor* NewActor)
-{
-	if (FocusedActor == NewActor) return;
-
-	FocusedActor = NewActor;
-
-	if (PromptWidgetComp)
-	{
-		PromptWidgetComp->SetVisibility(FocusedActor != nullptr);
-	}
-}
-
-void UInteractionComponent::UpdatePromptLocation()
-{
-	if (!PromptWidgetComp || !FocusedActor) return;
-
-	// 액터 바운딩 박스 상단 + 오프셋에 프롬프트 배치
-	FVector Origin, Extent;
-	FocusedActor->GetActorBounds(false, Origin, Extent);
-
-	FVector PromptLocation = Origin + FVector(0.0f, 0.0f, Extent.Z + PromptHeightOffset);
-	PromptWidgetComp->SetWorldLocation(PromptLocation);
-}
-
-// ══════════════════════════════════════════
-//  상호작용 체크 & 실행
-// ══════════════════════════════════════════
-
-bool UInteractionComponent::IsInteractable(AActor* Actor) const
-{
-	if (!Actor) return false;
-
-	// SavePoint 태그 또는 SavePointComponent
-	if (Actor->ActorHasTag(TEXT("SavePoint")) ||
-		Actor->FindComponentByClass<USavePointComponent>())
-	{
-		return true;
-	}
-
-	// GameClear 태그 또는 GameClearComponent
-	if (Actor->ActorHasTag(TEXT("GameClear")) ||
-		Actor->FindComponentByClass<UGameClearComponent>())
-	{
-		return true;
-	}
-
-	// IInteract (BaseObject 계열: 서류 등)
-	if (Actor->GetClass()->ImplementsInterface(UInteract::StaticClass()))
-	{
-		return true;
-	}
-
-	// IInteractionBase (Gimmic_CY 계열: 문 등)
-	if (Actor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
-	{
-		//IInteractionBase* Interactable = Cast<IInteractionBase>(Actor);
-		//if (Interactable && Interactable->CanBeInteracted())
-		//{
-		//	return true;
-		//}
-		if (IInteractionBase::Execute_CanBeInteracted(Actor))
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
-void UInteractionComponent::ExecuteInteraction(AActor* Actor)
-{
-	if (!Actor) return;
-
-	APrototypeCharacter* Player = Cast<APrototypeCharacter>(GetOwner());
-	if (!Player) return;
-
-	// SavePoint (태그 또는 컴포넌트)
-	USavePointComponent* SaveComp = Actor->FindComponentByClass<USavePointComponent>();
-	if (SaveComp)
-	{
-		SaveComp->ActivateSavePoint(Player);
-		return;
-	}
-	if (Actor->ActorHasTag(TEXT("SavePoint")))
-	{
-		APlayerController* PC = Cast<APlayerController>(Player->GetController());
-		if (PC)
-		{
-			ULocalPlayer* LP = PC->GetLocalPlayer();
-			if (LP)
-			{
-				USaveSubsystem* SaveSub = LP->GetSubsystem<USaveSubsystem>();
-				if (SaveSub) SaveSub->ShowSaveUI();
-			}
-		}
-		return;
-	}
-
-	// GameClear (태그 또는 컴포넌트)
-	UGameClearComponent* ClearComp = Actor->FindComponentByClass<UGameClearComponent>();
-	if (ClearComp)
-	{
-		ClearComp->ActivateGameClear(Player);
-		return;
-	}
-	if (Actor->ActorHasTag(TEXT("GameClear")))
-	{
-		APlayerController* PC = Cast<APlayerController>(Player->GetController());
-		if (PC)
-		{
-			ULocalPlayer* LP = PC->GetLocalPlayer();
-			if (LP)
-			{
-				UGameClearSubsystem* ClearSys = LP->GetSubsystem<UGameClearSubsystem>();
-				if (ClearSys) ClearSys->ShowGameClear(600.f);
-			}
-		}
-		return;
-	}
-
-	// IInteract (서류 등)
-	if (Actor->GetClass()->ImplementsInterface(UInteract::StaticClass()))
-	{
-		IInteract::Execute_OnInteract(Actor, Player);
-		return;
-	}
-
-	// IInteractionBase (문 등)
-	if (Actor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
-	{
-		IInteractionBase* Interactable = Cast<IInteractionBase>(Actor);
-		if (Interactable)
-		{
-			Interactable->OnIneracted(Player);
-		}
-	}
-}
-
-// ══════════════════════════════════════════
-//  외부 호출 (E키)
-// ══════════════════════════════════════════
 
 void UInteractionComponent::TryInteract()
 {
-	if (FocusedActor)
+	if (!OwnerCharacter || !InteractableBox) return;
+
+	TArray<AActor*> OverlappingActors;
+	InteractableBox->GetOverlappingActors(OverlappingActors);
+
+	AActor* ClosestInteractable = nullptr;
+	float MinDistanceSquared = MAX_FLT;
+	FVector PlayerLocation = OwnerCharacter->GetActorLocation();
+
+	for (AActor* Actor : OverlappingActors)
 	{
-		ExecuteInteraction(FocusedActor);
+		if (!Actor || Actor == OwnerCharacter) continue;
+
+		bool bIsValidInteractable = false;
+
+		if (Actor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+		{
+			IInteractionBase* InteractInterface = Cast<IInteractionBase>(Actor);
+			if (InteractInterface && InteractInterface->GetBCanInteract())
+			{
+				bIsValidInteractable = true;
+			}
+		}
+		else if (Actor->ActorHasTag(TEXT("SavePoint")))
+		{
+			bIsValidInteractable = true;
+		}
+
+		if (bIsValidInteractable)
+		{
+			float DistSq = FVector::DistSquared(PlayerLocation, Actor->GetActorLocation());
+			if (DistSq < MinDistanceSquared)
+			{
+				MinDistanceSquared = DistSq;
+				ClosestInteractable = Actor;
+			}
+		}
+	}
+
+	if (!ClosestInteractable) return;
+
+	if (ClosestInteractable->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+	{
+		EInteractionType Type = IInteractionBase::Execute_GetInteractionType(ClosestInteractable);
+
+		if (Type == EInteractionType::Door) HandleDoorInteraction(ClosestInteractable);
+		else if (Type == EInteractionType::Ammo || Type == EInteractionType::Heal || Type == EInteractionType::Key) HandleItemInteraction(ClosestInteractable);
+	}
+	else if (ClosestInteractable->ActorHasTag(TEXT("SavePoint")))
+	{
+		if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
+		{
+			if (USaveSubsystem* SaveSub = PC->GetLocalPlayer()->GetSubsystem<USaveSubsystem>())
+			{
+				SaveSub->ShowSaveUI();
+			}
+		}
 	}
 }
+
+void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
+{
+	if (!OwnerCharacter) return;
+
+	bool bIsSameDoor = (DoorActor == LastInteractedDoorActor);
+	float CurrentTime = GetWorld()->GetTimeSeconds();
+
+	if (bIsSameDoor && (CurrentTime - LastDoorInteractTime) < 2.5f) return;
+
+	LastInteractedDoorActor = DoorActor;
+	LastDoorInteractTime = CurrentTime;
+
+	if (bIsInteractingDoor) return;
+	bIsInteractingDoor = true;
+
+	PendingDoorActor = DoorActor;
+	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(PendingDoorActor);
+
+	OwnerCharacter->GetCapsuleComponent()->IgnoreActorWhenMoving(PendingDoorActor, true);
+
+	if (OwnerCharacter->MotionWarpingComp)
+	{
+		if (bIsSameDoor)
+		{
+			OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("DoorWarp"), OwnerCharacter->GetActorLocation(), OwnerCharacter->GetActorRotation());
+		}
+		else
+		{
+			FVector DirectionToPlayer = (OwnerCharacter->GetActorLocation() - CurrentPickupLocation).GetSafeNormal2D();
+			FVector TargetWarpLocation = CurrentPickupLocation + (DirectionToPlayer * 65.0f);
+			FRotator TargetWarpRotation = (-DirectionToPlayer).Rotation();
+
+			OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("DoorWarp"), TargetWarpLocation, TargetWarpRotation);
+		}
+	}
+
+	if (OwnerCharacter->AnimData && OwnerCharacter->AnimData->OpenDoorMontage)
+	{
+		float AnimDuration = OwnerCharacter->PlayAnimMontage(OwnerCharacter->AnimData->OpenDoorMontage);
+		AActor* SafeDoorActor = PendingDoorActor;
+		APrototypeCharacter* SafeCharacter = OwnerCharacter; // 람다 캡처용
+
+		FTimerHandle DoorTimer;
+		GetWorld()->GetTimerManager().SetTimer(DoorTimer, [this, SafeCharacter, SafeDoorActor]()
+			{
+				bIsInteractingDoor = false;
+				if (SafeCharacter)
+				{
+					if (APlayerController* PC = Cast<APlayerController>(SafeCharacter->GetController())) SafeCharacter->EnableInput(PC);
+
+					if (SafeDoorActor)
+					{
+						FTimerHandle CollisionRestoreTimer;
+						SafeCharacter->GetWorldTimerManager().SetTimer(CollisionRestoreTimer, FTimerDelegate::CreateLambda([SafeCharacter, SafeDoorActor]()
+							{
+								if (IsValid(SafeCharacter) && IsValid(SafeDoorActor))
+									SafeCharacter->GetCapsuleComponent()->IgnoreActorWhenMoving(SafeDoorActor, false);
+							}), 1.5f, false);
+					}
+				}
+			}, AnimDuration, false);
+	}
+
+	IInteractionBase::Execute_OnIneracted(DoorActor, OwnerCharacter);
+}
+
+void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)
+{
+	if (!OwnerCharacter) return;
+
+	if (CurrentInteractingItem) ConsumeInteractingItem();
+
+	CurrentInteractingItem = ItemActor;
+	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(CurrentInteractingItem);
+
+	if (OwnerCharacter->MotionWarpingComp)
+	{
+		FVector DirectionToTarget = CurrentPickupLocation - OwnerCharacter->GetActorLocation();
+		DirectionToTarget.Z = 0.0f;
+
+		if (!DirectionToTarget.IsNearlyZero())
+		{
+			FRotator TargetWarpRotation = DirectionToTarget.Rotation();
+			OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("ItemWarp"), OwnerCharacter->GetActorLocation(), TargetWarpRotation);
+		}
+	}
+
+	FVector LocalItemPos = OwnerCharacter->GetActorTransform().InverseTransformPosition(CurrentPickupLocation);
+	UAnimMontage* MontageToPlay = (LocalItemPos.Z < -50.0f) ? OwnerCharacter->AnimData->PickupLowMontage : OwnerCharacter->AnimData->PickupHighMontage;
+
+	if (MontageToPlay) OwnerCharacter->PlayAnimMontage(MontageToPlay);
+}
+
+void APrototypeCharacter::HandleLeverInteraction(AActor* LeverActor)
+{
+	if (bIsInteractingDoor) return;
+	bIsInteractingDoor = true;
+
+	ALever* Lever = Cast<ALever>(LeverActor);
+	if (!Lever)
+	{
+		bIsInteractingDoor = false;
+		return;
+	}
+
+	// 워핑 및 IK를 위한 타겟 위치(PickUpPoint) 갱신
+	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(Lever);
+
+	// 재생할 몽타주 결정 
+	UAnimMontage* MontageToPlay = AnimData->LeverMontage;
+
+	if (MontageToPlay)
+	{
+		// 몽타주 재생 및 전체 재생 시간 확보
+		float AnimDuration = PlayAnimMontage(MontageToPlay);
+
+		// 실제 레버 작동 트리거 (애니메이션의 약 50% 시점에 실행)
+		FTimerHandle LeverTriggerTimer;
+		GetWorldTimerManager().SetTimer(LeverTriggerTimer, [Lever, this]()
+			{
+				if (IsValid(Lever))
+				{
+					IInteractionBase::Execute_OnIneracted(Lever, this);
+				}
+			}, AnimDuration * 0.5f, false);
+
+		// 상호작용 상태 해제 타이머
+		FTimerHandle EndTimer;
+		GetWorldTimerManager().SetTimer(EndTimer, [this]()
+			{
+				bIsInteractingDoor = false;
+			}, AnimDuration, false);
+	}
+	else
+	{
+		// 몽타주가 없을 경우 즉시 실행하고 상태 해제
+		IInteractionBase::Execute_OnIneracted(Lever, this);
+		bIsInteractingDoor = false;
+	}
+}
+
+void UInteractionComponent::AttachInteractingItem()
+{
+	if (CurrentInteractingItem && OwnerCharacter)
+	{
+		CurrentInteractingItem->SetActorEnableCollision(false);
+		CurrentInteractingItem->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("ItemSocket"));
+		CurrentInteractingItem->SetActorScale3D(FVector(0.8f));
+	}
+}
+
+void UInteractionComponent::ConsumeInteractingItem()
+{
+	if (CurrentInteractingItem && OwnerCharacter)
+	{
+		IInteractionBase::Execute_OnIneracted(CurrentInteractingItem, OwnerCharacter);
+		CurrentInteractingItem = nullptr;
+	}
+}
+
+	

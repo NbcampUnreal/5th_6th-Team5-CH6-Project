@@ -465,10 +465,9 @@ void UPlayerCombatComponent::CalculateAimOffset()
 
 	// 두 회전의 차이 계산
 	FRotator Delta = UKismetMathLibrary::NormalizedDeltaRotator(ControlRot, ActorRot);
-
-	// 보통 Pitch는 -90~90, Yaw는 -90~90 혹은 그 이상
-	AimYaw = FMath::Clamp(Delta.Yaw, -180.f, 180.f);
+	AimYaw = 0.0f;
 	AimPitch = FMath::Clamp(Delta.Pitch, -90.f, 90.f);
+
 }
 
 void UPlayerCombatComponent::UpdateHandIK() { if (EquippedWeapon) HandIKTargetLocation = EquippedWeapon->GetLaserTargetLocation(); }

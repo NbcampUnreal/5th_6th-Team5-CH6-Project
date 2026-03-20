@@ -7,6 +7,7 @@
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Weapon/Weapon.h"
 #include "Animation/AnimNode_Inertialization.h" 
+#include "Character/Components/Interaction/InteractionComponent.h"
 
 void UPlayerAnimInstance::NativeInitializeAnimation()
 {
@@ -74,22 +75,25 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, (bCanUseSMGIK && !bIsIKBusy) ? CurveValue : 0.0f, DeltaSeconds, 15.0f);
 
 	// Pistol IK 조건
-	bool bPistolIKCondition = bIsPistolEquipped && !bIsSMGEquipped
-		&& !bIsEquipping && !bIsReloading && !bIsInteracting
-		&& (!bIsUseFlashLight || !bIsAiming || bIsRunning);
-
+	bool bPistolIKCondition = bIsPistolEquipped && !bIsSMGEquipped && !bIsIKBusy;
 	PistolIKAlpha = FMath::FInterpTo(PistolIKAlpha, bPistolIKCondition ? 1.0f : 0.0f, DeltaSeconds, 15.0f);
 
 	// Flashlight IK
 	// 조준 중 손전등 IK 
 	bool bFlashlightAimCondition = bIsUseFlashLight && bIsPistolEquipped && bIsAiming && !bIsSMGEquipped && !bIsIKBusy;
-	FlashlightAimIKAlpha = FMath::FInterpTo(FlashlightAimIKAlpha, bFlashlightAimCondition ? 1.0f : 0.0f, DeltaSeconds, 20.0f);
+	FlashlightAimIKAlpha = FMath::FInterpTo(FlashlightAimIKAlpha, 0.0f, DeltaSeconds, 20.0f);
 
 	// Flashlight Alpha 
-	float TargetFlashAlpha = (bIsUseFlashLight && !bIsSMGEquipped && (!bIsPistolEquipped || bIsAiming)) ? 1.0f : 0.0f;
+	float TargetFlashAlpha = 0.0f;
+	if (bIsUseFlashLight && !bIsSMGEquipped)
+	{
+		// 비무장 상태(둘 다 false)이거나, 권총 조준 중일 때 켬
+		if ((!bIsPistolEquipped && !bIsSMGEquipped) || bIsAiming)
+		{
+			TargetFlashAlpha = 1.0f;
+		}
+	}
 	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetFlashAlpha, DeltaSeconds, 5.0f);
-
-	FlashlightRelaxIKAlpha = FMath::FInterpTo(FlashlightRelaxIKAlpha, 0.0f, DeltaSeconds, 20.0f);
 
 	// 소켓 및 관절 위치 업데이트 
 	if (bIsPistolEquipped && WeaponMesh)
@@ -102,9 +106,9 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	}
 
 	// 아이템 픽업 IK 
-	if (CachedCharacter)
+	if (CachedCharacter && CachedCharacter->InteractionComp)
 	{
-		PickupTargetLocation = CachedCharacter->CurrentPickupLocation;
+		PickupTargetLocation = CachedCharacter->InteractionComp->CurrentPickupLocation;
 		float PickupCurveValue = GetCurveValue(TEXT("PickupIK"));
 		PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, PickupCurveValue, DeltaSeconds, 15.0f);
 
@@ -187,8 +191,15 @@ void UPlayerAnimInstance::UpdateOrientationWarping(float DeltaSeconds)
 {
 	float TargetAngle = 0.0f;
 
-	// 달리기가 아닐 때만 방향에 따른 각도를 계산합니다.
-	if (!bIsRunning)
+	if (GroundSpeed < 1.0f)
+	{
+		OrientationWarpingAngle = 0.0f;
+		OrientationWarpingAlpha = FMath::FInterpTo(OrientationWarpingAlpha, 0.0f, DeltaSeconds, 10.0f);
+		return;
+	}
+
+	// 조준 중(bIsAiming)이고 달리기가 아닐 때만 정교한 방향 계산 수행
+	if (bIsAiming && !bIsRunning)
 	{
 		switch (CurrentDir)
 		{
@@ -197,14 +208,16 @@ void UPlayerAnimInstance::UpdateOrientationWarping(float DeltaSeconds)
 		case ELocomotionDirection::Left:     TargetAngle = -90.0f; break;
 		case ELocomotionDirection::Backward: TargetAngle = (LocomotionAngle > 0) ? 180.0f : -180.0f; break;
 		}
+		OrientationWarpingAngle = FRotator::NormalizeAxis(LocomotionAngle - TargetAngle);
 	}
-	// bIsRunning일 때는 TargetAngle이 0이 되므로, 
-	// LocomotionAngle(캡슐과 이동방향의 차이)만큼만 최소한으로 보정하게 됩니다.
-
-	OrientationWarpingAngle = FRotator::NormalizeAxis(LocomotionAngle - TargetAngle);
+	else
+	{
+		// 조준 중이 아니거나 달리기 중일 때는 몸이 직접 회전하므로 Warping 각도를 0으로 고정
+		OrientationWarpingAngle = 0.0f;
+	}
 
 	// 달리기 중에는 Warping 기능을 완전히 끕니다 (Alpha = 0)
-	const float TargetAlpha = (bHasVelocity && !bIsRunning) ? 1.0f : 0.0f;
+	const float TargetAlpha = (bHasVelocity && bIsAiming && !bIsRunning) ? 1.0f : 0.0f;
 	OrientationWarpingAlpha = FMath::FInterpTo(OrientationWarpingAlpha, TargetAlpha, DeltaSeconds, 10.0f);
 }
 

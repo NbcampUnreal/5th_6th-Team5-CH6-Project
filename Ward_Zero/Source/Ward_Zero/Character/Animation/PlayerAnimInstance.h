@@ -149,11 +149,17 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	float OrientationWarpingAlpha;
 
+	UPROPERTY(BlueprintReadOnly, Category = "PickUp")
+	FVector PickupTargetLocation;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	FVector LocalVelocity2D;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Combat|Spread")
 	float CurrSpread;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Interaction | IK")
+	FVector CurrentPickUpLoc;
 
 public:
 	UPROPERTY(BlueprintReadOnly, Category = "Weapon|Mesh")
@@ -187,10 +193,6 @@ public:
 	FVector PistolFlashlightIKTargetLoc;
 
 public:
-	// 아이템의 월드 위치
-	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
-	FVector PickupTargetLocation;
-
 	// IK 적용 강도 (0.0 ~ 1.0)
 	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
 	float PickupIKAlpha = 0.0f;
