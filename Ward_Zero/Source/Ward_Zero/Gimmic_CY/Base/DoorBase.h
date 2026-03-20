@@ -52,7 +52,7 @@ protected:
 	
 	
 	// Lamp Mesh
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	UStaticMeshComponent* Lamp;
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
