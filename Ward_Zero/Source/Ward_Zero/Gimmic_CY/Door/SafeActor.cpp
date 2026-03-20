@@ -9,6 +9,8 @@ ASafeActor::ASafeActor()
 
     Door = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Door"));
     Door->SetupAttachment(Pivot);
+    
+    
 }
 
 void ASafeActor::BeginPlay()
@@ -36,6 +38,8 @@ void ASafeActor::OnConstruction(const FTransform& Transform)
     {
         Door->SetVisibility(true);
     }
+
+    
 }
 
 void ASafeActor::UpdateTimelineComp(float Output)
@@ -72,6 +76,7 @@ void ASafeActor::HandleInteraction_Implementation(APrototypeCharacter* Character
 void ASafeActor::Activate()
 {
     Super::Activate();
+   
     if (!DoorTimelineComp)
         return;
 

@@ -31,6 +31,10 @@ bool ASaveActor::GetBCanInteract() const
 	return false;
 }
 
+void ASaveActor::SaveActorState() const
+{
+}
+
 //void ASaveActor::HiddenActor()
 //{
 //}

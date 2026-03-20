@@ -26,6 +26,7 @@ public:
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override {}
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
+	virtual void SaveActorState() const override;
 	//virtual void HiddenActor() override;
 
 protected:

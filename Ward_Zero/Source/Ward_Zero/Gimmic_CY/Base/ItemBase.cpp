@@ -1,4 +1,6 @@
 #include "ItemBase.h"
+
+#include "WardGameInstanceSubsystem.h"
 #include "Components/BoxComponent.h"
 #include "Components/WidgetComponent.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
@@ -48,9 +50,8 @@ AItemBase::AItemBase()
 void AItemBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	bGamePlay = true;
 	SetBCanInteract(bDefaultInteractable);
-	UGameInstance* GI = GetGameInstance();
 	//todo: bIsActivated = SaveManager->CheckActivated(ActorID)
 	//todo: bIsInterActable = SaveManager->CheckInterActable(ActorID)
 	/*bool bIsActivated = false;
@@ -95,7 +96,7 @@ void AItemBase::HandleInteraction_Implementation(APrototypeCharacter* Character)
 
 	HiddenActor();
 
-	//todo: SaveManager->SetActorActivated(ActorID)
+	SaveActorState();
 	
 }
 
@@ -107,13 +108,31 @@ EInteractionType AItemBase::GetInteractionType_Implementation() const
 bool AItemBase::SetBCanInteract(bool IsCanInteract)
 {
 	bCanInteract = IsCanInteract;
-	//todo: SaveManager->SetActorInteractable(ActorId,bCanInteract)
+	SaveActorState();
 	return bCanInteract;
 }
 
 bool AItemBase::GetBCanInteract() const
 {
 	return bCanInteract;
+}
+
+void AItemBase::SaveActorState() const
+{
+	if (!bGamePlay)
+	{
+		return;
+	}
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UWardGameInstanceSubsystem* WardGISubSys = GI->GetSubsystem<UWardGameInstanceSubsystem>())
+			{
+				WardGISubSys->SetObjectState(ActorID,bActivated,bCanInteract);
+			}
+		}
+	}
 }
 
 void AItemBase::HiddenActor()

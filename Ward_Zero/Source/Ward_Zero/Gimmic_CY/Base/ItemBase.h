@@ -34,7 +34,10 @@ public:
 	virtual EInteractionType GetInteractionType_Implementation() const override;
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
+	virtual void SaveActorState() const override;
+	
 	virtual void PostActorCreated() override;
+	
 	
 	virtual void ShowPressEWidget_Implementation() override;
 	virtual void HidePressEWidget_Implementation() override;
@@ -64,6 +67,7 @@ protected:
 	UPROPERTY()
 	bool bCollected = false;
 
+	bool bGamePlay =false;
 	// Mesh
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Mesh;

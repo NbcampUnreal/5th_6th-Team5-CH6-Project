@@ -55,6 +55,8 @@ public:
 
 	virtual bool GetBCanInteract() const  = 0;
 	
+	virtual void SaveActorState() const = 0;
+	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void ShowPressEWidget();
 	
