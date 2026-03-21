@@ -8,7 +8,7 @@
 #include "Weapon/Weapon.h"
 #include "Animation/AnimNode_Inertialization.h" 
 #include "Character/Components/Interaction/InteractionComponent.h"
-#include "Gimmic_CY/Base/InteractionBase.h"
+#include "Gimmic_CY/Interface/InteractionBase.h"
 #include "Character/Components/Combat/PlayerCombatComponent.h"
 void UPlayerAnimInstance::NativeInitializeAnimation()
 {

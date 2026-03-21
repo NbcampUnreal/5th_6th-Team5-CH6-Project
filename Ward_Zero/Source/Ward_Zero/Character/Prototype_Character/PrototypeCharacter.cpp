@@ -26,8 +26,8 @@
 #include "UI_KWJ/Health/HealthVignetteWidget.h"
 #include "UI_KWJ/PauseMenu/PauseMenuSubsystem.h"
 #include "Engine/OverlapResult.h"
-#include "Gimmic_CY/Base/InteractionBase.h"
-#include "Gimmic_CY/Lever.h"
+#include "Gimmic_CY/Interface/InteractionBase.h"
+#include "Gimmic_CY/Object/Lever/Lever.h"
 #include "Components/BoxComponent.h"
 #include "MotionWarpingComponent.h"
 

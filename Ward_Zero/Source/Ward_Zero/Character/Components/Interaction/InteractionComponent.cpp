@@ -8,7 +8,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Components/CapsuleComponent.h"
 #include "Gimmic_CY/Object/Lever/Lever.h"
-#include "Gimmic_CY/Base/ItemBase.h"
+#include "Gimmic_CY/Items/ItemBase.h"
 
 UInteractionComponent::UInteractionComponent()
 {
