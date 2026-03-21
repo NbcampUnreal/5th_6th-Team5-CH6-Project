@@ -1,4 +1,4 @@
-#include "Gimmic_CY/Base/DoorBase.h"
+#include "Gimmic_CY/Object/Door/DoorBase.h"
 #include "NavModifierComponent.h"
 #include "NavAreas/NavArea_Default.h"
 #include "NavAreas/NavArea_Null.h"
@@ -21,7 +21,6 @@ ADoorBase::ADoorBase()
 	NavModifier->SetAreaClass(UNavArea_Null::StaticClass());
 	
 	
-
 }
 
 void ADoorBase::BeginPlay()
@@ -67,6 +66,19 @@ void ADoorBase::OnConstruction(const FTransform& Transform)
 	bIsOpen = false;
 }
 
+void ADoorBase::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	
+	UpdateFunctionFloat.BindDynamic(this, &ADoorBase::UpdateTimelineComp);
+
+	if (DoorTimelineFloatCurve)
+	{
+		DoorTimelineComp->AddInterpFloat(DoorTimelineFloatCurve, UpdateFunctionFloat);
+		
+	}
+}
+
 FVector ADoorBase::GetInteractionTargetLocation_Implementation() const {
 	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Blue, "Enable PickupPoint");
 	return PickUpPoint->GetComponentLocation();
@@ -90,6 +102,7 @@ void ADoorBase::Activate()
 	Super::Activate();
 	OpenDoor();
 }
+
 
 void ADoorBase::ChangeColorLampRed_Implementation()
 {

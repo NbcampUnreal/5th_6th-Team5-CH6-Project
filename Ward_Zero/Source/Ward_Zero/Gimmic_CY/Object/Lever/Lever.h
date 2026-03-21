@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/TimelineComponent.h"
-#include "Gimmic_CY/Base/ObjectBase.h"
+#include "Gimmic_CY/Object/ObjectBase.h"
 #include "Lever.generated.h"
 
 class UTimelineComponent;
@@ -37,6 +37,9 @@ private:
 	
 	FRotator InitialRotation;
 	
+	
+
+
 public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -64,11 +67,7 @@ public:
 	EInteractionType GetInteractionType_Implementation() const override;
 
 public:
-	// IK 타겟으로 쓸 위치 반환
-	virtual FVector GetIKTargetLocation_Implementation() const override;
-
-public:
-	void ActivateLever();
+	virtual void Activate() override;
 	// ===== IGimmickInterface =====
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 };

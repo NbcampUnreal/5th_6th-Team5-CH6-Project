@@ -15,9 +15,10 @@ void AKeyCardActor::BeginPlay()
 
 void AKeyCardActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
-	Super::HandleInteraction_Implementation(Character);
 	if (!bCanInteract)
 		return;
+	Super::HandleInteraction_Implementation(Character);
+	
 	
 	for (AActor* Actor : TargetActors)
 	{
