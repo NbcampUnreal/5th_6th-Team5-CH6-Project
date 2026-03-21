@@ -18,6 +18,12 @@ void UInteractionComponent::Initialize(APrototypeCharacter* InCharacter, UBoxCom
 {
 	OwnerCharacter = InCharacter;
 	InteractableBox = InBox;
+
+	if (InteractableBox)
+	{
+		InteractableBox->OnComponentBeginOverlap.AddDynamic(this, &UInteractionComponent::OnInteractableBeganOverlap);
+		InteractableBox->OnComponentEndOverlap.AddDynamic(this, &UInteractionComponent::OnInteractableEndedOverlap);
+	}
 }
 
 void UInteractionComponent::TryInteract()
@@ -239,6 +245,31 @@ void UInteractionComponent::ConsumeInteractingItem()
 	{
 		IInteractionBase::Execute_OnIneracted(CurrentInteractingItem, OwnerCharacter);
 		CurrentInteractingItem = nullptr;
+	}
+}
+
+void UInteractionComponent::OnInteractableBeganOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!OtherActor || OtherActor == OwnerCharacter) return;
+
+	if (OtherActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+	{
+		IInteractionBase* InteractInterface = Cast<IInteractionBase>(OtherActor);
+
+		if (InteractInterface && InteractInterface->GetBCanInteract())
+		{
+			IInteractionBase::Execute_ShowPressEWidget(OtherActor);
+		}
+	}
+}
+
+void UInteractionComponent::OnInteractableEndedOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (!OtherActor || OtherActor == OwnerCharacter) return;
+
+	if (OtherActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+	{
+		IInteractionBase::Execute_HidePressEWidget(OtherActor);
 	}
 }
 

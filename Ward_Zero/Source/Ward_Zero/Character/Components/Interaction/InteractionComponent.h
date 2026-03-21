@@ -28,6 +28,23 @@ public:
 	FVector CurrentPickupLocation;
 
 private:
+	UFUNCTION()
+	void OnInteractableBeganOverlap(
+		UPrimitiveComponent* OverlappedComponent, 
+		AActor* OtherActor, 
+		UPrimitiveComponent* OtherComp, 
+		int32 OtherBodyIndex, 
+		bool bFromSweep, 
+		const FHitResult& SweepResult
+	);
+
+	UFUNCTION()
+	void OnInteractableEndedOverlap(
+		UPrimitiveComponent* OverlappedComponent, 
+		AActor* OtherActor, 
+		UPrimitiveComponent* OtherComp, 
+		int32 OtherBodyIndex
+	);
 
 	UPROPERTY()
 	APrototypeCharacter* OwnerCharacter;
