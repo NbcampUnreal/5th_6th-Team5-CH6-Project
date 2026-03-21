@@ -1,4 +1,4 @@
-#include "Gimmic_CY/Items/AmmoBoxActor.h"
+#include "Gimmic_CY/Items/Ammo/AmmoBoxActor.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
@@ -20,12 +20,10 @@ void AAmmoBoxActor::BeginPlay()
 
 void AAmmoBoxActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
-	if (!Character) return;
+	if (!Character||!bCanInteract) return;
 
 	Super::HandleInteraction_Implementation(Character);
 	
-	if (!bCanInteract)
-		return;
 	UPlayerCombatComponent* CombatComp = Character->FindComponentByClass<UPlayerCombatComponent>();
 	if (CombatComp)
 	{
@@ -43,7 +41,7 @@ void AAmmoBoxActor::HandleInteraction_Implementation(APrototypeCharacter* Charac
 			
 		}
 	}
-	SetBCanInteract(false);
+	
 }
 
 EInteractionType AAmmoBoxActor::GetInteractionType_Implementation() const

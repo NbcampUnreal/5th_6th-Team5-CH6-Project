@@ -1,4 +1,4 @@
-#include "Gimmic_CY/Items/HealItemActor.h"
+#include "Gimmic_CY/Items/Heal/HealItemActor.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/WidgetComponent.h"

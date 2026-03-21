@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Gimmic_CY/Base/ObjectBase.h"
+#include "Gimmic_CY/Object/ObjectBase.h"
 #include "Components/TimelineComponent.h"
 #include "DoorBase.generated.h"
 
@@ -26,6 +26,8 @@ public:
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	
 	virtual void Activate() override;
+	
+
 
 protected:
 	virtual void BeginPlay() override;
@@ -65,12 +67,16 @@ protected:
 	virtual void UpdateTimelineComp(float Output);
 
 	virtual void OnConstruction(const FTransform& Transform) override;
+	
+	virtual void PostInitializeComponents() override;
 	bool bIsOpen = false;
 
 	UPROPERTY(VisibleAnywhere)
 	USceneComponent* PickUpPoint;
 
 	FVector GetInteractionTargetLocation_Implementation() const;
+	
+	
 
 public:
 	// ===== IGimmickInterface =====

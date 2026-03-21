@@ -1,4 +1,4 @@
-#include "Gimmic_CY/Base/ObjectBase.h"
+#include "Gimmic_CY/Object/ObjectBase.h"
 #include "Components/BoxComponent.h"
 #include "Components/WidgetComponent.h"
 #include "WardGameInstanceSubsystem.h"
@@ -41,20 +41,9 @@ AObjectBase::AObjectBase()
 void AObjectBase::BeginPlay()
 {
 	Super::BeginPlay();
-	SetBCanInteract(bDefaultInteractable);
+	//SetBCanInteract(bDefaultInteractable);
+	bCanInteract = bDefaultInteractable;
 	bGamePlay = true;
-	
-	//todo: bIsActivated = SaveManager->CheckActivated(ActorID)
-	//todo: bIsInterActable = SaveManager->CheckInterActable(ActorID)
-	/*bool bIsActivated = false;
-	bool bIsInteractable = true;
-	if (bIsActivated)
-	{
-		HiddenActor();
-	}else
-	{
-		SetBCanInteract(bIsInteractable);
-	}*/
 	
 	if (UWorld* World = GetWorld())
 	{
@@ -139,15 +128,7 @@ void AObjectBase::PostActorCreated()
 	}
 }
 
-/*void AObjectBase::ActivateInEditor()
-{
-	Activate();
-}
 
-void AObjectBase::DeActivateInEditor()
-{
-	Super::OnConstruction(GetActorTransform());
-}*/
 
 void AObjectBase::ShowPressEWidget_Implementation()
 {
@@ -179,12 +160,11 @@ void AObjectBase::SaveActorState() const
 	}
 }
 
+
 void AObjectBase::Activate()
 {
-	SetBCanInteract(false);
 	bActivated = true;
-	SaveActorState();
-	
+	SetBCanInteract(false);
 }
 
 FVector AObjectBase::GetInteractionTargetLocation_Implementation() const

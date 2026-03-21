@@ -51,18 +51,31 @@ void AItemBase::BeginPlay()
 {
 	Super::BeginPlay();
 	bGamePlay = true;
-	SetBCanInteract(bDefaultInteractable);
-	//todo: bIsActivated = SaveManager->CheckActivated(ActorID)
-	//todo: bIsInterActable = SaveManager->CheckInterActable(ActorID)
-	/*bool bIsActivated = false;
-	bool bIsInteractable = true;
-	if (bIsActivated)
+	//SetBCanInteract(bDefaultInteractable);
+	bCanInteract = bDefaultInteractable;
+	if (UWorld* World = GetWorld())
 	{
-		HiddenActor();
-	}else
-	{
-		SetBCanInteract(bIsInteractable);
-	}*/
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UWardGameInstanceSubsystem* WardGISubSys = GI->GetSubsystem<UWardGameInstanceSubsystem>())
+			{
+				if (WardGISubSys->HasObjectState(ActorID))
+				{
+					FObjectSaveData ActorData = WardGISubSys->GetObjectState(ActorID);
+					if (ActorData.bActive)
+					{
+						HiddenActor();
+					}else if (ActorData.bCanInteract)
+					{
+						SetBCanInteract(true);
+					}else
+					{
+						SetBCanInteract(false);
+					}
+				}
+			}
+		}
+	}
 }
 
 void AItemBase::Tick(float DeltaTime)
@@ -95,8 +108,6 @@ void AItemBase::HandleInteraction_Implementation(APrototypeCharacter* Character)
 	bCollected = true;
 
 	HiddenActor();
-
-	SaveActorState();
 	
 }
 
@@ -140,8 +151,9 @@ void AItemBase::HiddenActor()
 	CollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Mesh->SetVisibility(false);
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	SetBCanInteract(false);
 	bActivated = true;
+	SetBCanInteract(false);
+	
 }
 
 void AItemBase::PostActorCreated()

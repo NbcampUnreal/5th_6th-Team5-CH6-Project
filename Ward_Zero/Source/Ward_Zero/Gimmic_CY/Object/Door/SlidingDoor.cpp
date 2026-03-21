@@ -1,4 +1,4 @@
-#include "Gimmic_CY/Door/SlidingDoor.h"
+#include "Gimmic_CY/Object/Door/SlidingDoor.h"
 
 ASlidingDoor::ASlidingDoor()
 {
@@ -23,11 +23,7 @@ void ASlidingDoor::BeginPlay()
 	Super::BeginPlay();
 
 	ClosedLocation = Mesh->GetRelativeLocation();
-	UpdateFunctionFloat.BindDynamic(this, &ASlidingDoor::UpdateTimelineComp);
-	if (DoorTimelineFloatCurve)
-	{
-		DoorTimelineComp->AddInterpFloat(DoorTimelineFloatCurve, UpdateFunctionFloat);
-	}
+	
 }
 
 void ASlidingDoor::HandleInteraction_Implementation(APrototypeCharacter* Character)

@@ -1,6 +1,6 @@
-#include "Gimmic_CY/Lever.h"
-#include "Gimmic_CY/Base/InteractionBase.h"
-#include "Gimmic_CY/Door/SingleDoor.h"
+#include "Gimmic_CY/Object/Lever/Lever.h"
+#include "Gimmic_CY/Interface/InteractionBase.h"
+#include "Gimmic_CY/Object/Door/SingleDoor.h"
 
 ALever::ALever()
 {
@@ -19,13 +19,6 @@ void ALever::BeginPlay()
 	if (LeverTimelineFloatCurve)
 	{
 		LeverTimelineComp->AddInterpFloat(LeverTimelineFloatCurve, UpdateFunctionFloat);
-	}
-	//todo: bIsActivated = SaveManager->CheckActivated(ActorID)
-	bool bIsActivated = false;
-	
-	if (bIsActivated)
-	{
-		ActivateLever();
 	}
 	
 }
@@ -88,24 +81,25 @@ void ALever::UpdateTimelineFunction(float Output)
 
 EInteractionType ALever::GetInteractionType_Implementation() const
 {
-	return EInteractionType::Door;
+	return EInteractionType::Lever;
 }
 
-void ALever::ActivateLever()
+
+void ALever::Activate()
 {
+	Super::Activate();
 	LeverTimelineComp->Play();
-	SetBCanInteract(false);
+	LeverOpenDoor();
+	LeverUnLockInteraction();
+	LeverCloseDoor();
+	LeverLockInteraction();
 }
 
 void ALever::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
 	if (bCanInteract)
 	{
-		ActivateLever();
-		LeverOpenDoor();
-		LeverUnLockInteraction();
-		LeverCloseDoor();
-		LeverLockInteraction();
+		Activate();
 	}
 }
 

@@ -2,27 +2,27 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Gimmic_CY/Base/InteractionBase.h"
-#include "ItemBase.generated.h"
+#include "Gimmic_CY/Interface/InteractionBase.h"
+#include "ObjectBase.generated.h"
 
-class UWidgetComponent;
 class UStaticMeshComponent;
 class UBoxComponent;
 
 UCLASS()
-class WARD_ZERO_API AItemBase : public AActor, public IInteractionBase
+class WARD_ZERO_API AObjectBase : public AActor, public IInteractionBase
 {
 	GENERATED_BODY()
 	
 public:	
-	AItemBase();
+	AObjectBase();
 
 protected:
 	virtual void BeginPlay() override;
+	
+	bool bGamePlay = false;
 
 public:	
 	virtual void Tick(float DeltaTime) override;
-
 
 	// ===== IGimmickInterface =====
 public:
@@ -34,54 +34,34 @@ public:
 	virtual EInteractionType GetInteractionType_Implementation() const override;
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	virtual bool GetBCanInteract() const override;
+	virtual void ShowPressEWidget_Implementation() override;
+	virtual void HidePressEWidget_Implementation() override;
 	virtual void SaveActorState() const override;
 	
 	virtual void PostActorCreated() override;
 	
 	
-	virtual void ShowPressEWidget_Implementation() override;
-	virtual void HidePressEWidget_Implementation() override;
-
-	// ===== SaveInterface =====
-	//virtual void SaveActorState(class UWardSaveGame* SaveData) override;
-	//virtual void LoadActorState(class UWardSaveGame* SaveData) override;
-
-	FVector GetInteractionTargetLocation_Implementation() const override;
-
-	virtual void HiddenActor();
 	
-	UPROPERTY(EditInstanceOnly)
-	bool bDefaultInteractable = true;
+	virtual void Activate();
 	
 	bool bActivated = false;
-	
-	FRotator GetInHandTransform() const { return InHandRotator; }
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
-	class UWidgetComponent* InteractWidget;
-	
-protected:
-	UPROPERTY(EditInstanceOnly)
-	FGuid ActorID;
 
-	UPROPERTY()
-	bool bCollected = false;
-
-	bool bGamePlay =false;
+	FVector GetInteractionTargetLocation_Implementation() const;
 	// Mesh
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Mesh;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Setting")
-	FRotator InHandRotator;
-	
-	
-	
-	UPROPERTY(VisibleAnywhere)
-	USceneComponent* PickUpPoint;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UBoxComponent* CollisionBox;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+	class UWidgetComponent* InteractWidget;
+	
+	UPROPERTY(EditInstanceOnly)
+	FGuid ActorID;
+	
+	UPROPERTY(EditInstanceOnly)
+	bool bDefaultInteractable = true;
+	
 	virtual FVector GetIKTargetLocation_Implementation() const override;
 };
