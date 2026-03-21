@@ -220,6 +220,18 @@ private:
 
 	void SwitchWeaponByIndex(int32 WeaponIndex);
 
-		// 피격 시 공격자 방향 계산 분리
+	// 피격 시 공격자 방향 계산 분리
 	FVector GetAttackerDirection(AController* EventInstigator, AActor* DamageCauser);
+
+public:
+	// 레버 손잡이 위치를 추적할 IK 타겟
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Animation|IK")
+	FVector InteractionIKTargetLoc;
+
+	// 레버 IK 적용 강도 (0.0 ~ 1.0)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Animation|IK")
+	float InteractionIKAlpha = 0.0f;
+
+public:
+	void HandleWeaponVisibility(bool bShow);
 };
