@@ -1,4 +1,4 @@
-#include "Gimmic_CY/Door/SafeActor.h"
+#include "Gimmic_CY/Object/Door/SafeActor.h"
 
 ASafeActor::ASafeActor()
 {
@@ -18,14 +18,7 @@ void ASafeActor::BeginPlay()
     Super::BeginPlay();
 
     InitialRotation = Pivot->GetRelativeRotation();
-
-    UpdateFunctionFloat.BindDynamic(this, &ASafeActor::UpdateTimelineComp);
-
-    if (DoorTimelineFloatCurve)
-    {
-        DoorTimelineComp->AddInterpFloat(DoorTimelineFloatCurve, UpdateFunctionFloat);
-    }
-   
+    
 }
 
 void ASafeActor::OnConstruction(const FTransform& Transform)

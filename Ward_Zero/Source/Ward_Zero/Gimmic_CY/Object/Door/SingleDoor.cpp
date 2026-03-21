@@ -1,4 +1,4 @@
-#include "Gimmic_CY/Door/SingleDoor.h"
+#include "Gimmic_CY/Object/Door/SingleDoor.h"
 #include "NavModifierComponent.h"
 #include "NavAreas/NavArea_Default.h"
 #include "NavAreas/NavArea_Null.h"
@@ -15,13 +15,6 @@ void ASingleDoor::BeginPlay()
 	Super::BeginPlay();
 
 	InitialRotation = Mesh->GetRelativeRotation();
-	UpdateFunctionFloat.BindDynamic(this, &ASingleDoor::UpdateTimelineComp);
-
-	if (DoorTimelineFloatCurve)
-	{
-		DoorTimelineComp->AddInterpFloat(DoorTimelineFloatCurve, UpdateFunctionFloat);
-	}
-	
 }
 
 void ASingleDoor::HandleInteraction_Implementation(APrototypeCharacter* Character)

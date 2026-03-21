@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Gimmic_CY/Base/DoorBase.h"
+#include "Gimmic_CY/Object/Door/DoorBase.h"
 #include "SafeActor.generated.h"
 
 UCLASS()

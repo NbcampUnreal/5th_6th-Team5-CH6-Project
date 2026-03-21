@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/TimelineComponent.h"
-#include "Gimmic_CY/Base/ObjectBase.h"
+#include "Gimmic_CY/Object/ObjectBase.h"
 #include "Lever.generated.h"
 
 class UTimelineComponent;
@@ -67,8 +67,7 @@ public:
 	EInteractionType GetInteractionType_Implementation() const override;
 
 public:
-
-	void ActivateLever();
+	virtual void Activate() override;
 	// ===== IGimmickInterface =====
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 };

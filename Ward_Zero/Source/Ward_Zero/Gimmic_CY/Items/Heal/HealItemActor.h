@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Gimmic_CY/Base/ItemBase.h"
+#include "Gimmic_CY/Items/ItemBase.h"
 #include "HealItemActor.generated.h"
 
 class UBoxComponent;

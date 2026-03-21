@@ -1,4 +1,4 @@
-#include "Gimmic_CY/Door/DoubleDoor.h"
+#include "Gimmic_CY/Object/Door/DoubleDoor.h"
 #include "Components/BoxComponent.h"
 #include "NavModifierComponent.h"
 #include "NavAreas/NavArea_Default.h"
@@ -30,13 +30,7 @@ void ADoubleDoor::CloseDoor()
 void ADoubleDoor::BeginPlay()
 {
 	Super::BeginPlay();
-
-	UpdateFunctionFloat.BindDynamic(this, &ADoubleDoor::UpdateTimelineComp);
-
-	if (DoorTimelineFloatCurve)
-	{
-		DoorTimelineComp->AddInterpFloat(DoorTimelineFloatCurve, UpdateFunctionFloat);
-	}
+	
 	
 }
 

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Gimmic_CY/Base/InteractionBase.h"
+#include "Gimmic_CY/Object/ObjectBase.h"
 #include "SaveActor.generated.h"
 
 class UStaticMeshComponent;

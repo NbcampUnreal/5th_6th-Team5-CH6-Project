@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Gimmic_CY/Base/InteractionBase.h"
+#include "Gimmic_CY/Interface//InteractionBase.h"
 #include "ItemBase.generated.h"
 
 class UWidgetComponent;

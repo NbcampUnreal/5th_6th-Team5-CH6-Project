@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Gimmic_CY/Base/InteractionBase.h"
+#include "Gimmic_CY/Interface/InteractionBase.h"
 #include "ObjectBase.generated.h"
 
 class UStaticMeshComponent;
@@ -38,13 +38,8 @@ public:
 	virtual void HidePressEWidget_Implementation() override;
 	virtual void SaveActorState() const override;
 	
-	
 	virtual void PostActorCreated() override;
 	
-	/*UFUNCTION(CallInEditor,Category = "Editor",meta =(DisplayName = "Activate"))
-	void ActivateInEditor();
-	UFUNCTION(CallInEditor,Category = "Editor",meta =(DisplayName = "DeActivate"))
-	void DeActivateInEditor();*/
 	
 	
 	virtual void Activate();
