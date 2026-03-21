@@ -20,6 +20,7 @@ public:
 
 	void HandleDoorInteraction(AActor* DoorActor);
 	void HandleItemInteraction(AActor* ItemActor);
+	void HandleLeverInteraction(AActor* LeverActor);
 
 	void AttachInteractingItem();
 	void ConsumeInteractingItem();
@@ -27,7 +28,26 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Interaction")
 	FVector CurrentPickupLocation;
 
+	UPROPERTY()
+	AActor* CurrentInteractingItem;
 private:
+	UFUNCTION()
+	void OnInteractableBeganOverlap(
+		UPrimitiveComponent* OverlappedComponent, 
+		AActor* OtherActor, 
+		UPrimitiveComponent* OtherComp, 
+		int32 OtherBodyIndex, 
+		bool bFromSweep, 
+		const FHitResult& SweepResult
+	);
+
+	UFUNCTION()
+	void OnInteractableEndedOverlap(
+		UPrimitiveComponent* OverlappedComponent, 
+		AActor* OtherActor, 
+		UPrimitiveComponent* OtherComp, 
+		int32 OtherBodyIndex
+	);
 
 	UPROPERTY()
 	APrototypeCharacter* OwnerCharacter;
@@ -44,7 +64,7 @@ private:
 	float LastDoorInteractTime = 0.0f;
 	bool bIsInteractingDoor = false;
 
-	UPROPERTY()
-	AActor* CurrentInteractingItem;
-
+public:
+	void TriggerInteraction(); 
+	void EndInteraction();
 };

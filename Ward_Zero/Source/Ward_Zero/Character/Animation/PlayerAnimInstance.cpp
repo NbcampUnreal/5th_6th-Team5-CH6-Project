@@ -8,7 +8,8 @@
 #include "Weapon/Weapon.h"
 #include "Animation/AnimNode_Inertialization.h" 
 #include "Character/Components/Interaction/InteractionComponent.h"
-
+#include "Gimmic_CY/Base/InteractionBase.h"
+#include "Character/Components/Combat/PlayerCombatComponent.h"
 void UPlayerAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
@@ -94,8 +95,8 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		}
 	}
 	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetFlashAlpha, DeltaSeconds, 5.0f);
-
-	// 소켓 및 관절 위치 업데이트 
+	
+	// 픽업 및 오브젝트 소켓 및 관절 위치 업데이트 
 	if (bIsPistolEquipped && WeaponMesh)
 	{
 		FName TargetSocketName = bIsAiming ? FName("FlashLightIKSocket") : FName("RelaxFlashLightIK_Socket");
@@ -104,22 +105,45 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		FVector TargetJointPos = bIsAiming ? FVector(0.f, -20.f, 0.f) : FVector(0.f, -280.f, -150.f);
 		PistolJointTarget = FMath::VInterpTo(PistolJointTarget, TargetJointPos, DeltaSeconds, 15.0f);
 	}
-
-	// 아이템 픽업 IK 
-	if (CachedCharacter && CachedCharacter->InteractionComp)
+	if (CachedCharacter)
 	{
-		PickupTargetLocation = CachedCharacter->InteractionComp->CurrentPickupLocation;
-		float PickupCurveValue = GetCurveValue(TEXT("PickupIK"));
-		PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, PickupCurveValue, DeltaSeconds, 15.0f);
-
-		if (PickupIKAlpha > 0.1f)
+		// 아이템 픽업 IK 
+		// PickupIK 커브가 있을 때만 작동
+		if (CachedCharacter && CachedCharacter->InteractionComp)
 		{
-			FVector NewJointTarget;
-			FVector LocalTargetPos = CachedCharacter->GetActorTransform().InverseTransformPosition(PickupTargetLocation);
-			if (LocalTargetPos.Z < -50.0f) NewJointTarget = FVector(-20.0f, -60.0f, 40.0f);
-			else if (LocalTargetPos.Z < 30.0f) NewJointTarget = FVector(-50.0f, -50.0f, 0.0f);
-			else NewJointTarget = FVector(-40.0f, -40.0f, -30.0f);
-			DynamicPickupJointTarget = FMath::VInterpTo(DynamicPickupJointTarget, NewJointTarget, DeltaSeconds, 15.0f);
+			PickupTargetLocation = CachedCharacter->InteractionComp->CurrentPickupLocation;
+			float PickupCurveValue = GetCurveValue(TEXT("PickupIK"));
+			PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, PickupCurveValue, DeltaSeconds, 15.0f);
+
+			if (PickupIKAlpha > 0.1f)
+			{
+				FVector NewJointTarget;
+				FVector LocalTargetPos = CachedCharacter->GetActorTransform().InverseTransformPosition(PickupTargetLocation);
+				if (LocalTargetPos.Z < -50.0f) NewJointTarget = FVector(-20.0f, -60.0f, 40.0f);
+				else if (LocalTargetPos.Z < 30.0f) NewJointTarget = FVector(-50.0f, -50.0f, 0.0f);
+				else NewJointTarget = FVector(-40.0f, -40.0f, -30.0f);
+				DynamicPickupJointTarget = FMath::VInterpTo(DynamicPickupJointTarget, NewJointTarget, DeltaSeconds, 15.0f);
+			}
+		}
+		// 레버 IK 
+		// LeverIK 커브가 있을 때만 작동
+		float LeverCurveValue = GetCurveValue(TEXT("LeverIK"));
+		LeverIKAlpha = FMath::FInterpTo(LeverIKAlpha, LeverCurveValue, DeltaSeconds, 7.0f);
+
+		if (LeverIKAlpha > 0.01f)
+		{
+			// 애니메이션 도중 레버가 내려가는 걸 실시간으로 따라감
+			if (CachedCharacter->InteractionComp && CachedCharacter->InteractionComp->CurrentInteractingItem)
+			{
+				AActor* InteractItem = CachedCharacter->InteractionComp->CurrentInteractingItem;
+				if (IsValid(InteractItem) && InteractItem->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+				{
+					// 레버의 HandIKSocket 위치를 매 프레임 받아옴
+					LeverTargetLocation = IInteractionBase::Execute_GetIKTargetLocation(InteractItem);
+				}
+			}
+			FVector NewLeverJointTarget = FVector(-15.f, 30.f, 0.f);
+			DynamicLeverJointTarget = FMath::VInterpTo(DynamicLeverJointTarget, NewLeverJointTarget, DeltaSeconds, 5.0f);
 		}
 	}
 }
@@ -260,5 +284,45 @@ void UPlayerAnimInstance::AnimNotify_ConsumeItem()
 	if (CachedCharacter)
 	{
 		CachedCharacter->ConsumeInteractingItem();
+	}
+}
+
+void UPlayerAnimInstance::AnimNotify_HideWeaponForLever()
+{
+	if (CachedCharacter && CachedCharacter->CombatComp)
+	{
+		// 무기를 들고 있다면 잠시 등에 멘 상태(or 홀스터)로 변경
+		if (CachedCharacter->CombatComp->IsWeaponDrawn())
+		{
+			CachedCharacter->CombatComp->HandleWeaponAttachment(false);
+		}
+	}
+}
+
+void UPlayerAnimInstance::AnimNotify_RestoreWeaponAfterLever()
+{
+	if (CachedCharacter && CachedCharacter->CombatComp)
+	{
+		// 원래 무기를 들고 있던 상태였다면 다시 손에 쥠
+		if (CachedCharacter->CombatComp->IsWeaponDrawn())
+		{
+			CachedCharacter->CombatComp->HandleWeaponAttachment(true);
+		}
+	}
+}
+
+void UPlayerAnimInstance::AnimNotify_TriggerInteraction()
+{
+	if (CachedCharacter && CachedCharacter->InteractionComp)
+	{
+		CachedCharacter->InteractionComp->TriggerInteraction();
+	}
+}
+
+void UPlayerAnimInstance::AnimNotify_EndInteraction()
+{
+	if (CachedCharacter && CachedCharacter->InteractionComp)
+	{
+		CachedCharacter->InteractionComp->EndInteraction();
 	}
 }

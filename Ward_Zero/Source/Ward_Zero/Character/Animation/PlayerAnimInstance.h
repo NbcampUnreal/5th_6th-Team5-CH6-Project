@@ -149,17 +149,11 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	float OrientationWarpingAlpha;
 
-	UPROPERTY(BlueprintReadOnly, Category = "PickUp")
-	FVector PickupTargetLocation;
-
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	FVector LocalVelocity2D;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Combat|Spread")
 	float CurrSpread;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Interaction | IK")
-	FVector CurrentPickUpLoc;
 
 public:
 	UPROPERTY(BlueprintReadOnly, Category = "Weapon|Mesh")
@@ -193,11 +187,6 @@ public:
 	FVector PistolFlashlightIKTargetLoc;
 
 public:
-	// IK 적용 강도 (0.0 ~ 1.0)
-	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
-	float PickupIKAlpha = 0.0f;
-
-public:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	float FallingTime;
 
@@ -213,6 +202,28 @@ public:
 	void AnimNotify_ConsumeItem();
 
 public:
+	// Interact Object 
+	UPROPERTY(BlueprintReadOnly, Category = "PickUp")
+	FVector PickupTargetLocation;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Interaction | IK")
+	FVector CurrentPickUpLoc;
+
+	// IK 적용 강도 (0.0 ~ 1.0)
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
+	float PickupIKAlpha = 0.0f;
+	 
+	// Lever 
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
+	float LeverIKAlpha = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
+	FVector LeverTargetLocation;
+
+	// IK Joint 
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
+	FVector DynamicLeverJointTarget;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
 	FVector DynamicPickupJointTarget;
 
@@ -228,4 +239,17 @@ private:
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Ref")
 	TObjectPtr<class APrototypeCharacter> CachedCharacter;
+
+public:
+	UFUNCTION()
+	void AnimNotify_HideWeaponForLever();
+
+	UFUNCTION()
+	void AnimNotify_RestoreWeaponAfterLever();
+
+	UFUNCTION()
+	void AnimNotify_TriggerInteraction();
+
+	UFUNCTION()
+	void AnimNotify_EndInteraction();
 };

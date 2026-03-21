@@ -68,4 +68,5 @@ public:
 	UPROPERTY(EditInstanceOnly)
 	bool bDefaultInteractable = true;
 	
+	virtual FVector GetIKTargetLocation_Implementation() const override;
 };
