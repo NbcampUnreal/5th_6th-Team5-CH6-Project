@@ -108,3 +108,12 @@ void ALever::HandleInteraction_Implementation(APrototypeCharacter* Character)
 		LeverLockInteraction();
 	}
 }
+
+FVector ALever::GetIKTargetLocation_Implementation() const
+{
+	if (LeverHandle)
+	{
+		return LeverHandle->GetComponentLocation();
+	}
+	return GetActorLocation();
+}

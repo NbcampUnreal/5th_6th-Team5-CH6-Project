@@ -82,4 +82,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UBoxComponent* CollisionBox;
+
+	virtual FVector GetIKTargetLocation_Implementation() const override;
 };

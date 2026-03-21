@@ -174,3 +174,8 @@ FVector AItemBase::GetInteractionTargetLocation_Implementation() const
 	return GetActorLocation();
 }
 
+FVector AItemBase::GetIKTargetLocation_Implementation() const
+{
+	// 일반 아이템은 기존 상호작용 타겟 위치를 그대로 손 위치로 사용합니다.
+	return GetInteractionTargetLocation();
+}

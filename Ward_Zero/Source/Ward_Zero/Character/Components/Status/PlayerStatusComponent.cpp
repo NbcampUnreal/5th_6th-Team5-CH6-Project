@@ -1,6 +1,6 @@
 ﻿#include "Character/Components/Status/PlayerStatusComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
-#include "Gimmic_CY/Items/HealItemActor.h"
+#include "Gimmic_CY/Items/Heal/HealItemActor.h"
 #include "Components/WidgetComponent.h"
 
 UPlayerStatusComponent::UPlayerStatusComponent()
@@ -117,6 +117,13 @@ void UPlayerStatusComponent::SpawnHealItemVisual(USkeletalMeshComponent* Mesh)
 		CurrHealItem->AttachToComponent(Mesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("HealItemSocket"));
 		CurrHealItem->SetActorRelativeScale3D(FVector(0.5f, 0.5f, 0.5f));
 
+		IInteractionBase* Interactable = Cast<IInteractionBase>(CurrHealItem);
+		if (Interactable)
+		{
+			Interactable->SetBCanInteract(false);
+			
+		}
+
 		AHealItemActor* HealProp = Cast<AHealItemActor>(CurrHealItem);
 		if (HealProp)
 		{
@@ -130,7 +137,6 @@ void UPlayerStatusComponent::DestroyHealItemVisual()
 {
 	if (CurrHealItem)
 	{
-		CurrHealItem->SetActorHiddenInGame(true);
 		CurrHealItem->SetActorEnableCollision(false);
 		CurrHealItem->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		CurrHealItem = nullptr;

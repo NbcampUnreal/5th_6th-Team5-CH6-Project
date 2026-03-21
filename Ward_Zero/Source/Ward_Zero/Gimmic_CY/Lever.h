@@ -37,9 +37,6 @@ private:
 	
 	FRotator InitialRotation;
 	
-	
-
-
 public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -67,7 +64,10 @@ public:
 	EInteractionType GetInteractionType_Implementation() const override;
 
 public:
+	// IK 타겟으로 쓸 위치 반환
+	virtual FVector GetIKTargetLocation_Implementation() const override;
 
+public:
 	void ActivateLever();
 	// ===== IGimmickInterface =====
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;

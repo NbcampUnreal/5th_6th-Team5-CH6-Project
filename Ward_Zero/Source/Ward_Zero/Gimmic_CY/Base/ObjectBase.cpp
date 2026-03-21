@@ -192,3 +192,7 @@ FVector AObjectBase::GetInteractionTargetLocation_Implementation() const
 	return GetActorLocation();
 }
 
+FVector AObjectBase::GetIKTargetLocation_Implementation() const
+{
+	return GetInteractionTargetLocation();
+}

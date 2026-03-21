@@ -1,13 +1,14 @@
 ﻿#include "Character/Components/Interaction/InteractionComponent.h"
 #include "Components/BoxComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
-#include "Gimmic_CY/Base/InteractionBase.h"
+#include "Gimmic_CY/Interface/InteractionBase.h"
 #include "UI_KWJ/Save/SaveSubsystem.h"
 #include "MotionWarpingComponent.h"
 #include "Character/Data/AnimData/CharacterAnimData.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/CapsuleComponent.h"
-#include "Gimmic_CY/Lever.h"
+#include "Gimmic_CY/Object/Lever/Lever.h"
+#include "Gimmic_CY/Base/ItemBase.h"
 
 UInteractionComponent::UInteractionComponent()
 {
@@ -18,6 +19,12 @@ void UInteractionComponent::Initialize(APrototypeCharacter* InCharacter, UBoxCom
 {
 	OwnerCharacter = InCharacter;
 	InteractableBox = InBox;
+
+	if (InteractableBox)
+	{
+		InteractableBox->OnComponentBeginOverlap.AddDynamic(this, &UInteractionComponent::OnInteractableBeganOverlap);
+		InteractableBox->OnComponentEndOverlap.AddDynamic(this, &UInteractionComponent::OnInteractableEndedOverlap);
+	}
 }
 
 void UInteractionComponent::TryInteract()
@@ -68,15 +75,18 @@ void UInteractionComponent::TryInteract()
 		EInteractionType Type = IInteractionBase::Execute_GetInteractionType(ClosestInteractable);
 
 		if (Type == EInteractionType::Door) HandleDoorInteraction(ClosestInteractable);
-		else if (Type == EInteractionType::Ammo || Type == EInteractionType::Heal || Type == EInteractionType::Key) HandleItemInteraction(ClosestInteractable);
-	}
-	else if (ClosestInteractable->ActorHasTag(TEXT("SavePoint")))
-	{
-		if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
+		else if (Type == EInteractionType::Ammo || Type == EInteractionType::Heal || Type == EInteractionType::Key) 
+			HandleItemInteraction(ClosestInteractable);
+		else if (Type == EInteractionType::Lever) 
+			HandleLeverInteraction(ClosestInteractable); 
+		else if (Type == EInteractionType::Save)
 		{
-			if (USaveSubsystem* SaveSub = PC->GetLocalPlayer()->GetSubsystem<USaveSubsystem>())
+			if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
 			{
-				SaveSub->ShowSaveUI();
+				if (USaveSubsystem* SaveSub = PC->GetLocalPlayer()->GetSubsystem<USaveSubsystem>())
+				{
+					SaveSub->ShowSaveUI();
+				}
 			}
 		}
 	}
@@ -175,51 +185,46 @@ void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)
 	if (MontageToPlay) OwnerCharacter->PlayAnimMontage(MontageToPlay);
 }
 
-void APrototypeCharacter::HandleLeverInteraction(AActor* LeverActor)
+void UInteractionComponent::HandleLeverInteraction(AActor* LeverActor)
 {
-	if (bIsInteractingDoor) return;
-	bIsInteractingDoor = true;
+	if (!OwnerCharacter || bIsInteractingDoor) return;
 
 	ALever* Lever = Cast<ALever>(LeverActor);
-	if (!Lever)
+	if (!Lever) return;
+
+	CurrentInteractingItem = LeverActor;
+	bIsInteractingDoor = true;
+
+	// IK 타겟 위치 저장 (레버의 CollisionBox 위치)
+	CurrentPickupLocation = IInteractionBase::Execute_GetIKTargetLocation(Lever);
+
+	// 모션 워핑
+	if (OwnerCharacter->MotionWarpingComp)
 	{
-		bIsInteractingDoor = false;
-		return;
+		FVector LeverLoc = Lever->GetActorLocation();
+		FVector LeverForward = Lever->GetActorForwardVector();
+
+		// 레버 정면 65유닛 지점 계산
+		FVector TargetWarpLocation = LeverLoc + (LeverForward * 65.0f);
+		// 캐릭터가 바닥에 발을 붙이도록 Z축은 현재 캐릭터 높이 유지
+		TargetWarpLocation.Z = OwnerCharacter->GetActorLocation().Z;
+
+		// 레버를 마주보도록 회전값 계산
+		FRotator TargetWarpRotation = (-LeverForward).Rotation();
+		TargetWarpRotation.Pitch = 0.0f;
+		TargetWarpRotation.Roll = 0.0f;
+
+		OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(
+			TEXT("LeverWarp"),
+			TargetWarpLocation,
+			TargetWarpRotation
+		);
 	}
 
-	// 워핑 및 IK를 위한 타겟 위치(PickUpPoint) 갱신
-	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(Lever);
-
-	// 재생할 몽타주 결정 
-	UAnimMontage* MontageToPlay = AnimData->LeverMontage;
-
-	if (MontageToPlay)
+	// 몽타주 재생 
+	if (OwnerCharacter->AnimData && OwnerCharacter->AnimData->LeverMontage)
 	{
-		// 몽타주 재생 및 전체 재생 시간 확보
-		float AnimDuration = PlayAnimMontage(MontageToPlay);
-
-		// 실제 레버 작동 트리거 (애니메이션의 약 50% 시점에 실행)
-		FTimerHandle LeverTriggerTimer;
-		GetWorldTimerManager().SetTimer(LeverTriggerTimer, [Lever, this]()
-			{
-				if (IsValid(Lever))
-				{
-					IInteractionBase::Execute_OnIneracted(Lever, this);
-				}
-			}, AnimDuration * 0.5f, false);
-
-		// 상호작용 상태 해제 타이머
-		FTimerHandle EndTimer;
-		GetWorldTimerManager().SetTimer(EndTimer, [this]()
-			{
-				bIsInteractingDoor = false;
-			}, AnimDuration, false);
-	}
-	else
-	{
-		// 몽타주가 없을 경우 즉시 실행하고 상태 해제
-		IInteractionBase::Execute_OnIneracted(Lever, this);
-		bIsInteractingDoor = false;
+		OwnerCharacter->PlayAnimMontage(OwnerCharacter->AnimData->LeverMontage);
 	}
 }
 
@@ -238,8 +243,47 @@ void UInteractionComponent::ConsumeInteractingItem()
 	if (CurrentInteractingItem && OwnerCharacter)
 	{
 		IInteractionBase::Execute_OnIneracted(CurrentInteractingItem, OwnerCharacter);
+		CurrentInteractingItem->Destroy();
 		CurrentInteractingItem = nullptr;
 	}
 }
 
+void UInteractionComponent::OnInteractableBeganOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!OtherActor || OtherActor == OwnerCharacter) return;
+
+	if (OtherActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+	{
+		IInteractionBase* InteractInterface = Cast<IInteractionBase>(OtherActor);
+
+		if (InteractInterface && InteractInterface->GetBCanInteract())
+		{
+			IInteractionBase::Execute_ShowPressEWidget(OtherActor);
+		}
+	}
+}
+
+void UInteractionComponent::OnInteractableEndedOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (!OtherActor || OtherActor == OwnerCharacter) return;
+
+	if (OtherActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+	{
+		IInteractionBase::Execute_HidePressEWidget(OtherActor);
+	}
+}
+
 	
+void UInteractionComponent::TriggerInteraction()
+{
+	if (CurrentInteractingItem && IsValid(CurrentInteractingItem))
+	{
+		IInteractionBase::Execute_OnIneracted(CurrentInteractingItem, OwnerCharacter);
+	}
+}
+
+void UInteractionComponent::EndInteraction()
+{
+	bIsInteractingDoor = false;
+	CurrentInteractingItem = nullptr;
+}
