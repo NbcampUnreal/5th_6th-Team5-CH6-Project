@@ -51,7 +51,10 @@
 		{
 			"Name": "MotionWarping",
 			"Enabled": true
+		},
+		{
+			"Name": "ChaosMover",
+			"Enabled": true
 		}
-
 	]
 }
