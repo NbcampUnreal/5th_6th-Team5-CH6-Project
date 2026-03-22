@@ -41,7 +41,7 @@ public:
 	virtual void PostActorCreated() override;
 	
 	
-	
+	UFUNCTION(BlueprintCallable, Category = "Interaction")
 	virtual void Activate();
 	
 	bool bActivated = false;
@@ -64,4 +64,15 @@ public:
 	bool bDefaultInteractable = true;
 	
 	virtual FVector GetIKTargetLocation_Implementation() const override;
+	
+	UPROPERTY(VisibleAnywhere)
+	USceneComponent* PickUpPoint;
+	
+#if WITH_EDITOR
+	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
+	virtual void PostEditImport() override;
+	
+	UFUNCTION(CallInEditor, Category = "Editor")
+	void RegenerateAllObjectIDsInLevel();
+#endif
 };

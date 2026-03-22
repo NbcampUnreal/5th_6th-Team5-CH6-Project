@@ -3,6 +3,9 @@
 #include "Components/WidgetComponent.h"
 #include "WardGameInstanceSubsystem.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
+#if WITH_EDITOR
+#include "EngineUtils.h"
+#endif
 
 AObjectBase::AObjectBase()
 {
@@ -12,7 +15,7 @@ AObjectBase::AObjectBase()
 	CollisionBox->SetupAttachment(RootComponent);
 	CollisionBox->SetBoxExtent(FVector(10.0f, 10.0f, 10.0f));
 	SetRootComponent(CollisionBox);;
-	CollisionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	CollisionBox->SetCollisionResponseToChannels(ECR_Overlap);
 
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(CollisionBox);
@@ -176,3 +179,49 @@ FVector AObjectBase::GetIKTargetLocation_Implementation() const
 {
 	return GetInteractionTargetLocation();
 }
+
+#if WITH_EDITOR
+void AObjectBase::PostDuplicate(EDuplicateMode::Type DuplicateMode)
+{
+	Super::PostDuplicate(DuplicateMode);
+
+	if (DuplicateMode == EDuplicateMode::Normal)
+	{
+		ActorID = FGuid::NewGuid();
+		UE_LOG(LogTemp, Warning, TEXT("Duplicated Item ID Generated: %s"), *ActorID.ToString());
+	}
+}
+
+void AObjectBase::PostEditImport()
+{
+	Super::PostEditImport();
+	
+	ActorID = FGuid::NewGuid();
+	UE_LOG(LogTemp, Warning, TEXT("Imported Item ID Generated: %s"), *ActorID.ToString());
+}
+void AObjectBase::RegenerateAllObjectIDsInLevel()
+{
+	if (UWorld* World = GetWorld())
+	{
+		int32 Count = 0;
+		// 월드에 있는 모든 AObjectBase(및 그 자식 클래스)를 순회합니다.
+		for (TActorIterator<AObjectBase> It(World); It; ++It)
+		{
+			AObjectBase* Obj = *It;
+			if (Obj)
+			{
+				// 새로운 ID 발급
+				Obj->ActorID = FGuid::NewGuid();
+				
+				// Modify()를 호출해야 에디터가 '변경사항이 생겼다'고 인식하여 맵 저장 시 반영됩니다.
+				Obj->Modify(); 
+				
+				UE_LOG(LogTemp, Warning, TEXT("Regenerated ID for %s: %s"), *Obj->GetName(), *Obj->ActorID.ToString());
+				Count++;
+			}
+		}
+		UE_LOG(LogTemp, Warning, TEXT("Total %d Object IDs have been successfully regenerated."), Count);
+	}
+}
+#endif
+
