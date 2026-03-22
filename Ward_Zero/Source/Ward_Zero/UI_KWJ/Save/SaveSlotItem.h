@@ -32,7 +32,7 @@ public:
 protected:
 
 	virtual void NativeConstruct() override;
-
+	virtual void NativeOnInitialized() override;
 	// ── BindWidget: WBP 블루프린트에 동일 이름의 위젯 필요 ──
 
 	/** 슬롯 표시 이름 (DisplayName) */
