@@ -215,4 +215,10 @@ public:
     float GetRecoilIntensity() const;
     TSubclassOf<UCameraShakeBase> GetFireCameraShake() const;
 
+public:
+    UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo")
+    void SetCurrentAmmo(int32 NewAmmo) { CurrentAmmo = FMath::Clamp(NewAmmo, 0, MaxCapacity); }
+
+    UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo")
+    void SetReserveAmmo(int32 NewReserve) { ReserveAmmo = FMath::Max(NewReserve, 0); }
 };

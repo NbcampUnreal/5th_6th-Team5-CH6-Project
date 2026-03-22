@@ -59,4 +59,10 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Montage|Action")
     TObjectPtr<UAnimMontage> PickupHighMontage;
+
+    UPROPERTY(EditAnywhere, Category = "Turn")
+    TMap<EWeaponLayerType, UAnimMontage*> TurnLeft90Montages;
+
+    UPROPERTY(EditAnywhere, Category = "Turn")
+    TMap<EWeaponLayerType, UAnimMontage*> TurnRight90Montages;
 };
