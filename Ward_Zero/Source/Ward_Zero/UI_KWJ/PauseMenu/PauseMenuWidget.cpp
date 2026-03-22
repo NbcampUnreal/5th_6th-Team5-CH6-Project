@@ -4,6 +4,7 @@
 #include "UI_KWJ/PauseMenu/PauseMenuSubsystem.h"
 #include "UI_KWJ/Save/SaveSubsystem.h"
 #include "UI_KWJ/Options/OptionsWidget.h"
+#include "UI_KWJ/Reading/DocumentSubsystem.h"
 #include "UI_KWJ/Loading/LoadingScreenSubsystem.h"
 #include "Components/Button.h"
 #include "Kismet/GameplayStatics.h"
@@ -15,8 +16,9 @@ void UPauseMenuWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	if (BTN_Load)     BTN_Load->OnClicked.AddDynamic(this, &UPauseMenuWidget::OnLoadClicked);
-	if (BTN_Options)  BTN_Options->OnClicked.AddDynamic(this, &UPauseMenuWidget::OnOptionsClicked);
+	if (BTN_Load)      BTN_Load->OnClicked.AddDynamic(this, &UPauseMenuWidget::OnLoadClicked);
+	if (BTN_Documents) BTN_Documents->OnClicked.AddDynamic(this, &UPauseMenuWidget::OnDocumentsClicked);
+	if (BTN_Options)   BTN_Options->OnClicked.AddDynamic(this, &UPauseMenuWidget::OnOptionsClicked);
 	if (BTN_MainMenu) BTN_MainMenu->OnClicked.AddDynamic(this, &UPauseMenuWidget::OnMainMenuClicked);
 	if (BTN_Resume)   BTN_Resume->OnClicked.AddDynamic(this, &UPauseMenuWidget::OnResumeClicked);
 }
@@ -34,6 +36,7 @@ FReply UPauseMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKey
 		if (OptionsWidget && OptionsWidget->IsVisible())
 		{
 			OptionsWidget->SetVisibility(ESlateVisibility::Collapsed);
+			SetVisibility(ESlateVisibility::Visible);
 			return FReply::Handled();
 		}
 
@@ -42,7 +45,15 @@ FReply UPauseMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKey
 		if (SaveSys && SaveSys->IsLoadUIOpen())
 		{
 			SaveSys->HideLoadUI();
-			// PauseMenu 다시 보이게
+			SetVisibility(ESlateVisibility::Visible);
+			return FReply::Handled();
+		}
+
+		// 서류 컬렉션이 열려있으면 닫기
+		UDocumentSubsystem* DocSys = GetOwningLocalPlayer()->GetSubsystem<UDocumentSubsystem>();
+		if (DocSys && DocSys->IsCollectionOpen())
+		{
+			DocSys->HideCollection();
 			SetVisibility(ESlateVisibility::Visible);
 			return FReply::Handled();
 		}
@@ -72,13 +83,25 @@ void UPauseMenuWidget::OnLoadClicked()
 {
 	UE_LOG(LogWard_Zero, Log, TEXT("일시정지: 불러오기"));
 
-	// 일시정지 유지한 채 Load UI 열기 (게임 멈춘 상태로 세이브 파일 탐색)
 	SetVisibility(ESlateVisibility::Collapsed);
 
 	USaveSubsystem* SaveSys = GetOwningLocalPlayer()->GetSubsystem<USaveSubsystem>();
 	if (SaveSys)
 	{
 		SaveSys->ShowLoadUI();
+	}
+}
+
+void UPauseMenuWidget::OnDocumentsClicked()
+{
+	UE_LOG(LogWard_Zero, Log, TEXT("일시정지: 서류 수집"));
+
+	SetVisibility(ESlateVisibility::Collapsed);
+
+	UDocumentSubsystem* DocSys = GetOwningLocalPlayer()->GetSubsystem<UDocumentSubsystem>();
+	if (DocSys)
+	{
+		DocSys->ShowCollection();
 	}
 }
 

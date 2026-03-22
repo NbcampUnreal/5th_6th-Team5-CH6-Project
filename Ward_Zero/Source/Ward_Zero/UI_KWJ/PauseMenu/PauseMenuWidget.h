@@ -31,6 +31,10 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UButton* BTN_Load;
 
+	/** 서류 수집 버튼 */
+	UPROPERTY(meta = (BindWidgetOptional))
+	UButton* BTN_Documents;
+
 	/** 옵션 버튼 */
 	UPROPERTY(meta = (BindWidget))
 	UButton* BTN_Options;
@@ -52,6 +56,7 @@ protected:
 private:
 
 	UFUNCTION() void OnLoadClicked();
+	UFUNCTION() void OnDocumentsClicked();
 	UFUNCTION() void OnOptionsClicked();
 	UFUNCTION() void OnMainMenuClicked();
 	UFUNCTION() void OnResumeClicked();

@@ -3,6 +3,7 @@
 #include "UI_KWJ/Reading/DocumentSubsystem.h"
 #include "UI_KWJ/Reading/DocumentData.h"
 #include "UI_KWJ/Reading/DocumentViewerWidget.h"
+#include "UI_KWJ/Reading/DocumentCollectionWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/LocalPlayer.h"
@@ -139,4 +140,101 @@ UDocumentViewerWidget* UDocumentSubsystem::GetOrCreateViewer()
 	}
 
 	return ViewerWidget;
+}
+
+// ════════════════════════════════════════════════════════
+//  서류 수집 관리
+// ════════════════════════════════════════════════════════
+
+void UDocumentSubsystem::CollectDocument(UDocumentData* InDocument)
+{
+	if (!InDocument) return;
+
+	if (!CollectedDocuments.Contains(InDocument))
+	{
+		CollectedDocuments.Add(InDocument);
+		UE_LOG(LogWard_Zero, Log, TEXT("서류 수집: %s (%d/%d)"),
+			*InDocument->DocumentTitle.ToString(),
+			CollectedDocuments.Num(), AllDocuments.Num());
+	}
+}
+
+bool UDocumentSubsystem::IsDocumentCollected(UDocumentData* InDocument) const
+{
+	return InDocument && CollectedDocuments.Contains(InDocument);
+}
+
+// ════════════════════════════════════════════════════════
+//  컬렉션 UI
+// ════════════════════════════════════════════════════════
+
+void UDocumentSubsystem::ShowCollection()
+{
+	UDocumentCollectionWidget* Widget = GetOrCreateCollection();
+	if (Widget)
+	{
+		Widget->RefreshDocumentList();
+		Widget->SetVisibility(ESlateVisibility::Visible);
+		Widget->SetKeyboardFocus();
+
+		APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
+		if (PC)
+		{
+			FInputModeUIOnly InputMode;
+			InputMode.SetWidgetToFocus(Widget->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			PC->SetInputMode(InputMode);
+			PC->SetShowMouseCursor(true);
+		}
+	}
+}
+
+void UDocumentSubsystem::HideCollection()
+{
+	if (CollectionWidget)
+	{
+		CollectionWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+}
+
+bool UDocumentSubsystem::IsCollectionOpen() const
+{
+	return CollectionWidget && CollectionWidget->IsVisible();
+}
+
+UDocumentCollectionWidget* UDocumentSubsystem::GetOrCreateCollection()
+{
+	if (IsValid(CollectionWidget) && CollectionWidget->IsInViewport())
+	{
+		return CollectionWidget;
+	}
+
+	CollectionWidget = nullptr;
+
+	if (!CollectionWidgetClass)
+	{
+		CollectionWidgetClass = LoadClass<UDocumentCollectionWidget>(
+			nullptr,
+			TEXT("/Game/UI/read/WBP_DocumentCollection.WBP_DocumentCollection_C")
+		);
+	}
+
+	if (!CollectionWidgetClass)
+	{
+		UE_LOG(LogWard_Zero, Error, TEXT("WBP_DocumentCollection을 찾을 수 없습니다!"));
+		return nullptr;
+	}
+
+	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
+	if (!PC) return nullptr;
+
+	CollectionWidget = CreateWidget<UDocumentCollectionWidget>(PC, CollectionWidgetClass);
+	if (CollectionWidget)
+	{
+		CollectionWidget->AddToViewport(420);
+		CollectionWidget->SetAnchorsInViewport(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
+		CollectionWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	return CollectionWidget;
 }
