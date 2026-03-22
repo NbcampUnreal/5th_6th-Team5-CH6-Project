@@ -196,7 +196,7 @@ void UInteractionComponent::HandleLeverInteraction(AActor* LeverActor)
 	bIsInteractingDoor = true;
 
 	// IK 타겟 위치 저장 (레버의 PickupPoint 위치)
-	CurrentPickupLocation = Lever->PickupPoint->GetComponentLocation();
+	CurrentPickupLocation = Lever->PickUpPoint->GetComponentLocation();
 
 	// 모션 워핑
 	if (OwnerCharacter->MotionWarpingComp)
