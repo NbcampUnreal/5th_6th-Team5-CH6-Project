@@ -26,6 +26,9 @@ public class Ward_Zero : ModuleRules
             "AnimGraphRuntime",
             "AnimationBlueprintLibrary",
             "MotionWarping",
+            "GeometryCollectionEngine", 
+            "FieldSystemEngine",         
+            "ChaosSolverEngine",
             
             
             //GAS
