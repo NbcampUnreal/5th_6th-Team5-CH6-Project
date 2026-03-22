@@ -177,7 +177,7 @@ FVector AObjectBase::GetInteractionTargetLocation_Implementation() const
 
 FVector AObjectBase::GetIKTargetLocation_Implementation() const
 {
-	return GetInteractionTargetLocation();
+	return GetInteractionTargetLocation_Implementation();
 }
 
 #if WITH_EDITOR
