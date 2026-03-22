@@ -6,8 +6,6 @@
 
 ASingleDoor::ASingleDoor()
 {
-	OpenDoorNavModifier = CreateDefaultSubobject<UNavModifierComponent>(TEXT("OpenDoorNavModifier"));
-	OpenDoorNavModifier->SetAreaClass(UNavArea_Null::StaticClass());
 }
 
 void ASingleDoor::BeginPlay()

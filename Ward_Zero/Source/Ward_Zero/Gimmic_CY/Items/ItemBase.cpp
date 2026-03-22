@@ -13,7 +13,8 @@ AItemBase::AItemBase()
 	CollisionBox->SetupAttachment(RootComponent);
 	CollisionBox->SetBoxExtent(FVector(10.0f, 10.0f, 10.0f));
 	SetRootComponent(CollisionBox);
-	CollisionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	CollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CollisionBox->SetCollisionResponseToChannels(ECR_Overlap);
 
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);

@@ -71,8 +71,7 @@ protected:
 	virtual void PostInitializeComponents() override;
 	bool bIsOpen = false;
 
-	UPROPERTY(VisibleAnywhere)
-	USceneComponent* PickUpPoint;
+	
 
 	FVector GetInteractionTargetLocation_Implementation() const;
 	
