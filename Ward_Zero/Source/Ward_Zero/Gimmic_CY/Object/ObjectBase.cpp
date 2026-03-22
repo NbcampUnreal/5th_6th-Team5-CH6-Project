@@ -204,16 +204,13 @@ void AObjectBase::RegenerateAllObjectIDsInLevel()
 	if (UWorld* World = GetWorld())
 	{
 		int32 Count = 0;
-		// 월드에 있는 모든 AObjectBase(및 그 자식 클래스)를 순회합니다.
 		for (TActorIterator<AObjectBase> It(World); It; ++It)
 		{
 			AObjectBase* Obj = *It;
 			if (Obj)
 			{
-				// 새로운 ID 발급
 				Obj->ActorID = FGuid::NewGuid();
 				
-				// Modify()를 호출해야 에디터가 '변경사항이 생겼다'고 인식하여 맵 저장 시 반영됩니다.
 				Obj->Modify(); 
 				
 				UE_LOG(LogTemp, Warning, TEXT("Regenerated ID for %s: %s"), *Obj->GetName(), *Obj->ActorID.ToString());

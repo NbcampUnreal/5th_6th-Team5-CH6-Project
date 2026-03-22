@@ -4,6 +4,9 @@
 #include "Components/BoxComponent.h"
 #include "Components/WidgetComponent.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
+#if WITH_EDITOR
+#include "EngineUtils.h"
+#endif
 
 AItemBase::AItemBase()
 {
@@ -192,3 +195,45 @@ FVector AItemBase::GetIKTargetLocation_Implementation() const
 	// 일반 아이템은 기존 상호작용 타겟 위치를 그대로 손 위치로 사용합니다.
 	return GetInteractionTargetLocation();
 }
+
+#if WITH_EDITOR
+void AItemBase::PostDuplicate(EDuplicateMode::Type DuplicateMode)
+{
+	Super::PostDuplicate(DuplicateMode);
+
+	if (DuplicateMode == EDuplicateMode::Normal)
+	{
+		ActorID = FGuid::NewGuid();
+		UE_LOG(LogTemp, Warning, TEXT("Duplicated Item ID Generated: %s"), *ActorID.ToString());
+	}
+}
+
+void AItemBase::PostEditImport()
+{
+	Super::PostEditImport();
+	
+	ActorID = FGuid::NewGuid();
+	UE_LOG(LogTemp, Warning, TEXT("Imported Item ID Generated: %s"), *ActorID.ToString());
+}
+void AItemBase::RegenerateAllObjectIDsInLevel()
+{
+	if (UWorld* World = GetWorld())
+	{
+		int32 Count = 0;
+		for (TActorIterator<AItemBase> It(World); It; ++It)
+		{
+			AItemBase* Obj = *It;
+			if (Obj)
+			{
+				Obj->ActorID = FGuid::NewGuid();
+				
+				Obj->Modify(); 
+				
+				UE_LOG(LogTemp, Warning, TEXT("Regenerated ID for %s: %s"), *Obj->GetName(), *Obj->ActorID.ToString());
+				Count++;
+			}
+		}
+		UE_LOG(LogTemp, Warning, TEXT("Total %d Object IDs have been successfully regenerated."), Count);
+	}
+}
+#endif
