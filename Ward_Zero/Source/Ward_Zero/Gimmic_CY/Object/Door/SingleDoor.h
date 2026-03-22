@@ -38,7 +38,4 @@ protected:
 public:
 	virtual void OpenDoor() override;
 	virtual void CloseDoor() override;
-	
-	UPROPERTY(VisibleAnywhere)
-	UNavModifierComponent* OpenDoorNavModifier;
 };

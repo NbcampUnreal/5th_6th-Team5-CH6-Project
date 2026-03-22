@@ -8,6 +8,10 @@ ALever::ALever()
 	LeverHandle->SetupAttachment(RootComponent);
 	
 	LeverTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("DoorTimeline"));
+	
+	PickUpPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickUpPoint"));
+	PickUpPoint->SetupAttachment(LeverHandle);
+	PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
 }
 
 void ALever::BeginPlay()

@@ -16,12 +16,16 @@ void USaveSlotItem::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+
+}
+void USaveSlotItem::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
 	if (BTN_Slot)
 	{
 		BTN_Slot->OnClicked.AddDynamic(this, &USaveSlotItem::OnButtonClicked);
 	}
 }
-
 // ────────────────────────────────────────────
 //  슬롯 데이터 설정 (외부 호출)
 // ────────────────────────────────────────────
