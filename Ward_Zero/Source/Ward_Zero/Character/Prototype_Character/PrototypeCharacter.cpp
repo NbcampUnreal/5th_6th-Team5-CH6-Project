@@ -158,6 +158,11 @@ void APrototypeCharacter::BeginPlay()
 		// 컨트롤러 회전(카메라)에 몸을 고정하지 않음
 		bUseControllerRotationYaw = false;
 	}
+	if (CustomCameraComp)
+	{
+		// 캐릭터의 계산이 다 끝난 "다음에" 카메라 틱을 돌리라고 명시하는 것
+		CustomCameraComp->AddTickPrerequisiteActor(this);
+	}
 }
 
 void APrototypeCharacter::Tick(float DeltaTime)
@@ -909,4 +914,12 @@ USkeletalMeshComponent* APrototypeCharacter::GetEquippedWeaponMesh()
 		}
 	}
 	return nullptr;
+}
+
+void APrototypeCharacter::SetDoorPasscode(int32 Passcode)
+{
+	//if (IsValid(PlayerHUD))
+	//{
+	//	PlayerHUD->SetPasscode(Passcode, Door, PC);
+	//}
 }

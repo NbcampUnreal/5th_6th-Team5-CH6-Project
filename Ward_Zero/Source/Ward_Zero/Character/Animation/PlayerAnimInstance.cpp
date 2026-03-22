@@ -128,20 +128,30 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		// 레버 IK 
 		// LeverIK 커브가 있을 때만 작동
 		float LeverCurveValue = GetCurveValue(TEXT("LeverIK"));
-		LeverIKAlpha = FMath::FInterpTo(LeverIKAlpha, LeverCurveValue, DeltaSeconds, 7.0f);
+
+		if (LeverCurveValue > LeverIKAlpha)
+		{
+			LeverIKAlpha = FMath::FInterpTo(LeverIKAlpha, LeverCurveValue, DeltaSeconds, 15.0f);
+		}
+		else
+		{
+			// 내려갈 때(0이 될 때) 부드럽게 풀리도록 설정 (튕김 방지)
+			LeverIKAlpha = FMath::FInterpTo(LeverIKAlpha, LeverCurveValue, DeltaSeconds, 8.0f);
+		}
 
 		if (LeverIKAlpha > 0.01f)
 		{
-			// 애니메이션 도중 레버가 내려가는 걸 실시간으로 따라감
-			if (CachedCharacter->InteractionComp && CachedCharacter->InteractionComp->CurrentInteractingItem)
+			if (CachedCharacter && CachedCharacter->InteractionComp && CachedCharacter->InteractionComp->CurrentInteractingItem)
 			{
 				AActor* InteractItem = CachedCharacter->InteractionComp->CurrentInteractingItem;
 				if (IsValid(InteractItem) && InteractItem->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
 				{
-					// 레버의 HandIKSocket 위치를 매 프레임 받아옴
+					// ★ 매 프레임 레버의 PickupPoint(현재 위치)를 받아와서 타겟으로 설정합니다.
 					LeverTargetLocation = IInteractionBase::Execute_GetIKTargetLocation(InteractItem);
 				}
 			}
+
+			// 조인트(팔꿈치) 위치 업데이트
 			FVector NewLeverJointTarget = FVector(-15.f, 30.f, 0.f);
 			DynamicLeverJointTarget = FMath::VInterpTo(DynamicLeverJointTarget, NewLeverJointTarget, DeltaSeconds, 5.0f);
 		}
@@ -324,5 +334,6 @@ void UPlayerAnimInstance::AnimNotify_EndInteraction()
 	if (CachedCharacter && CachedCharacter->InteractionComp)
 	{
 		CachedCharacter->InteractionComp->EndInteraction();
+		CachedCharacter->InteractionComp->bIsInteractingDoor = false;
 	}
 }

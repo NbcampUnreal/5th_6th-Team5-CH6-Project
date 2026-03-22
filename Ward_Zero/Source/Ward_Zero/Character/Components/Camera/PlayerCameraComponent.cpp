@@ -5,6 +5,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Character/Data/Camera/CameraData.h"
+#include "Character/Components/Interaction/InteractionComponent.h"
 
 UPlayerCameraComponent::UPlayerCameraComponent() { PrimaryComponentTick.bCanEverTick = true; }
 

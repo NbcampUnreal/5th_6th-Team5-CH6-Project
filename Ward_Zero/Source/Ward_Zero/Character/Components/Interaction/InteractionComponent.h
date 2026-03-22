@@ -62,9 +62,11 @@ private:
 	AActor* LastInteractedDoorActor = nullptr;
 
 	float LastDoorInteractTime = 0.0f;
-	bool bIsInteractingDoor = false;
 
 public:
 	void TriggerInteraction(); 
 	void EndInteraction();
+
+	UPROPERTY(BlueprintReadOnly, Category = "Interaction")
+	bool bIsInteractingDoor = false;
 };

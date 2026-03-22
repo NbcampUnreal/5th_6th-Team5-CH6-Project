@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+#include "Character/Enum/CharacterType.h"
 #include "PlayerAnimInterface.generated.h"
 
 class UPlayerCombatComponent;
@@ -26,7 +27,7 @@ public:
     virtual bool IsEquipping() const = 0;
     virtual FVector GetHandIKTargetLoc() const = 0;
     virtual bool GetIsAiming() const = 0;
-    virtual void SetIsQuickTurning(bool bIsTurning) = 0;
+    virtual void SetIsQuickTurning(bool IsTurning) = 0;
     virtual class USkeletalMeshComponent* GetEquippedWeaponMesh() = 0;
     virtual class AWeapon* GetEquippedWeapon() = 0;
     virtual bool GetIsReloading() const = 0;

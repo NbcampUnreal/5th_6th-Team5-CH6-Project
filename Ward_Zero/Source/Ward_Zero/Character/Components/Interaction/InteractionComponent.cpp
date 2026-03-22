@@ -195,21 +195,21 @@ void UInteractionComponent::HandleLeverInteraction(AActor* LeverActor)
 	CurrentInteractingItem = LeverActor;
 	bIsInteractingDoor = true;
 
-	// IK 타겟 위치 저장 (레버의 CollisionBox 위치)
-	CurrentPickupLocation = IInteractionBase::Execute_GetIKTargetLocation(Lever);
+	// IK 타겟 위치 저장 (레버의 PickupPoint 위치)
+	CurrentPickupLocation = Lever->PickupPoint->GetComponentLocation();
 
 	// 모션 워핑
 	if (OwnerCharacter->MotionWarpingComp)
 	{
 		FVector LeverLoc = Lever->GetActorLocation();
-		FVector LeverForward = Lever->GetActorForwardVector();
+		// 에셋 방향에 따라 RightVector 또는 ForwardVector 선택 (기존에 잘 작동하던 Right 사용)
+		FVector LeverForward = Lever->GetActorRightVector();
 
-		// 레버 정면 65유닛 지점 계산
-		FVector TargetWarpLocation = LeverLoc + (LeverForward * 65.0f);
-		// 캐릭터가 바닥에 발을 붙이도록 Z축은 현재 캐릭터 높이 유지
+		// 캐릭터가 설 위치 계산 (레버 정면 65유닛)
+		FVector TargetWarpLocation = LeverLoc + (LeverForward * 55.0f);
 		TargetWarpLocation.Z = OwnerCharacter->GetActorLocation().Z;
 
-		// 레버를 마주보도록 회전값 계산
+		// 레버를 바라보는 회전값
 		FRotator TargetWarpRotation = (-LeverForward).Rotation();
 		TargetWarpRotation.Pitch = 0.0f;
 		TargetWarpRotation.Roll = 0.0f;

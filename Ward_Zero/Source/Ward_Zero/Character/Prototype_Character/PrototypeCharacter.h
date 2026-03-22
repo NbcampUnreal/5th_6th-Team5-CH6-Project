@@ -233,5 +233,5 @@ public:
 	float InteractionIKAlpha = 0.0f;
 
 public:
-	void HandleWeaponVisibility(bool bShow);
+	UFUNCTION()void SetDoorPasscode(int32 Passcode);
 };
