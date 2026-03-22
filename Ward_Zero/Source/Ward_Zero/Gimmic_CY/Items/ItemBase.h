@@ -84,4 +84,12 @@ protected:
 	class UBoxComponent* CollisionBox;
 
 	virtual FVector GetIKTargetLocation_Implementation() const override;
+	
+	#if WITH_EDITOR
+    	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
+    	virtual void PostEditImport() override;
+    	
+    	UFUNCTION(CallInEditor, Category = "Editor")
+    	void RegenerateAllObjectIDsInLevel();
+    #endif
 };
