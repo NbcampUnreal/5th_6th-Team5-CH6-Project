@@ -59,10 +59,6 @@ void UInteractionComponent::TryInteract()
 				bIsValidInteractable = true;
 			}
 		}
-		else if (Actor->ActorHasTag(TEXT("SavePoint")))
-		{
-			bIsValidInteractable = true;
-		}
 
 		if (bIsValidInteractable)
 		{
@@ -83,19 +79,13 @@ void UInteractionComponent::TryInteract()
 		EInteractionType Type = IInteractionBase::Execute_GetInteractionType(ClosestInteractable);
 
 		if (Type == EInteractionType::Door) HandleDoorInteraction(ClosestInteractable);
-		else if (Type == EInteractionType::Ammo || Type == EInteractionType::Heal || Type == EInteractionType::Key) 
+		else if (Type == EInteractionType::Ammo || Type == EInteractionType::Heal || Type == EInteractionType::Key)
 			HandleItemInteraction(ClosestInteractable);
-		else if (Type == EInteractionType::Lever) 
-			HandleLeverInteraction(ClosestInteractable); 
-		else if (Type == EInteractionType::Save)
+		else if (Type == EInteractionType::Lever)
+			HandleLeverInteraction(ClosestInteractable);
+		else
 		{
-			if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
-			{
-				if (USaveSubsystem* SaveSub = PC->GetLocalPlayer()->GetSubsystem<USaveSubsystem>())
-				{
-					SaveSub->ShowSaveUI();
-				}
-			}
+			IInteractionBase::Execute_OnIneracted(ClosestInteractable, OwnerCharacter);
 		}
 	}
 }
