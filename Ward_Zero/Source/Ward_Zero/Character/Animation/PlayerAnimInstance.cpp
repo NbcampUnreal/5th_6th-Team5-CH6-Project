@@ -333,6 +333,8 @@ void UPlayerAnimInstance::AnimNotify_HideWeaponForLever()
 {
 	if (CachedCharacter && CachedCharacter->CombatComp)
 	{
+		bWasWeaponDrawnBeforeLever = CachedCharacter->CombatComp->IsWeaponDrawn();
+
 		// 무기를 들고 있다면 잠시 등에 멘 상태(or 홀스터)로 변경
 		if (CachedCharacter->CombatComp->IsWeaponDrawn())
 		{
@@ -345,10 +347,10 @@ void UPlayerAnimInstance::AnimNotify_RestoreWeaponAfterLever()
 {
 	if (CachedCharacter && CachedCharacter->CombatComp)
 	{
-		// 원래 무기를 들고 있던 상태였다면 다시 손에 쥠
-		if (CachedCharacter->CombatComp->IsWeaponDrawn())
+		if (bWasWeaponDrawnBeforeLever)
 		{
 			CachedCharacter->CombatComp->HandleWeaponAttachment(true);
+			bWasWeaponDrawnBeforeLever = false; // 상태 초기화
 		}
 	}
 }

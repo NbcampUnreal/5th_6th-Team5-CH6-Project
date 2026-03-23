@@ -23,6 +23,7 @@ void UFlashlightComponent::BeginPlay()
 
 	if (ACharacter* Owner = Cast<ACharacter>(GetOwner()))
 	{
+		CurrentLightRotation = Owner->GetActorRotation();
 		CachedCombatComp = Owner->FindComponentByClass<UPlayerCombatComponent>();
 
 		if (FlashLightClass)
@@ -107,15 +108,29 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 
 	FRotator TargetRotation;
 	// 걷거나 비무장일 땐 카메라(Control) 방향, 무장/달리기 시엔 캐릭터 방향
-	if (bIsRunning || !bIsAiming)
+	if (bIsRunning)
 	{
+		// 달릴 때는 캐릭터가 바라보는 방향 고정
 		TargetRotation = Player->GetActorRotation();
 	}
 	else
 	{
-		TargetRotation = Player->GetControlRotation();
+		// 마우스 방향(ControlRotation)을 가져옴
+		FRotator ControlRot = Player->GetControlRotation();
+		FRotator ActorRot = Player->GetActorRotation();
+
+		// 캐릭터 정면 기준 카메라가 돌아간 차이값 계산
+		FRotator DeltaRot = (ControlRot - ActorRot).GetNormalized();
+
+		// 캐릭터 몸을 뚫지 않게 좌우/상하 각도 제한 (80도/60도)
+		DeltaRot.Yaw = FMath::Clamp(DeltaRot.Yaw, -80.0f, 80.0f);
+		DeltaRot.Pitch = FMath::Clamp(DeltaRot.Pitch, -60.0f, 60.0f);
+
+		// 최종 타겟 = 몸 방향 + 제한된 카메라 차이값
+		TargetRotation = ActorRot + DeltaRot;
 	}
-	CurrentLightRotation = FMath::RInterpTo(CurrentLightRotation, TargetRotation, DeltaTime, 15.0f);
+	if (DeltaTime <= 0.0f) CurrentLightRotation = TargetRotation;
+	else CurrentLightRotation = FMath::RInterpTo(CurrentLightRotation, TargetRotation, DeltaTime, 20.0f);
 
 	// 상태별 라이트 제어
 	if (bIsRunning)
@@ -129,8 +144,9 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 		FlashLightActor->SetActorHiddenInGame(false);
 		if (FlashLightMesh)
 		{
-			FlashLightMesh->SetVisibility(bIsUnarmed);
-			FlashLightMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), bIsUnarmed ? TargetEmissive : 0.0f);
+			bool bShowMesh = bIsUnarmed;
+			FlashLightMesh->SetVisibility(bShowMesh);
+			FlashLightMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), bShowMesh ? TargetEmissive : 0.0f);
 		}
 
 		FlashLightSpot->SetUsingAbsoluteRotation(true);
@@ -179,8 +195,14 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 
 			FlashLightActor->AttachToComponent(Player->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
 			FlashLightActor->SetActorHiddenInGame(false);
-			FlashLightSpot->SetVisibility(!bShouldHide);
+			if (FlashLightMesh)
+			{
+				bool bShowMesh = bIsUnarmed;
+				FlashLightMesh->SetVisibility(bShowMesh && !bShouldHide);
+				FlashLightMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), bShowMesh ? TargetEmissive : 0.0f);
+			}
 
+			FlashLightSpot->SetVisibility(!bShouldHide);
 			if (!bShouldHide)
 			{
 				FlashLightSpot->SetUsingAbsoluteRotation(true);
@@ -245,7 +267,6 @@ void UFlashlightComponent::ToggleFlashlight()
         UAnimMontage* MontageToPlay = bIsUseFlashlight ? RaiseLightMontage : LowerLightMontage;
         if (MontageToPlay)
         {
-            // [수정] 기존 몽타주를 멈추고 새로 재생하여 "올리다 마는" 현상 방지
             Player->StopAnimMontage();
             Player->PlayAnimMontage(MontageToPlay);
         }

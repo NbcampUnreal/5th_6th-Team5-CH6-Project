@@ -290,4 +290,6 @@ public:
 private:
 	float TurnCooldownTimer = 0.0f;
 	static constexpr float TurnCooldownDuration = 0.2f;
+
+	bool bWasWeaponDrawnBeforeLever = false;
 };
