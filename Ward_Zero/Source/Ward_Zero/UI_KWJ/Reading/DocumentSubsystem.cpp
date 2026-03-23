@@ -4,6 +4,7 @@
 #include "UI_KWJ/Reading/DocumentData.h"
 #include "UI_KWJ/Reading/DocumentViewerWidget.h"
 #include "UI_KWJ/Reading/DocumentCollectionWidget.h"
+#include "WardGameInstanceSubsystem.h"
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/LocalPlayer.h"
@@ -71,6 +72,45 @@ void UDocumentSubsystem::CloseDocument()
 		PC->SetInputMode(InputMode);
 		PC->SetShowMouseCursor(false);
 	}
+}
+
+void UDocumentSubsystem::OpenDocumentByIndex(int32 DocIndex)
+{
+	// GameInstanceSubsystem에서 DataTable 조회
+	UGameInstance* GI = GetLocalPlayer()->GetGameInstance();
+	if (!GI) return;
+
+	UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>();
+	if (!SaveGI) return;
+
+	FWardDocumentEntry Entry;
+	if (!SaveGI->GetDocumentEntry(DocIndex, Entry))
+	{
+		UE_LOG(LogWard_Zero, Warning, TEXT("OpenDocumentByIndex: 인덱스 %d를 찾을 수 없습니다"), DocIndex);
+		return;
+	}
+
+	// DocumentData를 동적 생성해서 뷰어에 전달
+	UDocumentData* TempDoc = NewObject<UDocumentData>();
+	TempDoc->DocumentTitle = Entry.Title;
+
+	// 페이지 변환 (FText → FDocumentPageData)
+	for (const FText& PageText : Entry.Pages)
+	{
+		FDocumentPageData Page;
+		Page.PageText = PageText;
+		TempDoc->Pages.Add(Page);
+	}
+
+	// 배경 이미지
+	if (Entry.Image.IsValid())
+	{
+		TempDoc->BackgroundTexture = Entry.Image;
+	}
+
+	OpenDocument(TempDoc);
+
+	UE_LOG(LogWard_Zero, Log, TEXT("서류 열기 (인덱스 %d): %s"), DocIndex, *Entry.Title.ToString());
 }
 
 bool UDocumentSubsystem::IsDocumentOpen() const

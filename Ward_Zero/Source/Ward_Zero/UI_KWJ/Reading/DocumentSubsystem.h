@@ -28,6 +28,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Document")
 	void OpenDocument(UDocumentData* InDocument);
 
+	/** 서류 열기 (인덱스로 DataTable에서 조회 → 뷰어 표시) */
+	UFUNCTION(BlueprintCallable, Category = "Document")
+	void OpenDocumentByIndex(int32 DocIndex);
+
 	UFUNCTION(BlueprintCallable, Category = "Document")
 	void CloseDocument();
 
