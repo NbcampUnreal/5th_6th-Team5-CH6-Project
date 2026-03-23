@@ -47,6 +47,16 @@ void ASingleDoor::HandleInteraction_Implementation(APrototypeCharacter* Characte
 
 }
 
+EInteractionType ASingleDoor::GetInteractionType_Implementation() const
+{
+	return EInteractionType::SingleDoor;
+}
+
+ESingleDoorAnimationType ASingleDoor::GetSingleDoorAnimationType() const
+{
+	return DoorAnimationType;
+}
+
 void ASingleDoor::UpdateTimelineComp(float Output)
 {
 	float NewYaw = FMath::Lerp(0.f, TargetYaw, Output);
@@ -54,6 +64,11 @@ void ASingleDoor::UpdateTimelineComp(float Output)
 	FRotator NewRotation = InitialRotation;
 	NewRotation.Yaw += NewYaw;
 	Mesh->SetRelativeRotation(NewRotation);
+}
+
+ESingleDoorAnimationType ASingleDoor::GetDoorAnimationType()
+{
+	return DoorAnimationType;
 }
 
 void ASingleDoor::OpenDoor()

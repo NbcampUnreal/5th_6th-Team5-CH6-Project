@@ -16,7 +16,16 @@ enum class EInteractionType : uint8
 	Save,
 	Key,
 	Heal,
-	Lever
+	Lever,
+	SingleDoor,
+	Button,
+};
+
+UENUM(BlueprintType)
+enum class ESingleDoorAnimationType: uint8
+{
+	SingleDoor_Push,
+	SingleDoor_Pull
 };
 
 UINTERFACE(MinimalAPI)
