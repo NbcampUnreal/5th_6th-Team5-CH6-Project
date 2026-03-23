@@ -26,10 +26,13 @@ public class Ward_Zero : ModuleRules
             "AnimGraphRuntime",
             "AnimationBlueprintLibrary",
             "MotionWarping",
+
+            //Level
             "GeometryCollectionEngine", 
             "FieldSystemEngine",         
             "ChaosSolverEngine",
-            
+            "ChaosNiagara",       
+            "Chaos",          
             
             //GAS
             "GameplayAbilities",  
