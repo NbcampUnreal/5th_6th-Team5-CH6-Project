@@ -21,7 +21,8 @@ protected:
 
 public:
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
+	virtual EInteractionType GetInteractionType_Implementation() const override;
 	virtual void Activate() override;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (DisplayName = "Actors For Activate"), Category="Interaction Actors")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (DisplayName = "Actors For Activate"), Category="Setting")
 	TArray<AObjectBase*> ActivateActors;
 };

@@ -19,6 +19,8 @@ protected:
 	
 	virtual void BeginPlay() override;
 
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "Setting")
+	int32 DocIdx = 0;
 public:
 	
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
