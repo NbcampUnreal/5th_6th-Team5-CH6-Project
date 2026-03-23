@@ -115,7 +115,7 @@ bool AObjectBase::SetBCanInteract(bool IsCanInteract)
 	if (bCanInteract)
 	{
 		ChangeColorLampGreen();
-	}else
+	}else if (!bActivated)
 	{
 		ChangeColorLampRed();
 	}
@@ -152,6 +152,7 @@ void AObjectBase::ShowPressEWidget_Implementation()
 {
 	IInteractionBase::ShowPressEWidget_Implementation();
 	InteractWidget->SetVisibility(true);
+	UE_LOG(LogTemp,Warning,TEXT("ShowPressEWidget: %s"), *ActorID.ToString());
 }
 
 void AObjectBase::HidePressEWidget_Implementation()
