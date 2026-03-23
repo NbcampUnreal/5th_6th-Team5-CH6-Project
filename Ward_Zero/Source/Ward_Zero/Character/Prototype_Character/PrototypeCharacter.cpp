@@ -289,6 +289,12 @@ void APrototypeCharacter::EndRunning(const FInputActionValue& Value)
 void APrototypeCharacter::ToggleCrouch(const FInputActionValue& Value)
 {
 	if (bIsRunning || GetIsReloading() || IsEquipping()) return;
+
+	if (!bIsCrouched && GetIsAiming())
+	{
+		StopAiming(Value);
+	}
+
 	bIsCrouched ? UnCrouch() : Crouch();
 }
 
@@ -355,6 +361,8 @@ void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 
 void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 {
+	if (bIsCrouched) return;
+
 	if (CombatComp && CombatComp->StartAiming())
 	{
 		// 캐릭터 회전 및 이동 속도 설정
@@ -435,6 +443,8 @@ void APrototypeCharacter::CheckRunState()
 
 void APrototypeCharacter::Fire(const FInputActionValue& Value)
 {
+	if (bIsCrouched) return;
+
 	if (CombatComp)
 	{
 		TSubclassOf<UCameraShakeBase> FinalCamShake = nullptr;

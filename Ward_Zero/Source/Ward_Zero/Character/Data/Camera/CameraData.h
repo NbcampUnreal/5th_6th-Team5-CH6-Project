@@ -26,16 +26,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Aim") float AimArmLength = 40.0f;
 	UPROPERTY(EditAnywhere, Category = "Aim|Pistol") FVector PistolAimSocketOffset = FVector(-20.0f, 30.0f, 20.0f);
 	UPROPERTY(EditAnywhere, Category = "Aim|SMG") FVector SMGAimSocketOffset = FVector(-60.0f, 50.0f, 20.0f);
-	UPROPERTY(EditAnywhere, Category = "Aim|Pistol") FVector CrouchedPistolAimSocketOffset = FVector(-20.0f, 30.0f, 10.0f);
-	UPROPERTY(EditAnywhere, Category = "Aim|SMG") FVector CrouchedSMGAimSocketOffset = FVector(-60.0f, 50.0f, 10.0f);
-
-	// (권총은 앉은 상태에서 사격 애니메이션이 없기에 필요함)
-	UPROPERTY(EditAnywhere, Category = "Aim|Pistol") float CrouchedWalkAimZOffset = 30.0f;
-
 	// 앉기 설정 (여기가 0이면 허리로 갑니다. 35~45 추천)
 	UPROPERTY(EditAnywhere, Category = "Crouch") float CrouchedArmLength = 100.f;
 	UPROPERTY(EditAnywhere, Category = "Crouch") float CrouchedCameraHeight = 35.f;
-	UPROPERTY(EditAnywhere, Category = "Crouch") float CrouchedWalkCameraHeight = 40.f;
 
 	// 흔들림(Bobbing) 설정
 	UPROPERTY(EditAnywhere, Category = "Bobbing") float BobFrequency = 12.0f;

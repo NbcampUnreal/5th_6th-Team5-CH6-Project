@@ -41,24 +41,8 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
     if (!OwnerCharacter || !CameraBoom || !MainCamera || !CameraData || !CachedCombatComp) return;
 
     UPlayerCombatComponent* Combat = CachedCombatComp;
-
     float Speed = OwnerCharacter->GetVelocity().Size();
 
-    bool bIsCrouchedNow = OwnerCharacter->bIsCrouched;
-    if (bIsCrouchedNow != bWasCrouched)
-    {
-        float CapsuleHeightDiff = 45.0f;
-
-        if (bIsCrouchedNow)
-        {
-            CameraBoom->SocketOffset.Z += CapsuleHeightDiff;
-        }
-        else
-        {
-            CameraBoom->SocketOffset.Z -= CapsuleHeightDiff;
-        }
-        bWasCrouched = bIsCrouchedNow;
-    }
 
     // 목표 수치 초기화 
     float TargetArmLength = CameraData->DefaultArmLength;
@@ -71,20 +55,7 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
         TargetArmLength = CameraData->AimArmLength;
         TargetFOV = CameraData->AimFOV;
 
-        // 무기별 조준 오프셋 적용
-        if (OwnerCharacter->bIsCrouched)
-        {
-            TargetSocketOffset = (Combat->GetCurrentWeaponIndex() == 2) ? CameraData->CrouchedSMGAimSocketOffset : CameraData->CrouchedPistolAimSocketOffset;
-
-            if (Combat->GetCurrentWeaponIndex() == 1 && Speed > 10.0f)
-            {
-                TargetSocketOffset.Z += CameraData->CrouchedWalkAimZOffset;
-            }
-        }
-        else
-        {
-            TargetSocketOffset = (Combat->GetCurrentWeaponIndex() == 2) ? CameraData->SMGAimSocketOffset : CameraData->PistolAimSocketOffset;
-        }
+        TargetSocketOffset = (Combat->GetCurrentWeaponIndex() == 2) ? CameraData->SMGAimSocketOffset : CameraData->PistolAimSocketOffset;
 
         if (!Combat->IsRecoiling())
         {
@@ -121,8 +92,7 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
         {
             TargetArmLength = CameraData->CrouchedArmLength;
 
-            float VerticalBase = (Speed > 10.f && Combat->GetCurrentWeaponIndex() != 2) ? CameraData->CrouchedWalkCameraHeight : CameraData->CrouchedCameraHeight;
-            TargetSocketOffset.Z = VerticalBase + 20.0f;
+            TargetSocketOffset = FVector(0.0f, 0.0f, CameraData->CrouchedCameraHeight);
         }
 
         // 이동 시 흔들림 (Bobbing) - 비조준 
@@ -153,36 +123,10 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
         else { BobTime = FMath::FInterpTo(BobTime, 0.0f, DeltaTime, 5.0f); }
     }
 
-    FVector TargetPivotOffset = OriginalTargetOffset;
-    if (CameraBoom && MainCamera)
-    {
-        FVector UnfixedPos = CameraBoom->GetUnfixedCameraPosition();
-        FVector ActualPos = MainCamera->GetComponentLocation();
-        float Compression = (UnfixedPos - ActualPos).Size();
-
-        if (Compression > 5.0f)
-        {
-            if (Combat->IsAiming())
-            {
-                float LiftAmount = FMath::Clamp(Compression * 0.8f, 0.0f, 70.0f);
-                TargetPivotOffset.Z += LiftAmount;
-
-                float ShiftAmount = FMath::Clamp(Compression * 0.5f, 0.0f, 40.0f);
-                TargetPivotOffset.Y += ShiftAmount;
-            }
-            else
-            {
-                float LiftAmount = FMath::Clamp(Compression * 0.4f, 0.0f, 40.0f);
-                TargetPivotOffset.Z += LiftAmount;
-            }
-        }
-    }
 
     // 부드러운 보간 적용 
     float Interp = CameraData->InterpSpeed;
     CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, TargetArmLength, DeltaTime, Interp);
     MainCamera->FieldOfView = FMath::FInterpTo(MainCamera->FieldOfView, TargetFOV, DeltaTime, Interp);
     CameraBoom->SocketOffset = FMath::VInterpTo(CameraBoom->SocketOffset, TargetSocketOffset, DeltaTime, Interp);
-
-    CameraBoom->TargetOffset = FMath::VInterpTo(CameraBoom->TargetOffset, TargetPivotOffset, DeltaTime, Interp);
 }
