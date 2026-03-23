@@ -8,14 +8,7 @@
 AHealItemActor::AHealItemActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
-
-	//// 충돌 박스
-	////CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
-	//SetRootComponent(CollisionBox);
-	//CollisionBox->SetBoxExtent(FVector(20.0f, 20.0f, 20.0f));
-	//CollisionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 	
-
 	// 약병 뚜껑 메쉬 
 	CapMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CapMesh"));
 	CapMesh->SetupAttachment(Mesh); 
