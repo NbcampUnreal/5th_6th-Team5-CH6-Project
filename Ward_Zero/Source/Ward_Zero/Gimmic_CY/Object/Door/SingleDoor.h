@@ -31,9 +31,8 @@ protected:
 
 	FRotator InitialRotation;
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite,meta = (DisplayName = "Door Action Type"),Category = "Door Action")
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,meta = (DisplayName = "Door Action Type"),Category = "Setting")
 	ESingleDoorAnimationType DoorAnimationType = ESingleDoorAnimationType::SingleDoor_Push;
-	
 
 	virtual void UpdateTimelineComp(float Output) override;
 

@@ -1,5 +1,7 @@
 #include "Gimmic_CY/Object/Door/SafeActor.h"
 
+#include "Gimmic_CY/Items/ItemBase.h"
+
 ASafeActor::ASafeActor()
 {
     PrimaryActorTick.bCanEverTick = false;
@@ -51,6 +53,18 @@ void ASafeActor::DoorVanishMagic()
     OnConstruction(GetActorTransform());
 }
 
+void ASafeActor::SettingItemInSafeBox()
+{
+    for (AActor* Item : Items)
+    {
+       AItemBase* IB = Cast<AItemBase>(Item);
+        if (IB)
+        {
+            IB->bDefaultInteractable = false;
+        }
+    }
+}
+
 void ASafeActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
     if (!bCanInteract)
@@ -84,7 +98,8 @@ void ASafeActor::Activate()
 
 EInteractionType ASafeActor::GetInteractionType_Implementation() const
 {
-    return EInteractionType::SingleDoor;
+    //return EInteractionType::SingleDoor;
+    return EInteractionType::Door;
 }
 
 ESingleDoorAnimationType ASafeActor::GetSingleDoorAnimationType() const

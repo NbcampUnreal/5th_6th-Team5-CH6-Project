@@ -13,6 +13,13 @@ void ASingleDoor::BeginPlay()
 	Super::BeginPlay();
 
 	InitialRotation = Mesh->GetRelativeRotation();
+	if (DoorAnimationType == ESingleDoorAnimationType::SingleDoor_Push)
+	{
+		TargetYaw = -90.f;
+	}else
+	{
+		TargetYaw = 90.f;
+	}
 }
 
 void ASingleDoor::HandleInteraction_Implementation(APrototypeCharacter* Character)
@@ -49,7 +56,8 @@ void ASingleDoor::HandleInteraction_Implementation(APrototypeCharacter* Characte
 
 EInteractionType ASingleDoor::GetInteractionType_Implementation() const
 {
-	return EInteractionType::SingleDoor;
+	//return EInteractionType::SingleDoor;
+	return EInteractionType::Door;
 }
 
 ESingleDoorAnimationType ASingleDoor::GetSingleDoorAnimationType() const
@@ -74,7 +82,6 @@ ESingleDoorAnimationType ASingleDoor::GetDoorAnimationType()
 void ASingleDoor::OpenDoor()
 {
 	Super::OpenDoor();
-	TargetYaw = -90.f;
 	DoorTimelineComp->Play();
 	
 }

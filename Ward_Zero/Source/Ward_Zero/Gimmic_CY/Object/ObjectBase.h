@@ -79,5 +79,6 @@ public:
 	
 	UFUNCTION(CallInEditor, Category = "Editor")
 	void RegenerateAllObjectIDsInLevel();
+
 #endif
 };
