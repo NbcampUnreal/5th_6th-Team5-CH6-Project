@@ -37,9 +37,15 @@ protected:
 	UFUNCTION(CallInEditor, Category = "Editor")
 	void DoorVanishMagic();
 	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, meta = (DisplayName = "Door Action"), Category = "Door Action")
+	ESingleDoorAnimationType DoorAnimationType;
+	
 public:
 	// ===== IGimmickInterface =====
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	
 	virtual void Activate() override;
+	
+	virtual EInteractionType GetInteractionType_Implementation() const override;
+	ESingleDoorAnimationType GetSingleDoorAnimationType() const;
 };

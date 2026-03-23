@@ -81,3 +81,13 @@ void ASafeActor::Activate()
     }
     SetBCanInteract(false);
 }
+
+EInteractionType ASafeActor::GetInteractionType_Implementation() const
+{
+    return EInteractionType::SingleDoor;
+}
+
+ESingleDoorAnimationType ASafeActor::GetSingleDoorAnimationType() const
+{
+    return DoorAnimationType;
+}

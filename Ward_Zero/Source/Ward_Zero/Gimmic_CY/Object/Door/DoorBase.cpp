@@ -91,30 +91,8 @@ FVector ADoorBase::GetInteractionTargetLocation_Implementation() const {
 	return PickUpPoint->GetComponentLocation();
 }
 
-bool ADoorBase::SetBCanInteract(bool IsCanInteract)
-{
-	
-	if (IsCanInteract)
-	{
-		ChangeColorLampGreen();
-	}else if (!bIsOpen)
-	{
-		ChangeColorLampRed();
-	}
-	return Super::SetBCanInteract(IsCanInteract);
-}
-
 void ADoorBase::Activate()
 {
 	Super::Activate();
 	OpenDoor();
-}
-
-
-void ADoorBase::ChangeColorLampRed_Implementation()
-{
-}
-
-void ADoorBase::ChangeColorLampGreen_Implementation()
-{
 }

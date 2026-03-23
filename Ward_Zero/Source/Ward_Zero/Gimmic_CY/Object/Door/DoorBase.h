@@ -23,7 +23,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void CloseDoor();
 	
-	virtual bool SetBCanInteract(bool IsCanInteract) override;
 	
 	virtual void Activate() override;
 	
@@ -56,12 +55,7 @@ protected:
 	// Lamp Mesh
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	UStaticMeshComponent* Lamp;
-
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void ChangeColorLampRed();
-
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void ChangeColorLampGreen();
+	
 
 	UFUNCTION()
 	virtual void UpdateTimelineComp(float Output);

@@ -40,6 +40,11 @@ public:
 	
 	virtual void PostActorCreated() override;
 	
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void ChangeColorLampRed();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void ChangeColorLampGreen();
 	
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
 	virtual void Activate();

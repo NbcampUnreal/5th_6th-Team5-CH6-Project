@@ -111,6 +111,14 @@ bool AObjectBase::SetBCanInteract(bool IsCanInteract)
 {
 	bCanInteract = IsCanInteract;
 	SaveActorState();
+	
+	if (bCanInteract)
+	{
+		ChangeColorLampGreen();
+	}else
+	{
+		ChangeColorLampRed();
+	}
 	return bCanInteract;
 }
 
@@ -131,6 +139,13 @@ void AObjectBase::PostActorCreated()
 	}
 }
 
+void AObjectBase::ChangeColorLampRed_Implementation()
+{
+}
+
+void AObjectBase::ChangeColorLampGreen_Implementation()
+{
+}
 
 
 void AObjectBase::ShowPressEWidget_Implementation()
