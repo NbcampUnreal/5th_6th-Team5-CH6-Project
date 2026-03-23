@@ -159,32 +159,40 @@ void APrototypeCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bIsRunning)
+	if (bIsRunning) CheckRunState();
+
+	// [수정] 애님 인스턴스 참조를 가져와서 턴 상태를 체크
+	UPlayerAnimInstance* AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
+	bool bIsTurningNow = (AnimInst && AnimInst->bIsTurn);
+
+	if (bIsTurningNow || GetIsQuickTurning())
 	{
-		CheckRunState();
+		// 턴 중에는 모든 자동 회전 로직을 물리적으로 차단
+		bUseControllerRotationYaw = false;
+		if (GetCharacterMovement())
+		{
+			GetCharacterMovement()->bOrientRotationToMovement = false;
+			// 중요: 회전 속도를 0으로 만들어 루트 모션 외의 간섭을 차단
+			GetCharacterMovement()->RotationRate = FRotator(0.f, 0.f, 0.f);
+		}
+	}
+	else
+	{
+		// 턴 중이 아닐 때의 로직 (기본값 복구)
+		if (GetIsAiming())
+		{
+			bUseControllerRotationYaw = true;
+			GetCharacterMovement()->bOrientRotationToMovement = false;
+		}
+		else
+		{
+			bUseControllerRotationYaw = false;
+			GetCharacterMovement()->bOrientRotationToMovement = true;
+			GetCharacterMovement()->RotationRate = FRotator(0.0f, 240.0f, 0.0f);
+		}
 	}
 
-	// 퀵턴 처리 
-	if (QuickTurnComp && QuickTurnComp->IsQuickTurning()) return;
-
-	// 캐릭터 몸체 회전 (비조준 / 조준)
 	UpdateBodyRotation(DeltaTime);
-
-#if !UE_BUILD_SHIPPING // 디버깅용 빌드에서 제외
-	if (GEngine)
-	{
-		if (StatusComp)
-		{
-			FString StatusMsg = FString::Printf(TEXT("HP: %.0f / Stamina: %.0f"), StatusComp->CurrHealth, StatusComp->CurrStamina);
-			GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Green, StatusMsg);
-		}
-		if (CombatComp && CombatComp->GetEquippedWeapon())
-		{
-			FString AmmoMsg = FString::Printf(TEXT("Ammo: %d / %d"), CombatComp->GetEquippedWeapon()->GetCurrentAmmo(), CombatComp->GetEquippedWeapon()->GetReserveAmmo());
-			GEngine->AddOnScreenDebugMessage(2, 0.0f, FColor::Yellow, AmmoMsg);
-		}
-	}
-#endif
 }
 
 #pragma region Input Biding

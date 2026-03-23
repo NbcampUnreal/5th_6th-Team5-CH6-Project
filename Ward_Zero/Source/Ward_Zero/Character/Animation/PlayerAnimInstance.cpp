@@ -76,7 +76,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	// IK를 끄는 Busy 조건 
 	bool bIsIKBusy = bIsEquipping || bIsReloading || bIsInteracting || bIsQuickTurning;
-	
+	/*CalculateYawDir();*/
 	if (!bIsIKBusy && bIsGround)
 	{
 		if (GroundSpeed < 1.0f && !bIsAcceleration)
@@ -396,42 +396,33 @@ void UPlayerAnimInstance::CalculateYawDir()
 
 void UPlayerAnimInstance::HandleTurnning()
 {
-	if (bIsTurn) return;
-	if (TurnCooldownTimer > 0.0f) return;
+	// 이미 턴 중이거나 쿨타임이면 절대 진입 금지
+	if (bIsTurn || TurnCooldownTimer > 0.0f) return;
+
+	// 슬롯 설정 문제로 모션이 안 보일 수 있으므로 재생 여부 재체크
 	if (Montage_IsPlaying(nullptr)) return;
-	// Yaw 차이가 50 이상일 때 턴 트리거 (절대값 비교)
+
+	// [수정] 90도 루트모션이라면 임계값을 약간 여유 있게(약 100도) 설정
 	if (FMath::Abs(RootYawOffset) >= 100.0f)
 	{
-		// 카메라가 캐릭터보다 오른쪽을 보면 양수, 왼쪽을 보면 음수
-		LocalTurnDir = (RootYawOffset >= 0.0f) ? ETurnDirection::Right : ETurnDirection::Left;
-		bIsTurn = true;
-
-		// --- 방식 A: 몽타주를 그대로 사용하는 방식 ---
-		if (CachedCharacter && CachedCharacter->AnimData)
+		if (CachedCharacter)
 		{
-			// CharacterAnimData에 이미 세팅해둔 TMap을 레이어 타입에 맞게 가져옴
-			EWeaponLayerType LayerType = CachedCharacter->CurrentLayerType;
-			UAnimMontage* MontageToPlay = nullptr;
+			bIsTurn = true; // 가장 먼저 플래그를 세워 중복 실행 방지
 
-			if (LocalTurnDir == ETurnDirection::Left)
-			{
-				MontageToPlay = CachedCharacter->AnimData->TurnLeft90Montages.FindRef(LayerType);
-			}
-			else
-			{
-				MontageToPlay = CachedCharacter->AnimData->TurnRight90Montages.FindRef(LayerType);
-			}
+			EWeaponLayerType LayerType = CachedCharacter->CurrentLayerType;
+			UAnimMontage* MontageToPlay = (RootYawOffset > 0) ?
+				CachedCharacter->AnimData->TurnRight90Montages.FindRef(LayerType) :
+				CachedCharacter->AnimData->TurnLeft90Montages.FindRef(LayerType);
 
 			if (MontageToPlay)
 			{
-				CachedCharacter->bUseControllerRotationYaw = false; // 명시적으로 끄기
-				if (MovementComp)
-					MovementComp->bOrientRotationToMovement = false;
+				// 재생 전 캐릭터의 회전 가속도를 0으로 밀어버림
+				CachedCharacter->GetCharacterMovement()->StopMovementImmediately();
 				Montage_Play(MontageToPlay);
 			}
 			else
 			{
-				bIsTurn = false; // 재생할 몽타주가 없으면 초기화
+				bIsTurn = false;
 			}
 		}
 	}
@@ -461,12 +452,23 @@ void UPlayerAnimInstance::StopTurnIfMove()
 
 void UPlayerAnimInstance::AnimNotify_TurnFinished()
 {
+	if (CachedCharacter)
+	{
+		// [수정] 현재 카메라가 보고 있는 정확한 Yaw 값을 가져옴
+		float TargetYaw = CachedCharacter->GetControlRotation().Yaw;
+		FRotator FinalRot = CachedCharacter->GetActorRotation();
+		FinalRot.Yaw = TargetYaw;
 
-	// RootYawOffset 강제 재계산 후 플래그 해제
-	CalculateYawDir();
+		// 캐릭터를 카메라 방향으로 강제 순간이동(회전) 시킴
+		CachedCharacter->SetActorRotation(FinalRot);
+
+		// 회전 속도 복구
+		CachedCharacter->GetCharacterMovement()->RotationRate = FRotator(0.0f, 240.0f, 0.0f);
+	}
+
 	bIsTurn = false;
-	TurnCooldownTimer = TurnCooldownDuration;  // ← 추가
+	TurnCooldownTimer = TurnCooldownDuration;
 
-	if (MovementComp && CachedCharacter && !CachedCharacter->GetIsAiming())
-		MovementComp->bOrientRotationToMovement = true;
+	// 종료 후 오프셋 즉시 재계산 (0에 가깝게 나옴)
+	CalculateYawDir();
 }
