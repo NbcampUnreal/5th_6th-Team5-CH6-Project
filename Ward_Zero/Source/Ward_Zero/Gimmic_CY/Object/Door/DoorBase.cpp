@@ -26,6 +26,13 @@ ADoorBase::ADoorBase()
 void ADoorBase::BeginPlay()
 {
 	Super::BeginPlay();
+	if (bCanInteract)
+	{
+		ChangeColorLampGreen();
+	}else
+	{
+		ChangeColorLampRed();
+	}
 	
 }
 
