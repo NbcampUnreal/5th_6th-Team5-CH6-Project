@@ -37,7 +37,7 @@ AItemBase::AItemBase()
 	InteractWidget->SetDrawSize(FVector2D(200.0f, 50.0f));
 	InteractWidget->SetVisibility(false);
 	
-	static ConstructorHelpers::FClassFinder<UUserWidget> InteractWidgetClass(TEXT("/Game/Gimmick/Gimmick_CY/Widget/WB_PressE.WB_PressE_C"));
+	static ConstructorHelpers::FClassFinder<UUserWidget> InteractWidgetClass(TEXT("/Game/UI/save/WBP_InteractPrompt.WBP_InteractPrompt_C"));
 	
 	if (InteractWidgetClass.Succeeded())
 	{
