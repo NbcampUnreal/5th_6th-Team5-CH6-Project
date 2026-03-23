@@ -94,3 +94,34 @@ void UWardGameInstanceSubsystem::ApplyOptions(UWorld* World)
 	UE_LOG(LogWard_Zero, Log, TEXT("옵션 적용: Master=%.0f%% SFX=%.0f%% BGM=%.0f%% Gamma=%.2f"),
 		MasterVolume * 100.f, SFXVolume * 100.f, BGMVolume * 100.f, Gamma);
 }
+
+// ════════════════════════════════════════════════════════
+//  문서/아이템 인덱스 관리
+// ════════════════════════════════════════════════════════
+
+void UWardGameInstanceSubsystem::ActivateDocumentIndex(int32 DocIndex)
+{
+	if (DocIndex < 0) return;
+
+	ActiveDocumentIndices.Add(DocIndex);
+	UE_LOG(LogWard_Zero, Log, TEXT("문서 인덱스 활성화: %d (총 %d개)"), DocIndex, ActiveDocumentIndices.Num());
+}
+
+bool UWardGameInstanceSubsystem::IsDocumentIndexActive(int32 DocIndex) const
+{
+	return ActiveDocumentIndices.Contains(DocIndex);
+}
+
+bool UWardGameInstanceSubsystem::GetDocumentEntry(int32 DocIndex, FWardDocumentEntry& OutEntry) const
+{
+	if (!DocumentDataTable) return false;
+
+	const FWardDocumentEntry* Found = DocumentDataTable->FindByIndex(DocIndex);
+	if (Found)
+	{
+		OutEntry = *Found;
+		return true;
+	}
+
+	return false;
+}

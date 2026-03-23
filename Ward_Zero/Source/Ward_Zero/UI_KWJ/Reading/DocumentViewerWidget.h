@@ -30,7 +30,7 @@ public:
 	UDocumentViewerWidget(const FObjectInitializer& ObjectInitializer)
 		: Super(ObjectInitializer)
 	{
-		bIsFocusable = true;
+		SetIsFocusable(true);
 	}
 	UPROPERTY(meta = (BindWidgetOptional))
 	UImage* BG_Overlay;

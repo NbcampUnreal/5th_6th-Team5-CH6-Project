@@ -13,7 +13,7 @@ void USplashWidget::NativeConstruct()
 	if (IMG_Logo) IMG_Logo->SetRenderOpacity(0.0f);
 	if (IMG_Background) IMG_Background->SetRenderOpacity(1.0f); // 검정 배경은 불투명
 
-	bIsFocusable = true;
+	SetIsFocusable(true);
 }
 
 void USplashWidget::PlaySplash()

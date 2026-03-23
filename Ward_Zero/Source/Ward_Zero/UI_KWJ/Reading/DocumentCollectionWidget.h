@@ -24,7 +24,7 @@ public:
 	UDocumentCollectionWidget(const FObjectInitializer& ObjectInitializer)
 		: Super(ObjectInitializer)
 	{
-		bIsFocusable = true;
+		SetIsFocusable(true);
 	}
 
 	// ══════════════════════════════════════════
