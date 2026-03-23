@@ -14,6 +14,7 @@ UWardSaveGame::UWardSaveGame()
 	bIsWeaponEquipped = false;
 	CurrentAmmo = 0;
 	MaxAmmoCapacity = 12;
+	ReserveAmmo = 0;
 	bIsFlashLightOn = false;
 	CurrentLevelName = NAME_None;
 	PlayTimeSeconds = 0.0f;

@@ -66,13 +66,17 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "SaveData|Weapon")
 	bool bIsWeaponEquipped;
 
-	/** 현재 탄약 */
+	/** 현재 탄약 (탄창 안) */
 	UPROPERTY(VisibleAnywhere, Category = "SaveData|Weapon")
 	int32 CurrentAmmo;
 
 	/** 탄창 최대 용량 */
 	UPROPERTY(VisibleAnywhere, Category = "SaveData|Weapon")
 	int32 MaxAmmoCapacity;
+
+	/** 예비 탄약 (탄창 밖) */
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Weapon")
+	int32 ReserveAmmo;
 
 	// ══════════════════════════════════════════
 	//  손전등
