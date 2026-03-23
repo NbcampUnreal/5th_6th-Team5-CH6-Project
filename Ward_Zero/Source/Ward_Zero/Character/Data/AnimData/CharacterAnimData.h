@@ -65,4 +65,10 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Turn")
     TMap<EWeaponLayerType, UAnimMontage*> TurnRight90Montages;
+
+    UPROPERTY(EditAnywhere, Category = "Turn")
+    TMap<EWeaponLayerType, UAnimMontage*> TurnLeft180Montages;
+
+    UPROPERTY(EditAnywhere, Category = "Turn")
+    TMap<EWeaponLayerType, UAnimMontage*>TurnRight180Montages;
 };

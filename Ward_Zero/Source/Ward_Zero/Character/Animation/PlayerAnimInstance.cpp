@@ -10,6 +10,9 @@
 #include "Character/Components/Interaction/InteractionComponent.h"
 #include "Gimmic_CY/Interface/InteractionBase.h"
 #include "Character/Components/Combat/PlayerCombatComponent.h"
+#include "Gimmic_CY/Object/ObjectBase.h"
+#include "Character/Data/AnimData/CharacterAnimData.h"
+
 void UPlayerAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
@@ -34,6 +37,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	{
 		GroundSpeed = 0.0f;
 		bHasVelocity = false;
+		bIsAcceleration = false;
 	}
 	else {
 		UpdateMovementCalculations(DeltaSeconds);
@@ -67,8 +71,27 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		AimPitch = bIsReloading ? FMath::FInterpTo(AimPitch, 0.0f, DeltaSeconds, 5.0f) : AnimInterface->GetAimPitch();
 	}
 
+	if (TurnCooldownTimer > 0.0f)
+		TurnCooldownTimer -= DeltaSeconds;
+
 	// IK를 끄는 Busy 조건 
 	bool bIsIKBusy = bIsEquipping || bIsReloading || bIsInteracting || bIsQuickTurning;
+	
+	if (!bIsIKBusy && bIsGround)
+	{
+		if (GroundSpeed < 1.0f && !bIsAcceleration)
+		{
+			HandleTurnning();
+		}
+		else if (bIsTurn && bIsAcceleration)
+		{
+			StopTurnIfMove();
+		}
+	}
+	else if (bIsTurn)
+	{
+		StopTurnIfMove(); // 상태가 변하면 턴 강제 종료
+	}
 
 	// SMG IK
 	float CurveValue = GetCurveValue(TEXT("HandIKLeftAlpha"));
@@ -146,8 +169,15 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 				AActor* InteractItem = CachedCharacter->InteractionComp->CurrentInteractingItem;
 				if (IsValid(InteractItem) && InteractItem->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
 				{
-					// ★ 매 프레임 레버의 PickupPoint(현재 위치)를 받아와서 타겟으로 설정합니다.
-					LeverTargetLocation = IInteractionBase::Execute_GetIKTargetLocation(InteractItem);
+					// 매 프레임 레버의 PickupPoint(현재 위치)를 받아와서 타겟으로 설정합니다.
+					if (AObjectBase* ObjectBase = Cast<AObjectBase>(InteractItem))
+					{
+						if (ObjectBase->PickUpPoint)
+						{
+							// 직접 컴포넌트의 월드 좌표를 가져옵니다.
+							LeverTargetLocation = ObjectBase->PickUpPoint->GetComponentLocation();
+						}
+					}
 				}
 			}
 
@@ -155,6 +185,11 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 			FVector NewLeverJointTarget = FVector(-15.f, 30.f, 0.f);
 			DynamicLeverJointTarget = FMath::VInterpTo(DynamicLeverJointTarget, NewLeverJointTarget, DeltaSeconds, 5.0f);
 		}
+	}
+	if (Character)
+	{
+		// 캐릭터(캡슐)의 현재 Yaw 각도를 실시간으로 화면 파란색으로 띄움
+		if (GEngine) GEngine->AddOnScreenDebugMessage(5, 0.0f, FColor::Cyan, FString::Printf(TEXT("Actor Yaw: %f"), Character->GetActorRotation().Yaw));
 	}
 }
 void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
@@ -246,11 +281,8 @@ void UPlayerAnimInstance::UpdateOrientationWarping(float DeltaSeconds)
 	}
 	else
 	{
-		// 조준 중이 아니거나 달리기 중일 때는 몸이 직접 회전하므로 Warping 각도를 0으로 고정
 		OrientationWarpingAngle = 0.0f;
 	}
-
-	// 달리기 중에는 Warping 기능을 완전히 끕니다 (Alpha = 0)
 	const float TargetAlpha = (bHasVelocity && bIsAiming && !bIsRunning) ? 1.0f : 0.0f;
 	OrientationWarpingAlpha = FMath::FInterpTo(OrientationWarpingAlpha, TargetAlpha, DeltaSeconds, 10.0f);
 }
@@ -335,5 +367,104 @@ void UPlayerAnimInstance::AnimNotify_EndInteraction()
 	{
 		CachedCharacter->InteractionComp->EndInteraction();
 		CachedCharacter->InteractionComp->bIsInteractingDoor = false;
+
+		if (APlayerController* PC = Cast<APlayerController>(CachedCharacter->GetController()))
+		{
+			CachedCharacter->EnableInput(PC);
+		}
+		Montage_Stop(0.2f);
 	}
+}
+
+void UPlayerAnimInstance::AnimNotify_FreeMovement()
+{
+	RootMotionMode = ERootMotionMode::IgnoreRootMotion;
+}
+
+void UPlayerAnimInstance::CalculateYawDir()
+{
+	if (!Character) return;
+
+	FRotator ControlRot = Character->GetControlRotation();
+	FRotator ActorRot = Character->GetActorRotation();
+
+	// 현재 컨트롤 회전(카메라)과 액터 회전의 차이 (Yaw) 계산
+	RootYawOffset = UKismetMathLibrary::NormalizedDeltaRotator(ControlRot, ActorRot).Yaw;
+}
+
+void UPlayerAnimInstance::HandleTurnning()
+{
+	if (bIsTurn) return;
+	if (TurnCooldownTimer > 0.0f) return;
+	if (Montage_IsPlaying(nullptr)) return;
+	// Yaw 차이가 50 이상일 때 턴 트리거 (절대값 비교)
+	if (FMath::Abs(RootYawOffset) >= 100.0f)
+	{
+		// 카메라가 캐릭터보다 오른쪽을 보면 양수, 왼쪽을 보면 음수
+		LocalTurnDir = (RootYawOffset >= 0.0f) ? ETurnDirection::Right : ETurnDirection::Left;
+		bIsTurn = true;
+
+		// --- 방식 A: 몽타주를 그대로 사용하는 방식 ---
+		if (CachedCharacter && CachedCharacter->AnimData)
+		{
+			// CharacterAnimData에 이미 세팅해둔 TMap을 레이어 타입에 맞게 가져옴
+			EWeaponLayerType LayerType = CachedCharacter->CurrentLayerType;
+			UAnimMontage* MontageToPlay = nullptr;
+
+			if (LocalTurnDir == ETurnDirection::Left)
+			{
+				MontageToPlay = CachedCharacter->AnimData->TurnLeft90Montages.FindRef(LayerType);
+			}
+			else
+			{
+				MontageToPlay = CachedCharacter->AnimData->TurnRight90Montages.FindRef(LayerType);
+			}
+
+			if (MontageToPlay)
+			{
+				CachedCharacter->bUseControllerRotationYaw = false; // 명시적으로 끄기
+				if (MovementComp)
+					MovementComp->bOrientRotationToMovement = false;
+				Montage_Play(MontageToPlay);
+			}
+			else
+			{
+				bIsTurn = false; // 재생할 몽타주가 없으면 초기화
+			}
+		}
+	}
+}
+
+void UPlayerAnimInstance::StopTurnIfMove()
+{
+	if (!bIsTurn) return;
+	bIsTurn = false;
+
+	if (MovementComp && CachedCharacter && !CachedCharacter->GetIsAiming())
+	{
+		MovementComp->bOrientRotationToMovement = true;
+	}
+
+	// 이동 시 재생 중이던 턴 몽타주를 부드럽게 블렌드 아웃(0.2초)하여 이동 상태로 즉시 전환
+	if (CachedCharacter && CachedCharacter->AnimData)
+	{
+		EWeaponLayerType LayerType = CachedCharacter->CurrentLayerType;
+		UAnimMontage* LeftMontage = CachedCharacter->AnimData->TurnLeft90Montages.FindRef(LayerType);
+		UAnimMontage* RightMontage = CachedCharacter->AnimData->TurnRight90Montages.FindRef(LayerType);
+
+		if (LeftMontage && Montage_IsPlaying(LeftMontage)) Montage_Stop(0.2f, LeftMontage);
+		if (RightMontage && Montage_IsPlaying(RightMontage)) Montage_Stop(0.2f, RightMontage);
+	}
+}
+
+void UPlayerAnimInstance::AnimNotify_TurnFinished()
+{
+
+	// RootYawOffset 강제 재계산 후 플래그 해제
+	CalculateYawDir();
+	bIsTurn = false;
+	TurnCooldownTimer = TurnCooldownDuration;  // ← 추가
+
+	if (MovementComp && CachedCharacter && !CachedCharacter->GetIsAiming())
+		MovementComp->bOrientRotationToMovement = true;
 }

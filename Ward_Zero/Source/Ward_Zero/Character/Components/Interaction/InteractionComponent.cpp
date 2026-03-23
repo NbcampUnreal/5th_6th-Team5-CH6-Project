@@ -1,5 +1,5 @@
 ﻿#include "Character/Components/Interaction/InteractionComponent.h"
-#include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Gimmic_CY/Interface/InteractionBase.h"
 #include "UI_KWJ/Save/SaveSubsystem.h"
@@ -13,26 +13,33 @@
 UInteractionComponent::UInteractionComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	InteractionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionSphere"));
 }
 
-void UInteractionComponent::Initialize(APrototypeCharacter* InCharacter, UBoxComponent* InBox)
+void UInteractionComponent::Initialize(APrototypeCharacter* InCharacter)
 {
 	OwnerCharacter = InCharacter;
-	InteractableBox = InBox;
 
-	if (InteractableBox)
-	{
-		InteractableBox->OnComponentBeginOverlap.AddDynamic(this, &UInteractionComponent::OnInteractableBeganOverlap);
-		InteractableBox->OnComponentEndOverlap.AddDynamic(this, &UInteractionComponent::OnInteractableEndedOverlap);
-	}
+	if (!InCharacter) return;
+
+	InteractionSphere->UnregisterComponent();
+	InteractionSphere->AttachToComponent(OwnerCharacter->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	InteractionSphere->RegisterComponent();
+
+	InteractionSphere->SetSphereRadius(100.0f);
+	InteractionSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+
+	// 델리게이트 연결
+	InteractionSphere->OnComponentBeginOverlap.AddDynamic(this, &UInteractionComponent::OnInteractableBeganOverlap);
+	InteractionSphere->OnComponentEndOverlap.AddDynamic(this, &UInteractionComponent::OnInteractableEndedOverlap);
 }
 
 void UInteractionComponent::TryInteract()
 {
-	if (!OwnerCharacter || !InteractableBox) return;
+	if (!OwnerCharacter || !InteractionSphere) return;
 
 	TArray<AActor*> OverlappingActors;
-	InteractableBox->GetOverlappingActors(OverlappingActors);
+	InteractionSphere->GetOverlappingActors(OverlappingActors);
 
 	AActor* ClosestInteractable = nullptr;
 	float MinDistanceSquared = MAX_FLT;
@@ -72,6 +79,7 @@ void UInteractionComponent::TryInteract()
 
 	if (ClosestInteractable->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
 	{
+		IInteractionBase::Execute_HidePressEWidget(ClosestInteractable);
 		EInteractionType Type = IInteractionBase::Execute_GetInteractionType(ClosestInteractable);
 
 		if (Type == EInteractionType::Door) HandleDoorInteraction(ClosestInteractable);
@@ -109,8 +117,12 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 
 	PendingDoorActor = DoorActor;
 	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(PendingDoorActor);
-
 	OwnerCharacter->GetCapsuleComponent()->IgnoreActorWhenMoving(PendingDoorActor, true);
+
+	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
+	{
+		OwnerCharacter->DisableInput(PC); // 문여는 동안 입력 잠금
+	}
 
 	if (OwnerCharacter->MotionWarpingComp)
 	{
@@ -130,6 +142,10 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 
 	if (OwnerCharacter->AnimData && OwnerCharacter->AnimData->OpenDoorMontage)
 	{
+		if (UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance())
+		{
+			AnimInst->RootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
+		}
 		float AnimDuration = OwnerCharacter->PlayAnimMontage(OwnerCharacter->AnimData->OpenDoorMontage);
 		AActor* SafeDoorActor = PendingDoorActor;
 		APrototypeCharacter* SafeCharacter = OwnerCharacter; // 람다 캡처용
@@ -182,7 +198,15 @@ void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)
 	FVector LocalItemPos = OwnerCharacter->GetActorTransform().InverseTransformPosition(CurrentPickupLocation);
 	UAnimMontage* MontageToPlay = (LocalItemPos.Z < -50.0f) ? OwnerCharacter->AnimData->PickupLowMontage : OwnerCharacter->AnimData->PickupHighMontage;
 
-	if (MontageToPlay) OwnerCharacter->PlayAnimMontage(MontageToPlay);
+	if (MontageToPlay)
+	{
+		if (UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance())
+		{
+			AnimInst->RootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
+		}
+
+		OwnerCharacter->PlayAnimMontage(MontageToPlay);
+	}
 }
 
 void UInteractionComponent::HandleLeverInteraction(AActor* LeverActor)
@@ -194,6 +218,11 @@ void UInteractionComponent::HandleLeverInteraction(AActor* LeverActor)
 
 	CurrentInteractingItem = LeverActor;
 	bIsInteractingDoor = true;
+
+	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
+	{
+		OwnerCharacter->DisableInput(PC);
+	}
 
 	// IK 타겟 위치 저장 (레버의 PickupPoint 위치)
 	CurrentPickupLocation = Lever->PickUpPoint->GetComponentLocation();

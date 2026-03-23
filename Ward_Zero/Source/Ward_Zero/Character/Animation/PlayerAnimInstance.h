@@ -17,6 +17,13 @@ enum class ELocomotionState : uint8
 	Walking, Running
 };
 
+UENUM(BlueprintType)
+enum class ETurnDirection : uint8
+{
+	Left,
+	Right
+};
+
 USTRUCT(BlueprintType)
 struct FDirectionalAnimSet
 {
@@ -252,4 +259,35 @@ public:
 
 	UFUNCTION()
 	void AnimNotify_EndInteraction();
+
+	UFUNCTION()
+	void AnimNotify_FreeMovement();
+
+public:
+	// --- 턴(Turn In Place) 관련 변수 ---
+	UPROPERTY(BlueprintReadOnly, Category = "Movement|Turn")
+	bool bIsTurn;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Movement|Turn")
+	float RootYawOffset;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Movement|Turn")
+	ETurnDirection LocalTurnDir;
+
+	// 턴 관련 함수 
+	UFUNCTION(BlueprintCallable, Category = "Movement|Turn")
+	void CalculateYawDir();
+
+	UFUNCTION(BlueprintCallable, Category = "Movement|Turn")
+	void HandleTurnning();
+
+	UFUNCTION(BlueprintCallable, Category = "Movement|Turn")
+	void StopTurnIfMove();
+
+	UFUNCTION(BlueprintCallable, Category = "Movement|Turn")
+	void AnimNotify_TurnFinished();
+
+private:
+	float TurnCooldownTimer = 0.0f;
+	static constexpr float TurnCooldownDuration = 0.2f;
 };
