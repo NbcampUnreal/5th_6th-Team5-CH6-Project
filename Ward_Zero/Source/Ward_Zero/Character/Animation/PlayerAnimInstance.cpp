@@ -186,11 +186,11 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 			DynamicLeverJointTarget = FMath::VInterpTo(DynamicLeverJointTarget, NewLeverJointTarget, DeltaSeconds, 5.0f);
 		}
 	}
-	if (Character)
-	{
-		// 캐릭터(캡슐)의 현재 Yaw 각도를 실시간으로 화면 파란색으로 띄움
-		if (GEngine) GEngine->AddOnScreenDebugMessage(5, 0.0f, FColor::Cyan, FString::Printf(TEXT("Actor Yaw: %f"), Character->GetActorRotation().Yaw));
-	}
+	//if (Character)
+	//{
+	//	// 캐릭터(캡슐)의 현재 Yaw 각도를 실시간으로 화면 파란색으로 띄움
+	//	if (GEngine) GEngine->AddOnScreenDebugMessage(5, 0.0f, FColor::Cyan, FString::Printf(TEXT("Actor Yaw: %f"), Character->GetActorRotation().Yaw));
+	//}
 }
 void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 {
