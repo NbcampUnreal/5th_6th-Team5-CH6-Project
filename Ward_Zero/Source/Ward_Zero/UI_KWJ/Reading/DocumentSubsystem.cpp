@@ -103,9 +103,9 @@ void UDocumentSubsystem::OpenDocumentByIndex(int32 DocIndex)
 	}
 
 	// 배경 이미지
-	if (Entry.Image.IsValid())
+	if (Entry.BackgroundImage.IsValid())
 	{
-		TempDoc->BackgroundTexture = Entry.Image;
+		TempDoc->BackgroundTexture = Entry.BackgroundImage;
 	}
 
 	OpenDocument(TempDoc);
