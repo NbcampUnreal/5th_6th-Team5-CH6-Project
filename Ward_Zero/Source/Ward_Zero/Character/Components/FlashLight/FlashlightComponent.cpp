@@ -107,7 +107,7 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 
 	FRotator TargetRotation;
 	// 걷거나 비무장일 땐 카메라(Control) 방향, 무장/달리기 시엔 캐릭터 방향
-	if (bIsRunning)
+	if (bIsRunning || !bIsAiming)
 	{
 		TargetRotation = Player->GetActorRotation();
 	}

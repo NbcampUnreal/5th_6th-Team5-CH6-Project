@@ -4,7 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "InteractionComponent.generated.h"
 
-class UBoxComponent;
+class USphereComponent;
 class APrototypeCharacter;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -12,10 +12,14 @@ class WARD_ZERO_API UInteractionComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
+	class USphereComponent* InteractionSphere;
+
 public:
 	UInteractionComponent();
 
-	void Initialize(APrototypeCharacter* InCharacter, UBoxComponent* InBox);
+	void Initialize(APrototypeCharacter* InCharacter);
 	void TryInteract();
 
 	void HandleDoorInteraction(AActor* DoorActor);
@@ -30,6 +34,7 @@ public:
 
 	UPROPERTY()
 	AActor* CurrentInteractingItem;
+
 private:
 	UFUNCTION()
 	void OnInteractableBeganOverlap(
@@ -51,9 +56,6 @@ private:
 
 	UPROPERTY()
 	APrototypeCharacter* OwnerCharacter;
-
-	UPROPERTY()
-	UBoxComponent* InteractableBox;
 
 	UPROPERTY()
 	AActor* PendingDoorActor;

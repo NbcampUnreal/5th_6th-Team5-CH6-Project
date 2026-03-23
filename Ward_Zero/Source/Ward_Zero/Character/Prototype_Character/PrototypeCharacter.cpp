@@ -28,7 +28,6 @@
 #include "Engine/OverlapResult.h"
 #include "Gimmic_CY/Interface/InteractionBase.h"
 #include "Gimmic_CY/Object/Lever/Lever.h"
-#include "Components/BoxComponent.h"
 #include "MotionWarpingComponent.h"
 
 APrototypeCharacter::APrototypeCharacter()
@@ -70,17 +69,8 @@ APrototypeCharacter::APrototypeCharacter()
 		CombatComp->PistolWeapon->SetActorEnableCollision(false);
 	}
 
-	InteractableBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractableBox"));
-	InteractableBox->SetupAttachment(RootComponent);
-	InteractableBox->SetBoxExtent(FVector(80.0f, 80.0f, 80.0f));
-	InteractableBox->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
-
 	MotionWarpingComp = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComp"));
 }
-
-
-
-
 
 void APrototypeCharacter::BeginPlay()
 {
@@ -126,9 +116,9 @@ void APrototypeCharacter::BeginPlay()
 		CombatComp->SetupCombat(MainCamera);
 	}
 
-	if (InteractionComp && InteractableBox)
+	if (InteractionComp)
 	{
-		InteractionComp->Initialize(this, InteractableBox);
+		InteractionComp->Initialize(this);
 	}
 
 	// 애니메이션 레이어 초기화
@@ -328,6 +318,14 @@ void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 	if (bWillDraw)
 	{
 		TargetLayer = (CombatComp->GetCurrentWeaponIndex() == 1) ? PistolLayer : SMGLayer;
+
+		// ⭐ [추가] C++에서도 현재 레이어 타입을 확실하게 업데이트!
+		CurrentLayerType = (CombatComp->GetCurrentWeaponIndex() == 1) ? EWeaponLayerType::Pistol : EWeaponLayerType::SMG;
+	}
+	else
+	{
+		// ⭐ [추가] 무기를 집어넣었으니 Unarmed 상태로 변경!
+		CurrentLayerType = EWeaponLayerType::Unarmed;
 	}
 	AnimInst->LinkAnimClassLayers(TargetLayer);
 
@@ -493,6 +491,7 @@ void APrototypeCharacter::TogglePauseMenu(const FInputActionValue& Value)
 		{
 			if (UPauseMenuSubsystem* PauseSubsystem = LP->GetSubsystem<UPauseMenuSubsystem>())
 			{
+				AbortAllActions();
 				PauseSubsystem->TogglePauseMenu();
 			}
 		}
@@ -801,7 +800,12 @@ void APrototypeCharacter::SwitchWeaponByIndex(int32 WeaponIndex)
 	if (FlashLightComp) FlashLightComp->SetFlashlightOff();
 
 	// 레이어 연결 및 손전등 상태 갱신
+	// 레이어 연결 및 손전등 상태 갱신
 	TSubclassOf<UAnimInstance> TargetLayer = (WeaponIndex == 1) ? PistolLayer : SMGLayer;
+
+	// ⭐ [추가] 무기를 바꿀 때도 현재 레이어 타입을 업데이트!
+	CurrentLayerType = (WeaponIndex == 1) ? EWeaponLayerType::Pistol : EWeaponLayerType::SMG;
+
 	if (TargetLayer) AnimInst->LinkAnimClassLayers(TargetLayer);
 
 	if (FlashLightComp) FlashLightComp->UpdateFlashlight(0.0f);
@@ -897,8 +901,16 @@ void APrototypeCharacter::ExecuteHealPoint()
 
 bool APrototypeCharacter::IsEquipping() const
 {
+	if (!CombatComp) return false;
+
 	if (UAnimInstance* AI = GetMesh()->GetAnimInstance())
-		return AI->Montage_IsPlaying(nullptr);
+	{
+		// 아무 몽타주나 검사하는 것이 아니라, 실제 '장착/해제 몽타주' 중 하나가 재생 중일 때만 true 반환!
+		return AI->Montage_IsPlaying(CombatComp->Pistol_EquipMontage) ||
+			AI->Montage_IsPlaying(CombatComp->Pistol_UnEquipMontage) ||
+			AI->Montage_IsPlaying(CombatComp->SMG_EquipMontage) ||
+			AI->Montage_IsPlaying(CombatComp->SMG_UnEquipMontage);
+	}
 	return false;
 }
 
@@ -922,4 +934,41 @@ void APrototypeCharacter::SetDoorPasscode(int32 Passcode)
 	//{
 	//	PlayerHUD->SetPasscode(Passcode, Door, PC);
 	//}
+}
+
+void APrototypeCharacter::AbortAllActions()
+{
+	// 모든 몽타주 중단
+	StopAnimMontage();
+
+	// 인터렉션 상태 강제 종료
+	if (InteractionComp)
+	{
+		InteractionComp->EndInteraction();
+		InteractionComp->bIsInteractingDoor = false;
+		InteractionComp->CurrentInteractingItem = nullptr;
+	}
+
+	// 전투 관련 상태 초기화
+	if (CombatComp)
+	{
+		CombatComp->StopFire();
+		// 조준 중이었다면 조준 해제 
+		if (CombatComp->IsAiming()) CombatComp->StopAiming();
+	}
+
+	// 루트 모션 및 이동 잠금 해제
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->StopMovementImmediately();
+	}
+	// 모션 워핑 컴포넌트가 있다면 워핑 타겟 초기화
+	if (MotionWarpingComp)
+	{
+		MotionWarpingComp->RemoveAllWarpTargets();
+	}
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		EnableInput(PC);
+	}
 }
