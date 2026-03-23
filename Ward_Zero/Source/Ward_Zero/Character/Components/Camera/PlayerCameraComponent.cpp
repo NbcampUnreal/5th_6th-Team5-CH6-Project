@@ -153,9 +153,36 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
         else { BobTime = FMath::FInterpTo(BobTime, 0.0f, DeltaTime, 5.0f); }
     }
 
+    FVector TargetPivotOffset = OriginalTargetOffset;
+    if (CameraBoom && MainCamera)
+    {
+        FVector UnfixedPos = CameraBoom->GetUnfixedCameraPosition();
+        FVector ActualPos = MainCamera->GetComponentLocation();
+        float Compression = (UnfixedPos - ActualPos).Size();
+
+        if (Compression > 5.0f)
+        {
+            if (Combat->IsAiming())
+            {
+                float LiftAmount = FMath::Clamp(Compression * 0.8f, 0.0f, 70.0f);
+                TargetPivotOffset.Z += LiftAmount;
+
+                float ShiftAmount = FMath::Clamp(Compression * 0.5f, 0.0f, 40.0f);
+                TargetPivotOffset.Y += ShiftAmount;
+            }
+            else
+            {
+                float LiftAmount = FMath::Clamp(Compression * 0.4f, 0.0f, 40.0f);
+                TargetPivotOffset.Z += LiftAmount;
+            }
+        }
+    }
+
     // 부드러운 보간 적용 
     float Interp = CameraData->InterpSpeed;
     CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, TargetArmLength, DeltaTime, Interp);
     MainCamera->FieldOfView = FMath::FInterpTo(MainCamera->FieldOfView, TargetFOV, DeltaTime, Interp);
     CameraBoom->SocketOffset = FMath::VInterpTo(CameraBoom->SocketOffset, TargetSocketOffset, DeltaTime, Interp);
+
+    CameraBoom->TargetOffset = FMath::VInterpTo(CameraBoom->TargetOffset, TargetPivotOffset, DeltaTime, Interp);
 }
