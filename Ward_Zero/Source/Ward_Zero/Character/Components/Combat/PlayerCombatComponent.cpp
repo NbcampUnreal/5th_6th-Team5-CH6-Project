@@ -184,6 +184,10 @@ void UPlayerCombatComponent::Fire(UAnimMontage* FireMontage, UAnimInstance* Anim
 	// 총알이 최종적으로 도달해야 할 목표 지점 총알 투사체 방식 
 	FVector FinalHitTarget = bHit ? Hit.ImpactPoint : End;
 
+	// 발사 지점 노이즈 발생
+	UPlayerNoise::ReportNoise(GetWorld(), Cast<APawn>(GetOwner()),
+		EquippedWeapon->GetActorLocation(), 1.0f, 2000.0f, TEXT("GunShot"));  
+
 	// 히트 결과 처리 및 궤적 생성 - 트레이서 방식 Test 
 	if (bHit)
 	{
@@ -394,7 +398,7 @@ void UPlayerCombatComponent::ProcessHit(const FHitResult& Hit, const FVector& Sh
 	// Damage
 	UGameplayStatics::ApplyPointDamage(Hit.GetActor(), ProjData->Damage, ShotDir, Hit, Cast<APawn>(GetOwner())->GetController(), GetOwner(), ProjData->DamageTypeClass);
 
-	// AI Noise
+	// 피격 지점 노이즈 
 	UPlayerNoise::ReportNoise(GetWorld(), Cast<APawn>(GetOwner()), Hit.ImpactPoint, ProjData->ImpactNoiseLoudness, ProjData->ImpactNoiseRange, ProjData->ImpactNoiseTag);
 
 	DrawDebugSphere(GetWorld(),Hit.ImpactPoint,10.0f,12,FColor::Red,false,2.0f,0,1.5f);

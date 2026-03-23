@@ -7,8 +7,6 @@
 #include "Character/Animation/Interface/PlayerAnimInterface.h"
 #include "PrototypeCharacter.generated.h"
 
-class UBoxComponent;
-
 UENUM(BlueprintType)
 enum class EWeaponLayerType : uint8 { Unarmed, Pistol, SMG };
 
@@ -202,8 +200,6 @@ public:
 	void ConsumeInteractingItem();
 
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	UBoxComponent* InteractableBox;
 	bool bIsInteractingDoor = false;
 
 	UPROPERTY()
@@ -234,4 +230,6 @@ public:
 
 public:
 	UFUNCTION()void SetDoorPasscode(int32 Passcode);
+
+	void AbortAllActions();
 };
