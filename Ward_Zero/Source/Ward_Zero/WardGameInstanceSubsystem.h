@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
+#include "UI_KWJ/Reading/WardDocumentDataTable.h"
 #include "WardGameInstanceSubsystem.generated.h"
 
 UCLASS()
@@ -67,10 +68,39 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Options")
 	void ApplyOptions(UWorld* World);
 
+	// ══════════════════════════════════════════
+	//  문서/아이템 인덱스 관리
+	//  액터가 인덱스로 알림 → 인스턴스에 등록
+	//  UI에서 인스턴스 확인 → 활성화된 인덱스만 표시
+	// ══════════════════════════════════════════
+
+	/** 데이터 테이블 (에디터에서 할당 또는 코드에서 로드) */
+	UPROPERTY(BlueprintReadWrite, Category = "Document")
+	UWardDocumentDataTable* DocumentDataTable = nullptr;
+
+	/** 문서/아이템 활성화 등록 (액터가 호출) */
+	UFUNCTION(BlueprintCallable, Category = "Document")
+	void ActivateDocumentIndex(int32 DocIndex);
+
+	/** 해당 인덱스가 활성화되었는지 확인 */
+	UFUNCTION(BlueprintPure, Category = "Document")
+	bool IsDocumentIndexActive(int32 DocIndex) const;
+
+	/** 활성화된 인덱스 목록 가져오기 (UI에서 사용) */
+	UFUNCTION(BlueprintPure, Category = "Document")
+	const TSet<int32>& GetActiveDocumentIndices() const { return ActiveDocumentIndices; }
+
+	/** 인덱스로 데이터 조회 */
+	UFUNCTION(BlueprintPure, Category = "Document")
+	bool GetDocumentEntry(int32 DocIndex, FWardDocumentEntry& OutEntry) const;
+
 private:
 
 	UPROPERTY()
 	UWardSaveGame* PendingSaveData = nullptr;
 
 	TMap<FGuid, FObjectSaveData> RuntimeObjectStates;
+
+	/** 활성화된 문서/아이템 인덱스 세트 */
+	TSet<int32> ActiveDocumentIndices;
 };

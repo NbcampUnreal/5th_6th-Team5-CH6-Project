@@ -40,6 +40,11 @@ public:
 	
 	virtual void PostActorCreated() override;
 	
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void ChangeColorLampRed();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void ChangeColorLampGreen();
 	
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
 	virtual void Activate();
@@ -74,5 +79,6 @@ public:
 	
 	UFUNCTION(CallInEditor, Category = "Editor")
 	void RegenerateAllObjectIDsInLevel();
+
 #endif
 };

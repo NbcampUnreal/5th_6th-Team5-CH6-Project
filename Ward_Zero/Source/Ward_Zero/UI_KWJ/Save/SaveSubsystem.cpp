@@ -312,6 +312,7 @@ UWardSaveGame* USaveSubsystem::CollectCurrentGameState()
 		{
 			SaveData->CurrentAmmo = Weapon->GetCurrentAmmo();
 			SaveData->MaxAmmoCapacity = Weapon->GetMaxCapacity();
+			SaveData->ReserveAmmo = Weapon->GetReserveAmmo();
 		}
 	}
 
@@ -381,11 +382,22 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 		Status->OnHealthChanged.Broadcast(Status->CurrHealth, Status->MaxHealth);
 	}
 
-	// TODO: 무기 장착 상태 & 탄약 복원
+	// 무기 탄약 복원
 	if (SaveData->bIsWeaponEquipped)
 	{
-		UE_LOG(LogWard_Zero, Log, TEXT("무기 복원 필요 — 탄약: %d/%d"),
-			SaveData->CurrentAmmo, SaveData->MaxAmmoCapacity);
+		UPlayerCombatComponent* Combat = Character->FindComponentByClass<UPlayerCombatComponent>();
+		if (Combat)
+		{
+			AWeapon* Weapon = Combat->GetEquippedWeapon();
+			if (Weapon)
+			{
+				Weapon->SetCurrentAmmo(SaveData->CurrentAmmo);
+				Weapon->SetReserveAmmo(SaveData->ReserveAmmo);
+
+				UE_LOG(LogWard_Zero, Log, TEXT("무기 탄약 복원: %d / %d"),
+					SaveData->CurrentAmmo, SaveData->ReserveAmmo);
+			}
+		}
 	}
 
 	// TODO: 손전등 상태 복원

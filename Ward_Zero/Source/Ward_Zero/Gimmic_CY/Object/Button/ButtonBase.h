@@ -3,27 +3,26 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Gimmic_CY/Items/ItemBase.h"
-#include "DocumentBase.generated.h"
+#include "Gimmic_CY/Object/ObjectBase.h"
+#include "ButtonBase.generated.h"
 
 UCLASS()
-class WARD_ZERO_API ADocumentBase : public AItemBase
+class WARD_ZERO_API AButtonBase : public AObjectBase
 {
 	GENERATED_BODY()
 
 public:
+	AButtonBase();
 	
-	ADocumentBase();
+	
 
 protected:
-	
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "Setting")
-	int32 DocIdx = 0;
 public:
-	
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	virtual EInteractionType GetInteractionType_Implementation() const override;
-	
+	virtual void Activate() override;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (DisplayName = "Actors For Activate"), Category="Setting")
+	TArray<AObjectBase*> ActivateActors;
 };

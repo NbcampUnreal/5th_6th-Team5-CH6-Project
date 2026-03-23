@@ -28,7 +28,7 @@ protected:
 
 	virtual void UpdateTimelineComp(float Output) override;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "In Items"), Category = "Item")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "In Items"), Category = "Setting")
 	TArray<AActor*> Items;
 
 	
@@ -37,9 +37,18 @@ protected:
 	UFUNCTION(CallInEditor, Category = "Editor")
 	void DoorVanishMagic();
 	
+	UFUNCTION(CallInEditor, Category = "Editor")
+	void SettingItemInSafeBox();
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, meta = (DisplayName = "Door Action"), Category = "Setting")
+	ESingleDoorAnimationType DoorAnimationType;
+	
 public:
 	// ===== IGimmickInterface =====
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	
 	virtual void Activate() override;
+	
+	virtual EInteractionType GetInteractionType_Implementation() const override;
+	ESingleDoorAnimationType GetSingleDoorAnimationType() const;
 };

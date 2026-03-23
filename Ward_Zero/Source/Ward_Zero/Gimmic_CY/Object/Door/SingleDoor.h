@@ -22,7 +22,8 @@ public:
 	// ===== IGimmickInterface =====
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
-	
+	virtual EInteractionType GetInteractionType_Implementation() const override;
+	ESingleDoorAnimationType GetSingleDoorAnimationType() const;
 
 protected:
 
@@ -30,12 +31,16 @@ protected:
 
 	FRotator InitialRotation;
 
-	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,meta = (DisplayName = "Door Action Type"),Category = "Setting")
+	ESingleDoorAnimationType DoorAnimationType = ESingleDoorAnimationType::SingleDoor_Push;
 
 	virtual void UpdateTimelineComp(float Output) override;
 
 
 public:
+	
+	
+	ESingleDoorAnimationType GetDoorAnimationType();
 	virtual void OpenDoor() override;
 	virtual void CloseDoor() override;
 };
