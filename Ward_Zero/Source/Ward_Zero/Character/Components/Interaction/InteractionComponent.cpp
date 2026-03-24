@@ -109,7 +109,6 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 
 	PendingDoorActor = DoorActor;
 	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(PendingDoorActor);
-	OwnerCharacter->GetCapsuleComponent()->IgnoreActorWhenMoving(PendingDoorActor, true);
 
 	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
 	{
