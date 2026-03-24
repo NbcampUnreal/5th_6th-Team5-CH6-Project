@@ -87,3 +87,4 @@ private:
     FZoneConfig* GetConfig(EEnvZone Zone);
     void PlayFadeMusic(USoundBase* NewMusic);
 };
+

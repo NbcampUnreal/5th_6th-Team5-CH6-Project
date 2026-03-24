@@ -19,6 +19,7 @@ void AEnvManager::BeginPlay()
 {
     Super::BeginPlay();
 
+
     for (FZoneConfig& Config : ZoneConfigs)
     {
         if (Config.ZonePostProcess)
@@ -31,19 +32,14 @@ void AEnvManager::BeginPlay()
             if (Light && Light->GetLightComponent())
             {
                 ULightComponent* LightComp = Light->GetLightComponent();
-
-               
                 LightComp->bAffectsWorld = false;
                 LightComp->SetCastShadows(false);
                 LightComp->SetVisibility(false);
-
-                
                 LightComp->MarkRenderStateDirty();
             }
         }
     }
 
-    
     if (BaseNormalBGM) PlayFadeMusic(BaseNormalBGM);
 
     
@@ -55,24 +51,22 @@ void AEnvManager::SwitchZone(EEnvZone NewZone)
     if (CurrentZone == NewZone) return;
 
     
-    if (FZoneConfig* OldConfig = GetConfig(CurrentZone))
+    for (FZoneConfig& Config : ZoneConfigs)
     {
-        if (OldConfig->ZonePostProcess) OldConfig->ZonePostProcess->bEnabled = false;
+        if (Config.ZonePostProcess) Config.ZonePostProcess->bEnabled = false;
 
-        for (ALight* Light : OldConfig->ZoneLights)
+        for (ALight* Light : Config.ZoneLights)
         {
             if (Light && Light->GetLightComponent())
             {
                 ULightComponent* LightComp = Light->GetLightComponent();
-                LightComp->bAffectsWorld = false;
-                LightComp->SetCastShadows(false);
                 LightComp->SetVisibility(false);
+                LightComp->bAffectsWorld = false;
                 LightComp->MarkRenderStateDirty();
             }
         }
     }
 
-    
     CurrentZone = NewZone;
 
     
@@ -89,19 +83,14 @@ void AEnvManager::SwitchZone(EEnvZone NewZone)
             if (Light && Light->GetLightComponent())
             {
                 ULightComponent* LightComp = Light->GetLightComponent();
-                LightComp->bAffectsWorld = true;
-                LightComp->SetCastShadows(true);
                 LightComp->SetVisibility(true);
+                LightComp->bAffectsWorld = true;
                 LightComp->MarkRenderStateDirty();
             }
         }
     }
 }
 
-void AEnvManager::PlayHutonBGM() { PlayFadeMusic(HutonBGM); }
-void AEnvManager::PlayHutonPhase2BGM() { PlayFadeMusic(HutonPhase2BGM); }
-void AEnvManager::PlayTentacleBGM() { PlayFadeMusic(TentacleBGM); }
-void AEnvManager::RestoreNormalBGM() { PlayFadeMusic(BaseNormalBGM); }
 
 FZoneConfig* AEnvManager::GetConfig(EEnvZone Zone)
 {
@@ -117,12 +106,16 @@ void AEnvManager::PlayFadeMusic(USoundBase* NewMusic)
     if (!NewMusic || !BGMComponent) return;
     if (BGMComponent->IsPlaying() && BGMComponent->GetSound() == NewMusic) return;
 
-    // 핵심: 위치값에 영향을 받지 않도록 설정
-    BGMComponent->bAllowSpatialization = false; // 공간화 비활성화
-    BGMComponent->SetUISound(true);             // UI 사운드(2D)로 취급
+    BGMComponent->bAllowSpatialization = false;
+    BGMComponent->SetUISound(true);
 
-    // 기존 로직
     BGMComponent->FadeOut(1.5f, 0.0f);
     BGMComponent->SetSound(NewMusic);
     BGMComponent->FadeIn(1.5f, 1.0f, 0.0f);
 }
+
+
+void AEnvManager::PlayHutonBGM() { PlayFadeMusic(HutonBGM); }
+void AEnvManager::PlayHutonPhase2BGM() { PlayFadeMusic(HutonPhase2BGM); }
+void AEnvManager::PlayTentacleBGM() { PlayFadeMusic(TentacleBGM); }
+void AEnvManager::RestoreNormalBGM() { PlayFadeMusic(BaseNormalBGM); }
