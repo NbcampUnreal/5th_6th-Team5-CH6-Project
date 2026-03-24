@@ -6,13 +6,32 @@
 
 ASingleDoor::ASingleDoor()
 {
+	if (Mesh)
+	{
+		Mesh->SetGenerateOverlapEvents(true);
+		Mesh->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+	}
 }
 
 void ASingleDoor::BeginPlay()
 {
 	Super::BeginPlay();
-
-	InitialRotation = Mesh->GetRelativeRotation();
+	
+	if (Mesh)
+	{
+		InitialRotation = Mesh->GetRelativeRotation();
+		Mesh->OnComponentBeginOverlap.AddDynamic(this, &ASingleDoor::OnOverLapBegin);
+		Mesh->OnComponentEndOverlap.AddDynamic(this, &ASingleDoor::OnOverLapEnd);
+		UMaterialInterface* BaseM = Mesh->GetMaterial(0);
+		if (BaseM)
+		{
+			DynamicMaterial = UMaterialInstanceDynamic::Create(BaseM,this);
+			Mesh->SetMaterial(0, DynamicMaterial);
+		}
+	}
+	
+	
+	
 	if (DoorAnimationType == ESingleDoorAnimationType::SingleDoor_Push)
 	{
 		TargetYaw = -90.f;
@@ -27,7 +46,7 @@ void ASingleDoor::HandleInteraction_Implementation(APrototypeCharacter* Characte
 	if (!DoorTimelineFloatCurve || !Character || !bCanInteract)
 		return;
 	
-	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
 	FTimerHandle InteractionTimer;
 	TWeakObjectPtr<ASingleDoor> WeakThis(this);
@@ -63,6 +82,32 @@ EInteractionType ASingleDoor::GetInteractionType_Implementation() const
 ESingleDoorAnimationType ASingleDoor::GetSingleDoorAnimationType() const
 {
 	return DoorAnimationType;
+}
+
+void ASingleDoor::OnOverLapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor,
+	class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor && (OtherActor != this))
+	{
+		APrototypeCharacter* Player = Cast<APrototypeCharacter>(OtherActor);
+		if (Player && Mesh)
+		{
+			DynamicMaterial->SetScalarParameterValue(FName("OpacityParam"),0.3f);
+		}
+	}
+}
+
+void ASingleDoor::OnOverLapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor,
+	class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (OtherActor && (OtherActor != this))
+	{
+		APrototypeCharacter* Player = Cast<APrototypeCharacter>(OtherActor);
+		if (Player && Mesh)
+		{
+			DynamicMaterial->SetScalarParameterValue(FName("OpacityParam"),1.0f);
+		}
+	}
 }
 
 void ASingleDoor::UpdateTimelineComp(float Output)

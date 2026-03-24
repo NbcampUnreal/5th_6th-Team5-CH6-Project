@@ -30,9 +30,13 @@ struct FWardDocumentEntry
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Document")
 	FText Description;
 
-	/** 이미지 (썸네일 / 아이템 아이콘) */
+	/** 수집 UI 썸네일 (메모 아이콘, 카드보드 아이콘 등) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Document")
-	TSoftObjectPtr<UTexture2D> Image;
+	TSoftObjectPtr<UTexture2D> ThumbnailImage;
+
+	/** 서류 뷰어 뒷배경 (편지지, 노트 텍스처 등) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Document")
+	TSoftObjectPtr<UTexture2D> BackgroundImage;
 
 	/** 사용 키 안내 (아이템 전용, 예: "Q키를 눌러 사용") */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Document")

@@ -17,6 +17,8 @@ class WARD_ZERO_API UWardGameInstanceSubsystem : public UGameInstanceSubsystem
 
 public:
 
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
 	// ══════════════════════════════════════════
 	//  PendingSaveData — 로드 대기 데이터
 	// ══════════════════════════════════════════

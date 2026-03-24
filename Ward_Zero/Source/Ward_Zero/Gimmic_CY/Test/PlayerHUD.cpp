@@ -7,7 +7,35 @@
 void UPlayerHUD::NativeConstruct()
 {
 	Super::NativeConstruct();
-	InteractBorder->SetVisibility(ESlateVisibility::Hidden);
+	
+	UE_LOG(LogTemp, Warning, TEXT("=== UI CHECK START ==="));
+
+	UE_LOG(LogTemp, Warning, TEXT("Border: %s"), PasscodeBorder ? TEXT("OK") : TEXT("NULL"));
+
+	UE_LOG(LogTemp, Warning, TEXT("Text1: %s"), PasscodeTextOne ? TEXT("OK") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("Text2: %s"), PasscodeTextTwo ? TEXT("OK") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("Text3: %s"), PasscodeTextThree ? TEXT("OK") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("Text4: %s"), PasscodeTextFour ? TEXT("OK") : TEXT("NULL"));
+
+	UE_LOG(LogTemp, Warning, TEXT("Btn1: %s"), ButtonOne ? TEXT("OK") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("Btn2: %s"), ButtonTwo ? TEXT("OK") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("Btn3: %s"), ButtonThree ? TEXT("OK") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("Btn4: %s"), ButtonFour ? TEXT("OK") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("Btn5: %s"), ButtonFive ? TEXT("OK") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("Btn6: %s"), ButtonSix ? TEXT("OK") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("Btn7: %s"), ButtonSeven ? TEXT("OK") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("Btn8: %s"), ButtonEight ? TEXT("OK") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("Btn9: %s"), ButtonNine ? TEXT("OK") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("Btn0: %s"), ButtonZero ? TEXT("OK") : TEXT("NULL"));
+
+	UE_LOG(LogTemp, Warning, TEXT("Clear: %s"), ButtonClear ? TEXT("OK") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("Enter: %s"), ButtonEnter ? TEXT("OK") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("Exit: %s"), ButtonExit ? TEXT("OK") : TEXT("NULL"));
+
+	UE_LOG(LogTemp, Warning, TEXT("=== UI CHECK END ==="));
+	
+	if (!PasscodeBorder) return;
+
 	PasscodeBorder->SetVisibility(ESlateVisibility::Hidden);
 	ButtonOne->OnClicked.AddDynamic(this, &UPlayerHUD::ClickedButtonOne);
 	ButtonTwo->OnClicked.AddDynamic(this, &UPlayerHUD::ClickedButtonTwo);
@@ -22,25 +50,27 @@ void UPlayerHUD::NativeConstruct()
 	ButtonClear->OnClicked.AddDynamic(this, &UPlayerHUD::ClickedButtonClear);
 	ButtonEnter->OnClicked.AddDynamic(this, &UPlayerHUD::ClickedButtonEnter);
 	ButtonExit->OnClicked.AddDynamic(this, &UPlayerHUD::ClickedButtonExit);
-}
 
-void UPlayerHUD::ShowInteract(bool bShow) const
-{
-	if (bShow)
-	{
-		InteractBorder->SetVisibility(ESlateVisibility::Visible);
-	}
-	else
-	{
-		InteractBorder->SetVisibility(ESlateVisibility::Hidden);
-	}
+	PasscodeText = {
+	   PasscodeTextOne,
+	   PasscodeTextTwo,
+	   PasscodeTextThree,
+	   PasscodeTextFour
+	};
 }
 
 void UPlayerHUD::ShowPasscode(bool bShow) const
 {
 	if (bShow)
 	{
-		PasscodeBorder->SetVisibility(ESlateVisibility::Visible);
+		if (PasscodeBorder)
+		{
+			PasscodeBorder->SetVisibility(ESlateVisibility::Visible);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PasscodeBorder is NULL"));
+		}
 	}
 	else
 	{
@@ -52,22 +82,14 @@ void UPlayerHUD::PasscodeNubmer(int32 number)
 {
 	if (PasscodeCurrentIndex < PasscodeDigits)
 	{
-		FString CodeString = FString::FromInt(EnterPasscode);
-		FString NumberString = FString::FromInt(number);
-		FString AppendedCode = CodeString.Append(NumberString);
-
-		EnterPasscode = FCString::Atoi(*AppendedCode);
-
-		PasscodeText.Add(PasscodeTextOne);
-		PasscodeText.Add(PasscodeTextTwo);
-		PasscodeText.Add(PasscodeTextThree);
-		PasscodeText.Add(PasscodeTextFour);
+		EnterPasscode = EnterPasscode * 10 + number;
 
 		if (PasscodeText.IsValidIndex(PasscodeCurrentIndex))
 		{
 			UTextBlock* currentText = PasscodeText[PasscodeCurrentIndex];
 			currentText->SetVisibility(ESlateVisibility::Visible);
 			currentText->SetText(FText::AsNumber(number));
+
 			PasscodeCurrentIndex++;
 		}
 	}
@@ -101,6 +123,7 @@ void UPlayerHUD::ClickedButtonEnter()
 	{
 		if (EnterPasscode == PasscodeDoor)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("Collect"));
 			//Door->bDoorPasscode = true;
 			//Door->PasscodeCorrect();
 			PC->SetShowMouseCursor(false);
@@ -108,13 +131,18 @@ void UPlayerHUD::ClickedButtonEnter()
 			ShowPasscode(false);
 			ClearPasscodeEntries();
 		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Failed"));
+		}
+
 	}
 }
 
 void UPlayerHUD::ClickedButtonExit()
 {
 	ShowPasscode(false);
-	ShowInteract(true);
+	//ShowInteract(true);
 	ClearPasscodeEntries();
 	PC->SetShowMouseCursor(false);
 	PC->SetInputMode(FInputModeGameOnly());
@@ -122,6 +150,8 @@ void UPlayerHUD::ClickedButtonExit()
 
 void UPlayerHUD::ClearPasscodeEntries()
 {
+
+
 	for (size_t i = 0; i < PasscodeCurrentIndex; i++)
 	{
 		UTextBlock* currentText = PasscodeText[i];
@@ -129,10 +159,10 @@ void UPlayerHUD::ClearPasscodeEntries()
 		currentText->SetText(FText::AsNumber(0));
 	}
 	PasscodeCurrentIndex = 0;
-	EnterPasscode = NULL;
+	EnterPasscode = 0;
 }
 
-void UPlayerHUD::SetPasscode(int32 DoorPasscode, ADoor* OverlappedDoor, AWard_ZeroPlayerController* PlayerController)
+void UPlayerHUD::SetPasscode(int32 DoorPasscode, AActor* OverlappedDoor, APlayerController* PlayerController)
 {
 	PasscodeDoor = DoorPasscode;
 	Door = OverlappedDoor;

@@ -8,7 +8,7 @@ class UBorder;
 class UTextBlock;
 class UButton;
 class ADoor;
-class AWard_ZeroPlayerController;
+class APlayerController;
 
 UCLASS()
 class WARD_ZERO_API UPlayerHUD : public UUserWidget
@@ -17,9 +17,6 @@ class WARD_ZERO_API UPlayerHUD : public UUserWidget
 	
 public:
 	virtual void NativeConstruct() override;
-
-	UFUNCTION()
-	void ShowInteract(bool bShow) const;
 
 	UFUNCTION()
 	void ShowPasscode(bool bShow) const;
@@ -70,13 +67,10 @@ public:
 	void ClearPasscodeEntries();
 
 	UFUNCTION()
-	void SetPasscode(int32 DoorPasscode, ADoor* OverlappedDoor, AWard_ZeroPlayerController* PlayerController);
+	void SetPasscode(int32 DoorPasscode, AActor* OverlappedDoor, APlayerController* PlayerController);
 
 
 private:
-
-	UPROPERTY(EditAnywhere, meta = (BindWidget))
-	TObjectPtr<UBorder> InteractBorder;
 
 	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	TObjectPtr<UBorder> PasscodeBorder;
@@ -148,8 +142,8 @@ private:
 	TArray<UTextBlock*> PasscodeText;
 
 	UPROPERTY()
-	TObjectPtr<ADoor> Door;
+	TObjectPtr<AActor> Door;
 
 	UPROPERTY()
-	TObjectPtr<AWard_ZeroPlayerController> PC;
+	TObjectPtr<APlayerController> PC;
 };

@@ -54,7 +54,7 @@ void ABreakableWall::ExecuteWallDestruction(FVector ImpactLocation)
     GCComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     GCComponent->SetCollisionResponseToAllChannels(ECR_Block);
     GCComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore); 
-    GCComponent->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
+    GCComponent->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Ignore);
     GCComponent->SetCanEverAffectNavigation(false);
     
 
