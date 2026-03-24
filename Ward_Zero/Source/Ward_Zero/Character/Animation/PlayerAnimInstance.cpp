@@ -138,14 +138,14 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		{
 			PickupTargetLocation = CachedCharacter->InteractionComp->CurrentPickupLocation;
 			float PickupCurveValue = GetCurveValue(TEXT("PickupIK"));
-			PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, PickupCurveValue, DeltaSeconds, 15.0f);
+			PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, PickupCurveValue, DeltaSeconds, 10.0f);
 
 			if (PickupIKAlpha > 0.1f)
 			{
 				FVector LocalTargetPos = CachedCharacter->GetActorTransform().InverseTransformPosition(PickupTargetLocation);
-				float JointX = -40.0f;
-				float JointY = -50.0f;
-				float JointZ = (LocalTargetPos.Z < -50.0f ? 50.0f : -20.0f);
+				float JointX = -20.0f;
+				float JointY = -40.0f;
+				float JointZ = (LocalTargetPos.Z < -50.0f) ? 20.0f : -30.0f;
 
 				FVector NewJointTarget = FVector(JointX, JointY, JointZ);
 				DynamicPickupJointTarget = FMath::VInterpTo(DynamicPickupJointTarget, NewJointTarget, DeltaSeconds, 15.0f);
