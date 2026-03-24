@@ -124,33 +124,29 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 		FVector TargetWarpLocation;
 		FRotator TargetWarpRotation;
 
-		// 문의 정면 방향 벡터 
+		// 문의 정면 방향(Forward)과 우측 방향(Right) 벡터
 		FVector DoorForward = DoorActor->GetActorForwardVector();
-		FVector DoorLocation = DoorActor->GetActorLocation();
+		FVector DoorRight = DoorActor->GetActorRightVector();
 
 		if (SingleDoor && SingleDoor->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
 		{
-			// Pull: 이미 배치된 PullWarpPoint 사용 (가장 정확함)
-		/*	TargetWarpLocation = SingleDoor->PullWarpPoint->GetComponentLocation();*/
-			DoorForward = DoorActor->GetActorForwardVector();
-			FVector DoorRight = DoorActor->GetActorRightVector();
-			TargetWarpLocation = CurrentPickupLocation + (DoorForward * 85.f) + (DoorRight * 20.f);
-
-			// 캐릭터는 문 손잡이를 바라보게 설정
+			// Pull
+			TargetWarpLocation = CurrentPickupLocation + (DoorForward * 100.0f);
 			TargetWarpRotation = (CurrentPickupLocation - TargetWarpLocation).Rotation();
 		}
 		else
 		{
+			// 플레이어가 서 있는 쪽에서 손잡이를 바라보는 방향으로 계산
 			FVector DirectionToPlayer = (OwnerCharacter->GetActorLocation() - CurrentPickupLocation).GetSafeNormal2D();
 			TargetWarpLocation = CurrentPickupLocation + (DirectionToPlayer * 89.42f);
 			TargetWarpRotation = (-DirectionToPlayer).Rotation();
-
-			OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("DoorWarp"), TargetWarpLocation, TargetWarpRotation);
 		}
 
+		// 캐릭터가 바닥에 수직으로 서도록 고정
 		TargetWarpRotation.Pitch = 0.f;
 		TargetWarpRotation.Roll = 0.f;
 
+		// 워핑 타겟 업데이트 (중복 호출 삭제하고 여기서 한 번만 실행)
 		OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("DoorWarp"), TargetWarpLocation, TargetWarpRotation);
 	}
 
