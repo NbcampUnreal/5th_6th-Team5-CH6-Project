@@ -232,4 +232,7 @@ public:
 	UFUNCTION()void SetDoorPasscode(int32 Passcode);
 
 	void AbortAllActions();
+
+	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+
 };
