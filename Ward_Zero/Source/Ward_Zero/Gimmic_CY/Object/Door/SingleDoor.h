@@ -25,6 +25,12 @@ public:
 	virtual EInteractionType GetInteractionType_Implementation() const override;
 	ESingleDoorAnimationType GetSingleDoorAnimationType() const;
 
+	
+	private:
+	UFUNCTION()
+	void OnOverLapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION()
+	void OnOverLapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 protected:
 
 	float TargetYaw = -90.f;

@@ -55,6 +55,9 @@ public:
 	// Mesh
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Mesh;
+	
+	UPROPERTY()
+	class UMaterialInstanceDynamic* DynamicMaterial;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UBoxComponent* CollisionBox;
