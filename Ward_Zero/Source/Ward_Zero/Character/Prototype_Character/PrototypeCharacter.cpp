@@ -161,7 +161,6 @@ void APrototypeCharacter::Tick(float DeltaTime)
 
 	if (bIsRunning) CheckRunState();
 
-	// [수정] 애님 인스턴스 참조를 가져와서 턴 상태를 체크
 	UPlayerAnimInstance* AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
 	bool bIsTurningNow = (AnimInst && AnimInst->bIsTurn);
 

@@ -133,17 +133,19 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 			// Pull: 이미 배치된 PullWarpPoint 사용 (가장 정확함)
 		/*	TargetWarpLocation = SingleDoor->PullWarpPoint->GetComponentLocation();*/
 			DoorForward = DoorActor->GetActorForwardVector();
-			TargetWarpLocation = CurrentPickupLocation + (DoorForward * 80.f);
-			// 캐릭터는 문(DoorLocation)을 바라봐야 함
-			TargetWarpRotation = (DoorLocation - TargetWarpLocation).Rotation();
+			FVector DoorRight = DoorActor->GetActorRightVector();
+			TargetWarpLocation = CurrentPickupLocation + (DoorForward * 85.f) + (DoorRight * 20.f);
+
+			// 캐릭터는 문 손잡이를 바라보게 설정
+			TargetWarpRotation = (CurrentPickupLocation - TargetWarpLocation).Rotation();
 		}
 		else
 		{
-			// 캐릭터의 현재 위치 대신 문의 정면 방향(Forward)을 기준으로 계산
-			DoorForward = DoorActor->GetActorForwardVector();
-			// 문 손잡이에서 문의 정면 방향으로 89.42f만큼 떨어진 지점을 워프 포인트로 설정
-			TargetWarpLocation = CurrentPickupLocation + (DoorForward * 89.42f);
-			TargetWarpRotation = (-DoorForward).Rotation();
+			FVector DirectionToPlayer = (OwnerCharacter->GetActorLocation() - CurrentPickupLocation).GetSafeNormal2D();
+			TargetWarpLocation = CurrentPickupLocation + (DirectionToPlayer * 89.42f);
+			TargetWarpRotation = (-DirectionToPlayer).Rotation();
+
+			OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("DoorWarp"), TargetWarpLocation, TargetWarpRotation);
 		}
 
 		TargetWarpRotation.Pitch = 0.f;
