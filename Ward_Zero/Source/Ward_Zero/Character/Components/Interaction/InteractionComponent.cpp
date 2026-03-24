@@ -121,32 +121,40 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 	if (OwnerCharacter->MotionWarpingComp)
 	{
 		ASingleDoor* SingleDoor = Cast<ASingleDoor>(DoorActor);
+
+		// 문의 실제 정면 방향 <= Mesh 기즈모는 반대여서 손잡이 위치를 기준. 
+		FVector HandleLocation = CurrentPickupLocation;
+		FVector CharacterLocation = OwnerCharacter->GetActorLocation();
+
+		// 평면상의 방향 벡터 (캐릭터 -> 손잡이)
+		FVector DirToHandle = (HandleLocation - CharacterLocation).GetSafeNormal2D();
+
 		FVector TargetWarpLocation;
 		FRotator TargetWarpRotation;
 
-		// 문의 정면 방향(Forward)과 우측 방향(Right) 벡터
-		FVector DoorForward = DoorActor->GetActorForwardVector();
-		FVector DoorRight = DoorActor->GetActorRightVector();
-
 		if (SingleDoor && SingleDoor->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
 		{
-			// Pull
-			TargetWarpLocation = CurrentPickupLocation + (DoorForward * 100.0f);
-			TargetWarpRotation = (CurrentPickupLocation - TargetWarpLocation).Rotation();
+			/** * PULL(당기기): 손잡이에서 캐릭터 쪽으로 90유닛 후퇴
+			 * + 문이 열릴 때 몸에 걸리지 않게 살짝 옆으로 비켜남 (SideOffset)
+			 */
+			FVector PullDir = -DirToHandle; // 캐릭터가 물러날 방향
+			FVector SideDir = FVector::CrossProduct(PullDir, FVector::UpVector); // 옆 방향
+
+			TargetWarpLocation = HandleLocation + (PullDir * 95.0f) + (SideDir * 20.0f);
+			TargetWarpRotation = (HandleLocation - TargetWarpLocation).Rotation();
 		}
 		else
 		{
-			// 플레이어가 서 있는 쪽에서 손잡이를 바라보는 방향으로 계산
-			FVector DirectionToPlayer = (OwnerCharacter->GetActorLocation() - CurrentPickupLocation).GetSafeNormal2D();
-			TargetWarpLocation = CurrentPickupLocation + (DirectionToPlayer * 89.42f);
-			TargetWarpRotation = (-DirectionToPlayer).Rotation();
+			/** * PUSH(밀기): 손잡이 정면에서 적정 거리 유지
+			 */
+			TargetWarpLocation = HandleLocation - (DirToHandle * 85.0f);
+			TargetWarpRotation = DirToHandle.Rotation();
 		}
 
-		// 캐릭터가 바닥에 수직으로 서도록 고정
+		// 수평 고정
 		TargetWarpRotation.Pitch = 0.f;
 		TargetWarpRotation.Roll = 0.f;
 
-		// 워핑 타겟 업데이트 (중복 호출 삭제하고 여기서 한 번만 실행)
 		OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("DoorWarp"), TargetWarpLocation, TargetWarpRotation);
 	}
 
@@ -166,7 +174,7 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)
 {
 	if (!OwnerCharacter) return;
-
+	if (OwnerCharacter->GetMesh()->GetAnimInstance()->IsAnyMontagePlaying() || CurrentInteractingItem) return;
 	if (CurrentInteractingItem) ConsumeInteractingItem();
 
 	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
