@@ -197,22 +197,20 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		if (ASingleDoor* Door = Cast<ASingleDoor>(InteractingActor))
 		{
 			LeverTargetLocation = Door->Mesh->GetSocketLocation(TEXT("HandleSocket"));
-
 			float LeverCurveValue = GetCurveValue(TEXT("LeverIK"));
 			LeverIKAlpha = FMath::FInterpTo(LeverIKAlpha, LeverCurveValue, DeltaSeconds, 15.0f);
 
-			// 팔꿈치 각도
 			FVector NewLeverJointTarget;
-
 			if (Door->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
 			{
-				// Pull
+				// Pull은 원래대로 (뒤로 당기는 동작이므로 -40이 어느 정도 유효)
 				NewLeverJointTarget = FVector(-40.f, -80.f, -10.f);
 			}
 			else
 			{
-				// Push
-				NewLeverJointTarget = FVector(-15.f, 30.f, 0.f);
+				// [수정된 Push 부분] 
+				// -15.f(뒤쪽)였던 값을 25.f(앞쪽)로 변경해야 팔이 앞으로 굽혀집니다.
+				NewLeverJointTarget = FVector(25.f, 30.f, 0.f);
 			}
 			DynamicLeverJointTarget = FMath::VInterpTo(DynamicLeverJointTarget, NewLeverJointTarget, DeltaSeconds, 5.0f);
 		}
