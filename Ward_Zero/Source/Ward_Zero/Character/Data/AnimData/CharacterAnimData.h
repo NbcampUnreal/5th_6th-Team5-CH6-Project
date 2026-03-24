@@ -46,7 +46,10 @@ public:
     TObjectPtr<UAnimMontage> FallLanding;
 
     UPROPERTY(EditAnywhere, Category = "Montage|Interaction")
-    TObjectPtr<UAnimMontage> OpenDoorMontage;
+    TObjectPtr<UAnimMontage> DoorPushOpenMontage;
+
+    UPROPERTY(EditAnywhere, Category = "Montage|Interaction")
+    TObjectPtr<UAnimMontage> DoorPullOpenMontage;
 
     UPROPERTY(EditAnywhere, Category = "Montage|Interaction")
     TObjectPtr<UAnimMontage> LeverMontage; // 레버 내리는 몽타주
@@ -65,10 +68,4 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Turn")
     TMap<EWeaponLayerType, UAnimMontage*> TurnRight90Montages;
-
-    UPROPERTY(EditAnywhere, Category = "Turn")
-    TMap<EWeaponLayerType, UAnimMontage*> TurnLeft180Montages;
-
-    UPROPERTY(EditAnywhere, Category = "Turn")
-    TMap<EWeaponLayerType, UAnimMontage*>TurnRight180Montages;
 };

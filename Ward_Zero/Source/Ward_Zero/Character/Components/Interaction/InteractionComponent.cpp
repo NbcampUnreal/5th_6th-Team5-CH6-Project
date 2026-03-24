@@ -9,6 +9,8 @@
 #include "Components/CapsuleComponent.h"
 #include "Gimmic_CY/Object/Lever/Lever.h"
 #include "Gimmic_CY/Items/ItemBase.h"
+#include "Gimmic_CY/Object/Door/SingleDoor.h"
+#include "GameFramework/SpringArmComponent.h"
 
 UInteractionComponent::UInteractionComponent()
 {
@@ -96,7 +98,6 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 
 	bool bIsSameDoor = (DoorActor == LastInteractedDoorActor);
 	float CurrentTime = GetWorld()->GetTimeSeconds();
-
 	if (bIsSameDoor && (CurrentTime - LastDoorInteractTime) < 2.5f) return;
 
 	LastInteractedDoorActor = DoorActor;
@@ -104,6 +105,7 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 
 	if (bIsInteractingDoor) return;
 	bIsInteractingDoor = true;
+	OwnerCharacter->bIsInteractingDoor = true;
 
 	PendingDoorActor = DoorActor;
 	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(PendingDoorActor);
@@ -111,56 +113,55 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 
 	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
 	{
-		OwnerCharacter->DisableInput(PC); // 문여는 동안 입력 잠금
+		PC->SetIgnoreMoveInput(true);
+		PC->SetIgnoreLookInput(true);
 	}
 
+	// Push/Pull 에 따른 워핑 로직 분리
 	if (OwnerCharacter->MotionWarpingComp)
 	{
-		if (bIsSameDoor)
+		ASingleDoor* SingleDoor = Cast<ASingleDoor>(DoorActor);
+		FVector TargetWarpLocation;
+		FRotator TargetWarpRotation;
+
+		// 문의 정면 방향 벡터 
+		FVector DoorForward = DoorActor->GetActorForwardVector();
+		FVector DoorLocation = DoorActor->GetActorLocation();
+
+		if (SingleDoor && SingleDoor->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
 		{
-			OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("DoorWarp"), OwnerCharacter->GetActorLocation(), OwnerCharacter->GetActorRotation());
+			// Pull: 이미 배치된 PullWarpPoint 사용 (가장 정확함)
+		/*	TargetWarpLocation = SingleDoor->PullWarpPoint->GetComponentLocation();*/
+			DoorForward = DoorActor->GetActorForwardVector();
+			TargetWarpLocation = CurrentPickupLocation + (DoorForward * 80.f);
+			// 캐릭터는 문(DoorLocation)을 바라봐야 함
+			TargetWarpRotation = (DoorLocation - TargetWarpLocation).Rotation();
 		}
 		else
 		{
-			FVector DirectionToPlayer = (OwnerCharacter->GetActorLocation() - CurrentPickupLocation).GetSafeNormal2D();
-			FVector TargetWarpLocation = CurrentPickupLocation + (DirectionToPlayer * 65.0f);
-			FRotator TargetWarpRotation = (-DirectionToPlayer).Rotation();
-
-			OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("DoorWarp"), TargetWarpLocation, TargetWarpRotation);
+			// 캐릭터의 현재 위치 대신 문의 정면 방향(Forward)을 기준으로 계산
+			DoorForward = DoorActor->GetActorForwardVector();
+			// 문 손잡이에서 문의 정면 방향으로 89.42f만큼 떨어진 지점을 워프 포인트로 설정
+			TargetWarpLocation = CurrentPickupLocation + (DoorForward * 89.42f);
+			TargetWarpRotation = (-DoorForward).Rotation();
 		}
+
+		TargetWarpRotation.Pitch = 0.f;
+		TargetWarpRotation.Roll = 0.f;
+
+		OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("DoorWarp"), TargetWarpLocation, TargetWarpRotation);
 	}
 
-	if (OwnerCharacter->AnimData && OwnerCharacter->AnimData->OpenDoorMontage)
+	// 몽타주 분기 및 실행
+	UAnimMontage* SelectedMontage = OwnerCharacter->AnimData->DoorPushOpenMontage;
+	if (ASingleDoor* SingleDoor = Cast<ASingleDoor>(DoorActor))
 	{
-		if (UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance())
-		{
-			AnimInst->RootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
-		}
-		float AnimDuration = OwnerCharacter->PlayAnimMontage(OwnerCharacter->AnimData->OpenDoorMontage);
-		AActor* SafeDoorActor = PendingDoorActor;
-		APrototypeCharacter* SafeCharacter = OwnerCharacter; // 람다 캡처용
-
-		FTimerHandle DoorTimer;
-		GetWorld()->GetTimerManager().SetTimer(DoorTimer, [this, SafeCharacter, SafeDoorActor]()
-			{
-				bIsInteractingDoor = false;
-				if (SafeCharacter)
-				{
-					if (APlayerController* PC = Cast<APlayerController>(SafeCharacter->GetController())) SafeCharacter->EnableInput(PC);
-
-					if (SafeDoorActor)
-					{
-						FTimerHandle CollisionRestoreTimer;
-						SafeCharacter->GetWorldTimerManager().SetTimer(CollisionRestoreTimer, FTimerDelegate::CreateLambda([SafeCharacter, SafeDoorActor]()
-							{
-								if (IsValid(SafeCharacter) && IsValid(SafeDoorActor))
-									SafeCharacter->GetCapsuleComponent()->IgnoreActorWhenMoving(SafeDoorActor, false);
-							}), 1.5f, false);
-					}
-				}
-			}, AnimDuration, false);
+		SelectedMontage = (SingleDoor->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
+			? OwnerCharacter->AnimData->DoorPullOpenMontage
+			: OwnerCharacter->AnimData->DoorPushOpenMontage;
 	}
 
+	if (SelectedMontage) OwnerCharacter->PlayAnimMontage(SelectedMontage);
 	IInteractionBase::Execute_OnIneracted(DoorActor, OwnerCharacter);
 }
 
@@ -169,6 +170,16 @@ void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)
 	if (!OwnerCharacter) return;
 
 	if (CurrentInteractingItem) ConsumeInteractingItem();
+
+	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
+	{
+		PC->SetIgnoreMoveInput(true);
+		PC->SetIgnoreLookInput(true);
+	}
+
+	if (OwnerCharacter->GetCameraBoom()) {
+		OwnerCharacter->GetCameraBoom()->bDoCollisionTest = false;
+	}
 
 	CurrentInteractingItem = ItemActor;
 	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(CurrentInteractingItem);
@@ -209,38 +220,25 @@ void UInteractionComponent::HandleLeverInteraction(AActor* LeverActor)
 	CurrentInteractingItem = LeverActor;
 	bIsInteractingDoor = true;
 
+	// ESC 허용을 위해 이동/회전만 무시
 	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
 	{
-		OwnerCharacter->DisableInput(PC);
+		PC->SetIgnoreMoveInput(true);
+		PC->SetIgnoreLookInput(true);
 	}
 
-	// IK 타겟 위치 저장 (레버의 PickupPoint 위치)
 	CurrentPickupLocation = Lever->PickUpPoint->GetComponentLocation();
 
-	// 모션 워핑
 	if (OwnerCharacter->MotionWarpingComp)
 	{
-		FVector LeverLoc = Lever->GetActorLocation();
-		// 에셋 방향에 따라 RightVector 또는 ForwardVector 선택 (기존에 잘 작동하던 Right 사용)
 		FVector LeverForward = Lever->GetActorRightVector();
-
-		// 캐릭터가 설 위치 계산 (레버 정면 65유닛)
-		FVector TargetWarpLocation = LeverLoc + (LeverForward * 55.0f);
+		FVector TargetWarpLocation = Lever->GetActorLocation() + (LeverForward * 55.0f);
 		TargetWarpLocation.Z = OwnerCharacter->GetActorLocation().Z;
-
-		// 레버를 바라보는 회전값
 		FRotator TargetWarpRotation = (-LeverForward).Rotation();
-		TargetWarpRotation.Pitch = 0.0f;
-		TargetWarpRotation.Roll = 0.0f;
 
-		OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(
-			TEXT("LeverWarp"),
-			TargetWarpLocation,
-			TargetWarpRotation
-		);
+		OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("LeverWarp"), TargetWarpLocation, TargetWarpRotation);
 	}
 
-	// 몽타주 재생 
 	if (OwnerCharacter->AnimData && OwnerCharacter->AnimData->LeverMontage)
 	{
 		OwnerCharacter->PlayAnimMontage(OwnerCharacter->AnimData->LeverMontage);
@@ -262,7 +260,7 @@ void UInteractionComponent::ConsumeInteractingItem()
 	if (CurrentInteractingItem && OwnerCharacter)
 	{
 		IInteractionBase::Execute_OnIneracted(CurrentInteractingItem, OwnerCharacter);
-		CurrentInteractingItem->Destroy();
+		CurrentInteractingItem->Destroy(); // 월드에서 진짜 액터 삭제
 		CurrentInteractingItem = nullptr;
 	}
 }
@@ -304,5 +302,22 @@ void UInteractionComponent::TriggerInteraction()
 void UInteractionComponent::EndInteraction()
 {
 	bIsInteractingDoor = false;
+	if (OwnerCharacter) OwnerCharacter->bIsInteractingDoor = false;
 	CurrentInteractingItem = nullptr;
+
+	if (OwnerCharacter)
+	{
+		OwnerCharacter->DestroyHealItemVisual();
+
+		if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
+		{
+			PC->SetIgnoreMoveInput(false);
+			PC->SetIgnoreLookInput(false);
+			OwnerCharacter->EnableInput(PC);
+		}
+		if (OwnerCharacter->GetCameraBoom())
+		{
+			OwnerCharacter->GetCameraBoom()->bDoCollisionTest = true;
+		}
+	}
 }

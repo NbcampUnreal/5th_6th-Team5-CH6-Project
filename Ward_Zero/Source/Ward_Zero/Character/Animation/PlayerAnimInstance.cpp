@@ -12,6 +12,8 @@
 #include "Character/Components/Combat/PlayerCombatComponent.h"
 #include "Gimmic_CY/Object/ObjectBase.h"
 #include "Character/Data/AnimData/CharacterAnimData.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "Gimmic_CY/Object/Door/SingleDoor.h"
 
 void UPlayerAnimInstance::NativeInitializeAnimation()
 {
@@ -140,11 +142,12 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 			if (PickupIKAlpha > 0.1f)
 			{
-				FVector NewJointTarget;
 				FVector LocalTargetPos = CachedCharacter->GetActorTransform().InverseTransformPosition(PickupTargetLocation);
-				if (LocalTargetPos.Z < -50.0f) NewJointTarget = FVector(-20.0f, -60.0f, 40.0f);
-				else if (LocalTargetPos.Z < 30.0f) NewJointTarget = FVector(-50.0f, -50.0f, 0.0f);
-				else NewJointTarget = FVector(-40.0f, -40.0f, -30.0f);
+				float JointX = -40.0f;
+				float JointY = -50.0f;
+				float JointZ = (LocalTargetPos.Z < -50.0f ? 50.0f : -20.0f);
+
+				FVector NewJointTarget = FVector(JointX, JointY, JointZ);
 				DynamicPickupJointTarget = FMath::VInterpTo(DynamicPickupJointTarget, NewJointTarget, DeltaSeconds, 15.0f);
 			}
 		}
@@ -186,11 +189,34 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 			DynamicLeverJointTarget = FMath::VInterpTo(DynamicLeverJointTarget, NewLeverJointTarget, DeltaSeconds, 5.0f);
 		}
 	}
-	//if (Character)
-	//{
-	//	// 캐릭터(캡슐)의 현재 Yaw 각도를 실시간으로 화면 파란색으로 띄움
-	//	if (GEngine) GEngine->AddOnScreenDebugMessage(5, 0.0f, FColor::Cyan, FString::Printf(TEXT("Actor Yaw: %f"), Character->GetActorRotation().Yaw));
-	//}
+
+	if (bIsInteracting && CachedCharacter && CachedCharacter->InteractionComp->CurrentInteractingItem)
+	{
+		AActor* InteractingActor = CachedCharacter->InteractionComp->CurrentInteractingItem;
+
+		if (ASingleDoor* Door = Cast<ASingleDoor>(InteractingActor))
+		{
+			LeverTargetLocation = Door->Mesh->GetSocketLocation(TEXT("HandleSocket"));
+
+			float LeverCurveValue = GetCurveValue(TEXT("LeverIK"));
+			LeverIKAlpha = FMath::FInterpTo(LeverIKAlpha, LeverCurveValue, DeltaSeconds, 15.0f);
+
+			// 팔꿈치 각도
+			FVector NewLeverJointTarget;
+
+			if (Door->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
+			{
+				// Pull
+				NewLeverJointTarget = FVector(-40.f, -80.f, -10.f);
+			}
+			else
+			{
+				// Push
+				NewLeverJointTarget = FVector(-15.f, 30.f, 0.f);
+			}
+			DynamicLeverJointTarget = FMath::VInterpTo(DynamicLeverJointTarget, NewLeverJointTarget, DeltaSeconds, 5.0f);
+		}
+	}
 }
 void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 {
@@ -260,6 +286,12 @@ void UPlayerAnimInstance::UpdateOrientationWarping(float DeltaSeconds)
 {
 	float TargetAngle = 0.0f;
 
+	if (bIsInteracting)
+	{
+		OrientationWarpingAngle = 0.0f;
+		OrientationWarpingAlpha = FMath::FInterpTo(OrientationWarpingAlpha, 0.0f, DeltaSeconds, 10.0f);
+		return;
+	}
 	if (GroundSpeed < 1.0f)
 	{
 		OrientationWarpingAngle = 0.0f;
@@ -368,12 +400,6 @@ void UPlayerAnimInstance::AnimNotify_EndInteraction()
 	if (CachedCharacter && CachedCharacter->InteractionComp)
 	{
 		CachedCharacter->InteractionComp->EndInteraction();
-		CachedCharacter->InteractionComp->bIsInteractingDoor = false;
-
-		if (APlayerController* PC = Cast<APlayerController>(CachedCharacter->GetController()))
-		{
-			CachedCharacter->EnableInput(PC);
-		}
 		Montage_Stop(0.2f);
 	}
 }
@@ -397,7 +423,7 @@ void UPlayerAnimInstance::CalculateYawDir()
 void UPlayerAnimInstance::HandleTurnning()
 {
 	// 이미 턴 중이거나 쿨타임이면 절대 진입 금지
-	if (bIsTurn || TurnCooldownTimer > 0.0f) return;
+	if (bIsTurn || TurnCooldownTimer > 0.0f || bIsInteracting) return;
 
 	// 슬롯 설정 문제로 모션이 안 보일 수 있으므로 재생 여부 재체크
 	if (Montage_IsPlaying(nullptr)) return;
@@ -454,7 +480,7 @@ void UPlayerAnimInstance::AnimNotify_TurnFinished()
 {
 	if (CachedCharacter)
 	{
-		// [수정] 현재 카메라가 보고 있는 정확한 Yaw 값을 가져옴
+		// 현재 카메라가 보고 있는 정확한 Yaw 값을 가져옴
 		float TargetYaw = CachedCharacter->GetControlRotation().Yaw;
 		FRotator FinalRot = CachedCharacter->GetActorRotation();
 		FinalRot.Yaw = TargetYaw;

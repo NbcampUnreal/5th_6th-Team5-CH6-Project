@@ -9,12 +9,13 @@ AHealItemActor::AHealItemActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	
+	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	Mesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+
 	// 약병 뚜껑 메쉬 
 	CapMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CapMesh"));
 	CapMesh->SetupAttachment(Mesh); 
 	CapMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	
 }
 
 void AHealItemActor::BeginPlay()
@@ -50,7 +51,15 @@ EInteractionType AHealItemActor::GetInteractionType_Implementation() const
 void AHealItemActor::HiddenActor()
 {
 	Super::HiddenActor();
-	CapMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	CapMesh->SetVisibility(false);
+	if (CapMesh)
+	{
+		CapMesh->SetVisibility(false);
+		CapMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+	if (MarkerPillar)
+	{
+		MarkerPillar->SetVisibility(false);
+		MarkerPillar->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 }
 
