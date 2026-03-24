@@ -99,6 +99,7 @@ void AEnvManager::SwitchZone(EEnvZone NewZone)
 }
 
 void AEnvManager::PlayHutonBGM() { PlayFadeMusic(HutonBGM); }
+void AEnvManager::PlayHutonPhase2BGM() { PlayFadeMusic(HutonPhase2BGM); }
 void AEnvManager::PlayTentacleBGM() { PlayFadeMusic(TentacleBGM); }
 void AEnvManager::RestoreNormalBGM() { PlayFadeMusic(BaseNormalBGM); }
 
@@ -116,6 +117,11 @@ void AEnvManager::PlayFadeMusic(USoundBase* NewMusic)
     if (!NewMusic || !BGMComponent) return;
     if (BGMComponent->IsPlaying() && BGMComponent->GetSound() == NewMusic) return;
 
+    // 핵심: 위치값에 영향을 받지 않도록 설정
+    BGMComponent->bAllowSpatialization = false; // 공간화 비활성화
+    BGMComponent->SetUISound(true);             // UI 사운드(2D)로 취급
+
+    // 기존 로직
     BGMComponent->FadeOut(1.5f, 0.0f);
     BGMComponent->SetSound(NewMusic);
     BGMComponent->FadeIn(1.5f, 1.0f, 0.0f);

@@ -54,6 +54,10 @@ public:
     USoundBase* HutonBGM;
 
     UPROPERTY(EditAnywhere, Category = "Environment|Sound")
+    class USoundBase* HutonPhase2BGM; 
+
+
+    UPROPERTY(EditAnywhere, Category = "Environment|Sound")
     USoundBase* TentacleBGM;
 
     
@@ -63,6 +67,9 @@ public:
     // AI 호출용 BGM 함수들 
     UFUNCTION(BlueprintCallable, Category = "Environment|Sound")
     void PlayHutonBGM();
+
+    UFUNCTION(BlueprintCallable, Category = "Environment|Sound")
+    void PlayHutonPhase2BGM();
 
     UFUNCTION(BlueprintCallable, Category = "Environment|Sound")
     void PlayTentacleBGM();
