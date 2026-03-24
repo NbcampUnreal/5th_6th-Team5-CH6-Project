@@ -2,8 +2,11 @@
 
 
 #include "DocumentBase.h"
-
 #include "WardGameInstanceSubsystem.h"
+#include "UI_KWJ/Reading/DocumentSubsystem.h"
+#include "Character/Prototype_Character/PrototypeCharacter.h"
+#include "Engine/LocalPlayer.h"
+#include "GameFramework/PlayerController.h"
 
 
 // Sets default values
@@ -21,16 +24,31 @@ void ADocumentBase::BeginPlay()
 
 void ADocumentBase::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
-	if (!Character || !bCanInteract)return;
+	if (!Character || !bCanInteract) return;
 	Super::HandleInteraction_Implementation(Character);
 	
 	UWardGameInstanceSubsystem* SaveGI = GetGameInstance()->GetSubsystem<UWardGameInstanceSubsystem>();
-	SaveGI->ActivateDocumentIndex(DocIdx);
+	if (SaveGI)
+	{
+		SaveGI->ActivateDocumentIndex(DocIdx);
+	}
+
+	// 서류 뷰어 열기
+	APlayerController* PC = Cast<APlayerController>(Character->GetController());
+	if (PC)
+	{
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			if (UDocumentSubsystem* DocSys = LP->GetSubsystem<UDocumentSubsystem>())
+			{
+				DocSys->OpenDocumentByIndex(DocIdx);
+			}
+		}
+	}
 }
 
 EInteractionType ADocumentBase::GetInteractionType_Implementation() const
 {
-	//return EInteractionType::Document;
 	return EInteractionType::Heal;
 }
 

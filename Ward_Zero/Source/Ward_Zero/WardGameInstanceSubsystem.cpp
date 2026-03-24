@@ -1,11 +1,55 @@
 // WardGameInstance.cpp
 
 #include "WardGameInstanceSubsystem.h"
+#include "Engine/Blueprint.h"
 #include "AudioDevice.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundMix.h"
 #include "Sound/SoundClass.h"
 #include "Ward_Zero.h"
+
+// ════════════════════════════════════════════════════════
+//  초기화 — DataTable 자동 로드
+// ════════════════════════════════════════════════════════
+
+void UWardGameInstanceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+
+	// DataTable 자동 로드
+	DocumentDataTable = LoadObject<UWardDocumentDataTable>(
+		nullptr,
+		TEXT("/Game/UI/read/MyWardDocumentDataTable.MyWardDocumentDataTable")
+	);
+
+	// Blueprint DataAsset인 경우 _C 경로로 재시도
+	if (!DocumentDataTable)
+	{
+		UObject* LoadedObj = StaticLoadObject(UObject::StaticClass(), nullptr,
+			TEXT("/Game/UI/read/MyWardDocumentDataTable.MyWardDocumentDataTable"));
+		DocumentDataTable = Cast<UWardDocumentDataTable>(LoadedObj);
+	}
+
+	// Blueprint CDO에서 가져오기
+	if (!DocumentDataTable)
+	{
+		UBlueprint* BP = LoadObject<UBlueprint>(nullptr,
+			TEXT("/Game/UI/read/MyWardDocumentDataTable.MyWardDocumentDataTable"));
+		if (BP && BP->GeneratedClass)
+		{
+			DocumentDataTable = Cast<UWardDocumentDataTable>(BP->GeneratedClass->GetDefaultObject());
+		}
+	}
+
+	if (DocumentDataTable)
+	{
+		UE_LOG(LogWard_Zero, Log, TEXT("DocumentDataTable 로드 성공: %d개 항목"), DocumentDataTable->Entries.Num());
+	}
+	else
+	{
+		UE_LOG(LogWard_Zero, Warning, TEXT("DocumentDataTable 로드 실패!"));
+	}
+}
 
 // ════════════════════════════════════════════════════════
 //  PendingSaveData
