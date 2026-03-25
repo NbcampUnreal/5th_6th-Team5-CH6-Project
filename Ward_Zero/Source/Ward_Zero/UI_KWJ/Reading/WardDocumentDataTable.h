@@ -5,11 +5,17 @@
 // 인덱스 규칙:
 //   0~19: 아이템 설명 (힐아이템=0, 총알박스=1, ...)
 //   20~: 서류 문서
+//
+// 서류 텍스트 파일 규칙:
+//   Content/Documents/Doc_20.txt ← DocIndex 20이면 자동으로 이 파일
+//   파일 안에서 --- 로 페이지 구분
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 #include "WardDocumentDataTable.generated.h"
 
 /** 문서/아이템 한 항목의 데이터 */
@@ -26,7 +32,7 @@ struct FWardDocumentEntry
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Document")
 	FText Title;
 
-	/** 설명 텍스트 (아이템 알림 / 서류 뷰어에서 표시) */
+	/** 설명 텍스트 (아이템 알림용) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Document")
 	FText Description;
 
@@ -42,8 +48,8 @@ struct FWardDocumentEntry
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Document")
 	FText KeyHint;
 
-	/** 서류 페이지 목록 (서류 전용 — 아이템이면 비어있음) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Document", meta = (MultiLine = true))
+	/** 서류 페이지 목록 (런타임에 txt 파일에서 자동 로드) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Document")
 	TArray<FText> Pages;
 };
 
@@ -59,16 +65,52 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Document")
 	TArray<FWardDocumentEntry> Entries;
 
-	/** 인덱스로 항목 찾기 (없으면 nullptr) */
-	const FWardDocumentEntry* FindByIndex(int32 DocIndex) const
+	/** 인덱스로 항목 찾기 (Pages가 비어있으면 txt에서 자동 로드) */
+	const FWardDocumentEntry* FindByIndex(int32 DocIndex)
 	{
-		for (const FWardDocumentEntry& Entry : Entries)
+		for (FWardDocumentEntry& Entry : Entries)
 		{
 			if (Entry.DocIndex == DocIndex)
 			{
+				// Pages가 비어있으면 Content/Documents/Doc_{인덱스}.txt에서 자동 로드
+				if (Entry.Pages.Num() == 0)
+				{
+					LoadPagesFromFile(Entry);
+				}
 				return &Entry;
 			}
 		}
 		return nullptr;
+	}
+
+	/** txt 파일에서 페이지 로드 — Content/Documents/Doc_{DocIndex}.txt
+	 *  --- 구분자로 페이지 분리 */
+	static void LoadPagesFromFile(FWardDocumentEntry& Entry)
+	{
+		// Content/Documents/Doc_20.txt 형식
+		FString FileName = FString::Printf(TEXT("Doc_%d.txt"), Entry.DocIndex);
+		FString FilePath = FPaths::ProjectContentDir() / TEXT("Documents") / FileName;
+		FString FileContent;
+
+		if (!FFileHelper::LoadFileToString(FileContent, *FilePath))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("서류 파일 로드 실패: %s"), *FilePath);
+			return;
+		}
+
+		// --- 로 페이지 분리
+		TArray<FString> PageStrings;
+		FileContent.ParseIntoArray(PageStrings, TEXT("---"), true);
+
+		for (const FString& PageStr : PageStrings)
+		{
+			FString Trimmed = PageStr.TrimStartAndEnd();
+			if (!Trimmed.IsEmpty())
+			{
+				Entry.Pages.Add(FText::FromString(Trimmed));
+			}
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("서류 파일 로드: %s (%d 페이지)"), *FileName, Entry.Pages.Num());
 	}
 };

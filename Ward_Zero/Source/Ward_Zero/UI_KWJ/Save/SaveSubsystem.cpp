@@ -589,13 +589,14 @@ bool USaveSubsystem::IsSaveUIOpen() const
 //  불러오기 UI (ESC / 게임오버용)
 // ════════════════════════════════════════════════════════
 
-void USaveSubsystem::ShowLoadUI(bool bFromGameOver)
+void USaveSubsystem::ShowLoadUI(bool bFromGameOver, bool bFromMainMenu)
 {
 	ULoadWidget* Widget = GetOrCreateLoadUI();
 	if (Widget)
 	{
 		Widget->RefreshSaveList();
-		Widget->SetCloseButtonVisible(!bFromGameOver); // 게임오버에서 열면 나가기 숨김
+		Widget->SetCloseButtonVisible(!bFromGameOver);
+		Widget->SetOpenedFromMainMenu(bFromMainMenu);
 		Widget->SetVisibility(ESlateVisibility::Visible);
 		Widget->SetKeyboardFocus();
 
