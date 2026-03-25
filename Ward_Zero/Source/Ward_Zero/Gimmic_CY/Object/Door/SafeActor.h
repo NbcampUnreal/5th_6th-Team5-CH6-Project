@@ -33,13 +33,21 @@ protected:
 
 	
 	bool bVanishMagic = false;
-	
+#if WITH_EDITOR
 	UFUNCTION(CallInEditor, Category = "Editor")
 	void DoorVanishMagic();
 	
 	UFUNCTION(CallInEditor, Category = "Editor")
-	void SettingItemInSafeBox();
+	void SettingItemAllSafeBox();
 	
+	UFUNCTION()
+	void SettingItemInSafeBox(ASafeActor* Obj);
+	
+	UFUNCTION(CallInEditor, Category = "Editor")
+	void RegistAllItemWithTag();
+	
+	
+#endif
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, meta = (DisplayName = "Door Action"), Category = "Setting")
 	ESingleDoorAnimationType DoorAnimationType;
 	
@@ -51,4 +59,12 @@ public:
 	
 	virtual EInteractionType GetInteractionType_Implementation() const override;
 	ESingleDoorAnimationType GetSingleDoorAnimationType() const;
+	UPROPERTY(EditInstanceOnly, Category = "Editor")
+	FName ItemTag;
+#if WITH_EDITOR
+	
+	
+	UFUNCTION()
+	void RegistItem(AActor* item);
+#endif
 };

@@ -10,13 +10,13 @@
 AObjectBase::AObjectBase()
 {
 	PrimaryActorTick.bCanEverTick = false;
-
+	
 	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
-	CollisionBox->SetupAttachment(RootComponent);
 	CollisionBox->SetBoxExtent(FVector(10.0f, 10.0f, 10.0f));
 	SetRootComponent(CollisionBox);;
 	CollisionBox->SetCollisionResponseToChannels(ECR_Overlap);
-
+	CollisionBox->SetCanEverAffectNavigation(true);
+	
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(CollisionBox);
 	Mesh->SetCollisionResponseToChannels(ECR_Block);
@@ -153,12 +153,20 @@ void AObjectBase::ShowPressEWidget_Implementation()
 	IInteractionBase::ShowPressEWidget_Implementation();
 	InteractWidget->SetVisibility(true);
 	UE_LOG(LogTemp,Warning,TEXT("ShowPressEWidget: %s"), *ActorID.ToString());
+	if (Mesh) 
+	{
+		Mesh->SetRenderCustomDepth(true);
+	}
 }
 
 void AObjectBase::HidePressEWidget_Implementation()
 {
 	IInteractionBase::HidePressEWidget_Implementation();
 	InteractWidget->SetVisibility(false);
+	if (Mesh) 
+	{
+		Mesh->SetRenderCustomDepth(false);
+	}
 }
 
 void AObjectBase::SaveActorState() const
@@ -236,5 +244,7 @@ void AObjectBase::RegenerateAllObjectIDsInLevel()
 		UE_LOG(LogTemp, Warning, TEXT("Total %d Object IDs have been successfully regenerated."), Count);
 	}
 }
+
+
 #endif
 

@@ -67,7 +67,7 @@ protected:
 
 	
 
-	FVector GetInteractionTargetLocation_Implementation() const;
+	virtual FVector GetInteractionTargetLocation_Implementation() const;
 	
 	
 

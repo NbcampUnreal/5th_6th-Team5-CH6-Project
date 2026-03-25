@@ -8,14 +8,10 @@
 AHealItemActor::AHealItemActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	
-	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	Mesh->SetCollisionResponseToAllChannels(ECR_Ignore);
 
 	// 약병 뚜껑 메쉬 
 	CapMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CapMesh"));
 	CapMesh->SetupAttachment(Mesh); 
-	CapMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void AHealItemActor::BeginPlay()

@@ -3,13 +3,16 @@
 #include "NavAreas/NavArea_Default.h"
 #include "NavAreas/NavArea_Null.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
+#include "Components/CapsuleComponent.h"
 
 ASingleDoor::ASingleDoor()
 {
 	if (Mesh)
 	{
 		Mesh->SetGenerateOverlapEvents(true);
-		Mesh->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+		Mesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+		PullPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PullPoint"));
+		PullPoint->SetupAttachment(Mesh);
 	}
 }
 
@@ -28,6 +31,7 @@ void ASingleDoor::BeginPlay()
 			DynamicMaterial = UMaterialInstanceDynamic::Create(BaseM,this);
 			Mesh->SetMaterial(0, DynamicMaterial);
 		}
+		
 	}
 	
 	
@@ -46,12 +50,12 @@ void ASingleDoor::HandleInteraction_Implementation(APrototypeCharacter* Characte
 	if (!DoorTimelineFloatCurve || !Character || !bCanInteract)
 		return;
 	
-	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	Mesh->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECR_Overlap);
 
 	FTimerHandle InteractionTimer;
 	TWeakObjectPtr<ASingleDoor> WeakThis(this);
 	GetWorld()->GetTimerManager().SetTimer(InteractionTimer, FTimerDelegate::CreateLambda([WeakThis]() {
-		WeakThis->Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+		WeakThis->Mesh->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECR_Block);
 		}), 1.0f, false);
 
 	FVector DoorLocation = GetActorLocation();
@@ -90,7 +94,7 @@ void ASingleDoor::OnOverLapBegin(class UPrimitiveComponent* OverlappedComp, clas
 	if (OtherActor && (OtherActor != this))
 	{
 		APrototypeCharacter* Player = Cast<APrototypeCharacter>(OtherActor);
-		if (Player && Mesh)
+		if (Player && OtherComp == Player->GetCapsuleComponent())
 		{
 			DynamicMaterial->SetScalarParameterValue(FName("OpacityParam"),0.3f);
 		}
@@ -103,11 +107,23 @@ void ASingleDoor::OnOverLapEnd(class UPrimitiveComponent* OverlappedComp, class 
 	if (OtherActor && (OtherActor != this))
 	{
 		APrototypeCharacter* Player = Cast<APrototypeCharacter>(OtherActor);
-		if (Player && Mesh)
+		if (Player && OtherComp == Player->GetCapsuleComponent())
 		{
 			DynamicMaterial->SetScalarParameterValue(FName("OpacityParam"),1.0f);
 		}
 	}
+}
+
+FVector ASingleDoor::GetInteractionTargetLocation_Implementation() const
+{
+	if (DoorAnimationType == ESingleDoorAnimationType::SingleDoor_Push)
+	{
+		return Super::GetInteractionTargetLocation_Implementation();
+	}else
+	{
+		return PullPoint->GetComponentLocation();
+	}
+	
 }
 
 void ASingleDoor::UpdateTimelineComp(float Output)

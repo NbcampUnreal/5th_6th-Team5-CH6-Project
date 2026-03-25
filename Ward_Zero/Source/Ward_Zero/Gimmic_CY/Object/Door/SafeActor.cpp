@@ -1,6 +1,13 @@
 #include "Gimmic_CY/Object/Door/SafeActor.h"
 
+#include "NavModifierComponent.h"
 #include "Gimmic_CY/Items/ItemBase.h"
+#include "Kismet/GameplayStatics.h"
+#include "NavAreas/NavArea_Null.h"
+
+#if WITH_EDITOR
+#include "EngineUtils.h"
+#endif
 
 ASafeActor::ASafeActor()
 {
@@ -11,6 +18,9 @@ ASafeActor::ASafeActor()
 
     Door = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Door"));
     Door->SetupAttachment(Pivot);
+    
+    PullPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PullPoint"));
+    PullPoint->SetupAttachment(Door);
     
     
 }
@@ -47,24 +57,6 @@ void ASafeActor::UpdateTimelineComp(float Output)
     Pivot->SetRelativeRotation(NewRot);
 }
 
-void ASafeActor::DoorVanishMagic()
-{
-    bVanishMagic = !bVanishMagic;
-    OnConstruction(GetActorTransform());
-}
-
-void ASafeActor::SettingItemInSafeBox()
-{
-    for (AActor* Item : Items)
-    {
-       AItemBase* IB = Cast<AItemBase>(Item);
-        if (IB)
-        {
-            IB->bDefaultInteractable = false;
-        }
-    }
-}
-
 void ASafeActor::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
     if (!bCanInteract)
@@ -91,8 +83,9 @@ void ASafeActor::Activate()
     {
         DoorTimelineComp->Play();
         bIsOpen = true;
-        Mesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+        //Mesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Overlap);
     }
+    NavModifier->SetAreaClass(UNavArea_Null::StaticClass());
     SetBCanInteract(false);
 }
 
@@ -106,3 +99,61 @@ ESingleDoorAnimationType ASafeActor::GetSingleDoorAnimationType() const
 {
     return DoorAnimationType;
 }
+#if WITH_EDITOR
+void ASafeActor::DoorVanishMagic()
+{
+    bVanishMagic = !bVanishMagic;
+    OnConstruction(GetActorTransform());
+}
+
+void ASafeActor::SettingItemInSafeBox(ASafeActor* Obj)
+{
+    for (AActor* Item : Obj->Items)
+    {
+        AItemBase* IB = Cast<AItemBase>(Item);
+        if (IB)
+        {
+            IB->bDefaultInteractable = false;
+        }
+    }
+}
+
+void ASafeActor::RegistAllItemWithTag()
+{
+    TArray<AActor*> ItemsWithTag;
+    UGameplayStatics::GetAllActorsWithTag(GetWorld(),ItemTag,ItemsWithTag);
+    
+    for (AActor* Item : ItemsWithTag)
+    {
+        RegistItem(Item);
+       
+    }
+}
+
+void ASafeActor::RegistItem(AActor* item)
+{
+    
+    AItemBase* IB = Cast<AItemBase>(item);
+    if (IB)
+    {
+        Items.Add(IB);
+        IB->bDefaultInteractable = false;
+    }
+}
+
+void ASafeActor::SettingItemAllSafeBox()
+{
+    if (UWorld* World = GetWorld())
+    {
+        for (TActorIterator<ASafeActor> It(World); It; ++It)
+        {
+            ASafeActor* Obj = *It;
+            if (Obj)
+            {
+                SettingItemInSafeBox(Obj);
+            }
+        }
+    }
+    
+}
+#endif

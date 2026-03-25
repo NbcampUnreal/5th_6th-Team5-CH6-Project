@@ -59,6 +59,8 @@ public:
 	UPROPERTY()
 	class UMaterialInstanceDynamic* DynamicMaterial;
 
+	UPROPERTY(VisibleAnywhere)
+	USceneComponent* Root;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UBoxComponent* CollisionBox;
 
@@ -68,13 +70,16 @@ public:
 	UPROPERTY(EditInstanceOnly)
 	FGuid ActorID;
 	
-	UPROPERTY(EditInstanceOnly)
+	UPROPERTY(EditAnywhere,Category = "Setting")
 	bool bDefaultInteractable = true;
 	
 	virtual FVector GetIKTargetLocation_Implementation() const override;
 	
 	UPROPERTY(VisibleAnywhere)
 	USceneComponent* PickUpPoint;
+	
+	UPROPERTY(VisibleAnywhere,BlueprintReadWrite)
+	USceneComponent* PullPoint;
 	
 #if WITH_EDITOR
 	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
