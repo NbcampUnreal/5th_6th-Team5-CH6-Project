@@ -113,11 +113,14 @@ void ULoadWidget::OnCloseClicked()
 		SaveSub->HideLoadUI();
 	}
 
-	// PauseMenu 다시 표시
-	UPauseMenuSubsystem* PauseSys = LP->GetSubsystem<UPauseMenuSubsystem>();
-	if (PauseSys)
+	// 메인메뉴에서 열렸으면 PauseMenu 안 열기
+	if (!bOpenedFromMainMenu)
 	{
-		PauseSys->ShowPauseMenu();
+		UPauseMenuSubsystem* PauseSys = LP->GetSubsystem<UPauseMenuSubsystem>();
+		if (PauseSys)
+		{
+			PauseSys->ShowPauseMenu();
+		}
 	}
 }
 

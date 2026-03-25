@@ -25,7 +25,7 @@ public:
 	UGameOverWidget(const FObjectInitializer& ObjectInitializer)
 		: Super(ObjectInitializer)
 	{
-		bIsFocusable = true;
+		SetIsFocusable(true);
 	}
 
 	/** 페이드인 연출 재생 */

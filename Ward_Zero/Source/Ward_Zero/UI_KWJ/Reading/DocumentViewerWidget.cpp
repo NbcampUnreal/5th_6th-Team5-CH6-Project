@@ -11,9 +11,9 @@
 #include "Engine/LocalPlayer.h"
 #include "Ward_Zero.h"
 
-void UDocumentViewerWidget::NativeConstruct()
+void UDocumentViewerWidget::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
 	if (BTN_Back)
 	{
@@ -27,6 +27,17 @@ void UDocumentViewerWidget::NativeConstruct()
 	{
 		BTN_PrevPage->OnClicked.AddDynamic(this, &UDocumentViewerWidget::OnPrevPageClicked);
 	}
+
+	// 텍스트 자동 줄바꿈 설정
+	if (TXT_PageContent)
+	{
+		TXT_PageContent->SetAutoWrapText(true);
+	}
+}
+
+void UDocumentViewerWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
 
 	if (Panel_Viewer)
 	{

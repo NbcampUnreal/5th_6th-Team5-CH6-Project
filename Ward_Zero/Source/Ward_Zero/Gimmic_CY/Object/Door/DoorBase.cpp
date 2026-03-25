@@ -14,11 +14,12 @@ ADoorBase::ADoorBase()
 	DoorTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("DoorTimeline"));
 
 	NavModifier = CreateDefaultSubobject<UNavModifierComponent>(TEXT("NavModifier"));
-
+	NavModifier->SetAreaClass(UNavArea_Null::StaticClass());
+	NavModifier->SetCanEverAffectNavigation(true);
 	PickUpPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickUpPoint"));
 	PickUpPoint->SetupAttachment(Mesh);
 	PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
-	NavModifier->SetAreaClass(UNavArea_Null::StaticClass());
+	
 	
 	
 }
@@ -48,15 +49,11 @@ EInteractionType ADoorBase::GetInteractionType_Implementation() const
 
 void ADoorBase::OpenDoor()
 {
-	if (bIsOpen)
-		return;
 	NavModifier->SetAreaClass(UNavArea_Default::StaticClass());
 }
 
 void ADoorBase::CloseDoor()
 {
-	if (!bIsOpen)
-		return;
 	NavModifier->SetAreaClass(UNavArea_Null::StaticClass());
 }
 

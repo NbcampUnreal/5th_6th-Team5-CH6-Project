@@ -151,7 +151,7 @@ void UMainMenuWidget::OnLoadClicked()
 	USaveSubsystem* SaveSys = LP->GetSubsystem<USaveSubsystem>();
 	if (SaveSys)
 	{
-		SaveSys->ShowLoadUI();
+		SaveSys->ShowLoadUI(false, true);
 	}
 }
 

@@ -79,6 +79,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Load")
 	void SetCloseButtonVisible(bool bVisible);
 
+	/** 메인메뉴에서 열렸는지 표시 */
+	void SetOpenedFromMainMenu(bool bFromMainMenu) { bOpenedFromMainMenu = bFromMainMenu; }
+
 protected:
 
 	virtual void NativeOnInitialized() override;
@@ -101,4 +104,6 @@ private:
 
 	void OnSlotSelected(const FSaveFileInfo& Info);
 	void UpdateDetailPanel(const FSaveFileInfo& Info);
+
+	bool bOpenedFromMainMenu = false;
 };

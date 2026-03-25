@@ -91,5 +91,8 @@ protected:
     	
     	UFUNCTION(CallInEditor, Category = "Editor")
     	void RegenerateAllObjectIDsInLevel();
+	
+		UFUNCTION(CallInEditor, Category = "Editor")
+		void FindClosestSafeBoxAndRegist();
     #endif
 };

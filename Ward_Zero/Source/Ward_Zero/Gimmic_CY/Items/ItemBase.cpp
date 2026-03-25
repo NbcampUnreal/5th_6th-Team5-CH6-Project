@@ -3,6 +3,7 @@
 #include "WardGameInstanceSubsystem.h"
 #include "Components/BoxComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Gimmic_CY/Object/Door/SafeActor.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
 #if WITH_EDITOR
 #include "EngineUtils.h"
@@ -234,6 +235,39 @@ void AItemBase::RegenerateAllObjectIDsInLevel()
 			}
 		}
 		UE_LOG(LogTemp, Warning, TEXT("Total %d Object IDs have been successfully regenerated."), Count);
+	}
+}
+
+void AItemBase::FindClosestSafeBoxAndRegist()
+{
+	if (UWorld* World = GetWorld())
+	{
+		FVector ItemLocation = GetActorLocation();
+		float ClosestDistance = -1.0f;
+		ASafeActor* TargetSafeActor = nullptr;
+		for (TActorIterator<ASafeActor> It(World); It; ++It)
+		{
+			ASafeActor* Obj = *It;
+			if (Obj)
+			{
+				FVector SafeBoxLocation = Obj->GetActorLocation();
+				float dist = FVector::Dist(ItemLocation, SafeBoxLocation);
+				if (ClosestDistance <0)
+				{
+					ClosestDistance = dist;
+					TargetSafeActor = Obj;
+				}else if (dist < ClosestDistance)
+				{
+					ClosestDistance = dist;
+					TargetSafeActor = Obj;
+				}
+			}
+		}
+		if (TargetSafeActor)
+		{
+			TargetSafeActor->RegistItem(this);
+		}
+		
 	}
 }
 #endif

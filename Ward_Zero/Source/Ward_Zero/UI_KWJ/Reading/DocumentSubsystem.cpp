@@ -6,6 +6,7 @@
 #include "UI_KWJ/Reading/DocumentCollectionWidget.h"
 #include "WardGameInstanceSubsystem.h"
 #include "Blueprint/UserWidget.h"
+#include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/LocalPlayer.h"
 #include "Ward_Zero.h"
@@ -47,6 +48,9 @@ void UDocumentSubsystem::OpenDocument(UDocumentData* InDocument)
 
 	Viewer->OpenDocument(InDocument);
 
+	// 게임 정지
+	UGameplayStatics::SetGamePaused(GetWorld(), true);
+
 	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
 	if (PC)
 	{
@@ -64,6 +68,9 @@ void UDocumentSubsystem::CloseDocument()
 	{
 		ViewerWidget->CloseDocument();
 	}
+
+	// 게임 재개
+	UGameplayStatics::SetGamePaused(GetWorld(), false);
 
 	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
 	if (PC)

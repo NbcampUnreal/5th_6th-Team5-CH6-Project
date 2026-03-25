@@ -1,4 +1,6 @@
 #include "Gimmic_CY/Object/Lever/Lever.h"
+
+#include "Components/BoxComponent.h"
 #include "Gimmic_CY/Interface/InteractionBase.h"
 #include "Gimmic_CY/Object/Door/SingleDoor.h"
 
@@ -12,6 +14,7 @@ ALever::ALever()
 	PickUpPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickUpPoint"));
 	PickUpPoint->SetupAttachment(LeverHandle);
 	PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
+	CollisionBox->SetCanEverAffectNavigation(false);
 }
 
 void ALever::BeginPlay()
