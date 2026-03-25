@@ -80,21 +80,21 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	// IK를 끄는 Busy 조건 
 	bool bIsIKBusy = bIsEquipping || bIsReloading || bIsInteracting || bIsQuickTurning;
 	/*CalculateYawDir();*/
-	if (!bIsIKBusy && bIsGround)
-	{
-		if (GroundSpeed < 1.0f && !bIsAcceleration)
-		{
-			HandleTurnning();
-		}
-		else if (bIsTurn && bIsAcceleration)
-		{
-			StopTurnIfMove();
-		}
-	}
-	else if (bIsTurn)
-	{
-		StopTurnIfMove(); // 상태가 변하면 턴 강제 종료
-	}
+	//if (!bIsIKBusy && bIsGround)
+	//{
+	//	if (GroundSpeed < 1.0f && !bIsAcceleration)
+	//	{
+	//		HandleTurnning();
+	//	}
+	//	else if (bIsTurn && bIsAcceleration)
+	//	{
+	//		StopTurnIfMove();
+	//	}
+	//}
+	//else if (bIsTurn)
+	//{
+	//	StopTurnIfMove(); // 상태가 변하면 턴 강제 종료
+	//}
 
 	// SMG IK
 	float CurveValue = GetCurveValue(TEXT("HandIKLeftAlpha"));
@@ -197,27 +197,35 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 		if (ASingleDoor* Door = Cast<ASingleDoor>(InteractingActor))
 		{
-			LeverTargetLocation = Door->Mesh->GetSocketLocation(TEXT("HandleSocket"));
+			FVector HandleLoc = Door->Mesh->GetSocketLocation(TEXT("HandleSocket"));
+			PickupTargetLocation = HandleLoc;
+			LeverTargetLocation = HandleLoc;
 			LeverTargetRotation = Door->Mesh->GetSocketRotation(TEXT("HandleSocket"));
 
-			float LeverCurveValue = GetCurveValue(TEXT("LeverIK"));
-			LeverIKAlpha = FMath::FInterpTo(LeverIKAlpha, LeverCurveValue, DeltaSeconds, 15.0f);
+			float DoorIKCurve = GetCurveValue(TEXT("PickupIK"));
 
-			FVector NewLeverJointTarget;
+			PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, DoorIKCurve, DeltaSeconds, 15.0f);
+			LeverIKAlpha = 0.0f;
+
 			if (Door->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
 			{
-				NewLeverJointTarget = FVector(40.f, -80.f, 0.f);
+				// Pull
+				DynamicPickupJointTarget = FVector(40.f, 80.f, 0.f);
 			}
 			else
 			{
-				NewLeverJointTarget = FVector(25.f, 30.f, 0.f);
+				// Push
+				DynamicPickupJointTarget = FVector(25.f, 30.f, 0.f);
 			}
-			DynamicLeverJointTarget = FMath::VInterpTo(DynamicLeverJointTarget, NewLeverJointTarget, DeltaSeconds, 5.0f);
 		}
 	}
-	if (LeverIKAlpha > 0.1)
+	if (LeverIKAlpha > 0.1) // 레버 당길 때 
 	{
 		DrawDebugSphere(GetWorld(), LeverTargetLocation, 5.0f, 12, FColor::Green, false, -1.f);
+	}
+	if (PickupIKAlpha > 0.1) // 문을 열 때나 아이템 잡을 때
+	{
+		DrawDebugSphere(GetWorld(), PickupTargetLocation, 5.0f, 12, FColor::Blue, false, -1.f);
 	}
 }
 void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)

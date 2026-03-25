@@ -18,6 +18,15 @@ struct FSMGReloadAnimSet
 	GENERATED_BODY()
 
 public:
+	// 제가 제안한 생성자
+	FSMGReloadAnimSet()
+		: StandingReload(nullptr)
+		, StandingAimReload(nullptr)
+		, CrouchReload(nullptr)
+		, CrouchAimReload(nullptr)
+	{
+	}
+
 	UPROPERTY(EditAnywhere, Category = "Reload") UAnimMontage* StandingReload;
 	UPROPERTY(EditAnywhere, Category = "Reload") UAnimMontage* StandingAimReload;
 	UPROPERTY(EditAnywhere, Category = "Reload") UAnimMontage* CrouchReload;

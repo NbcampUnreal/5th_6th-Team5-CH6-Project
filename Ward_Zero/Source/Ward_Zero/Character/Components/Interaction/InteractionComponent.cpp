@@ -181,9 +181,11 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 
 void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)
 {
-	if (!OwnerCharacter) return;
+	if (!OwnerCharacter || !ItemActor) return;
 	if (OwnerCharacter->GetMesh()->GetAnimInstance()->IsAnyMontagePlaying() || CurrentInteractingItem) return;
 	if (CurrentInteractingItem) ConsumeInteractingItem();
+
+	ItemActor->SetActorEnableCollision(false);
 
 	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
 	{
