@@ -12,6 +12,7 @@
 #include "Gimmic_CY/Object/Door/SingleDoor.h"
 #include "Gimmic_CY/Object/Door/SafeActor.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "UI_KWJ/InteractionHint/InteractionHintSubsystem.h"
 
 UInteractionComponent::UInteractionComponent()
 {
@@ -61,6 +62,18 @@ void UInteractionComponent::TryInteract()
 			{
 				bIsValidInteractable = true;
 			}
+			else
+			{
+				EInteractionType Type = IInteractionBase::Execute_GetInteractionType(Actor);
+				if (Type == EInteractionType::Door || Type == EInteractionType::SingleDoor)
+				{
+					if (DistSq < MinLockedDistSq)
+					{
+						MinLockedDistSq = DistSq;
+						ClosestLockedDoor = Actor;
+					}
+				}
+			}
 		}
 
 		if (bIsValidInteractable)
@@ -90,7 +103,25 @@ void UInteractionComponent::TryInteract()
 		{
 			IInteractionBase::Execute_OnIneracted(ClosestInteractable, OwnerCharacter);
 		}
+		return;
 	}
+	if (ClosestLockedDoor)
+	{
+		APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController());
+		if (PC)
+		{
+			if (ULocalPlayer* LP = PC->GetLocalPlayer())
+			{
+				UInteractionHintSubsystem* HintSys = LP->GetSubsystem<UInteractionHintSubsystem>();
+				if (HintSys)
+				{
+					HintSys->ShowHint(2.0f);
+				}
+			}
+		}
+	}
+	AActor* ClosestLockedDoor = nullptr;
+	float MinLockedDistSq = MAX_FLT;
 }
 
 void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
