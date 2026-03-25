@@ -37,6 +37,8 @@ private:
 
 	bool bWasCrouched = false;
 
+	float CurrentSlopeOffset = 0.0f;
+
 	bool bIsInVent = false;
 
 	UPROPERTY()
