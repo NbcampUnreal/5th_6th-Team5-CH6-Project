@@ -22,7 +22,9 @@ void UStatusComponent::InitData(const UMonsterDataAsset* BaseData)
 		MonsterData = BaseData;
 		if (BaseData->StateConfigMap.Find(EMonsterMainState::Idle) != nullptr && BaseData->StateConfigMap.Find(EMonsterMainState::Combat) != nullptr)
 		{
-			Speed = FSpeed(BaseData->StateConfigMap[EMonsterMainState::Idle].MovementSpeed,BaseData->StateConfigMap[EMonsterMainState::Combat].MovementSpeed);
+			Speed = FSpeed(FMath::RandRange(BaseData->StateConfigMap[EMonsterMainState::Idle].MaxMovementSpeed,BaseData->StateConfigMap[EMonsterMainState::Idle].MinMovementSpeed),
+				FMath::RandRange(BaseData->StateConfigMap[EMonsterMainState::Combat].MaxMovementSpeed,BaseData->StateConfigMap[EMonsterMainState::Combat].MinMovementSpeed));
+			
 		}
 		Health = FHealth(BaseData->MaxHP,BaseData->MaxHP);
 	}

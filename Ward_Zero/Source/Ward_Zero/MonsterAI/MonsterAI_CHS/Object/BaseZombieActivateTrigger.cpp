@@ -18,6 +18,26 @@ ABaseZombieActivateTrigger::ABaseZombieActivateTrigger()
 	bHasTriggered = false;
 }
 
+void ABaseZombieActivateTrigger::WakeUpZombies()
+{
+	if (ZomIdx >= ZombieNum)
+	{
+		GetWorldTimerManager().ClearTimer(WaveTimerHandle);
+		return;
+	}
+	int StartIdx = ZomIdx;
+	int EndIdx = FMath::Clamp(ZomIdx + ZombieNumPerOneWave,ZomIdx,ZombieNum);
+	for (int i = StartIdx; i < EndIdx; ++i)
+	{
+		ABaseZombie* Zombie = Zombies[i];
+		if (Zombie)
+		{
+			Zombie->Activate();
+		}
+	}
+	ZomIdx = EndIdx;
+}
+
 void ABaseZombieActivateTrigger::BeginPlay()
 {
 	Super::BeginPlay();
@@ -25,6 +45,7 @@ void ABaseZombieActivateTrigger::BeginPlay()
 	{
 		TriggerVolume->OnComponentBeginOverlap.AddDynamic(this,&ABaseZombieActivateTrigger::OnTriggerOverlap);
 	}
+	ZombieNum = Zombies.Num();
 }
 
 void ABaseZombieActivateTrigger::OnTriggerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -35,14 +56,15 @@ void ABaseZombieActivateTrigger::OnTriggerOverlap(UPrimitiveComponent* Overlappe
 	if (OtherActor && OtherActor != this && OtherActor->ActorHasTag(TEXT("Player")))
 	{
 		bHasTriggered = true;
+		WakeUpZombies();
+		GetWorldTimerManager().SetTimer(
+			WaveTimerHandle, 
+			this, 
+			&ABaseZombieActivateTrigger::WakeUpZombies, 
+			WaveInterval, 
+		true 
+	);
 		
-		for (ABaseZombie* Zombie: Zombies)
-		{
-			if (Zombie)
-			{
-				Zombie->Activate();
-			}
-		}
 		TriggerVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 }

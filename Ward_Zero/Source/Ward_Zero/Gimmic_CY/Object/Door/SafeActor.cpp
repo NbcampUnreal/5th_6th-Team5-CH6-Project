@@ -1,9 +1,12 @@
 #include "Gimmic_CY/Object/Door/SafeActor.h"
 
 #include "NavModifierComponent.h"
+#include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Gimmic_CY/Items/ItemBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "NavAreas/NavArea_Null.h"
+#include "Components/CapsuleComponent.h"
+
 
 #if WITH_EDITOR
 #include "EngineUtils.h"
@@ -30,6 +33,19 @@ void ASafeActor::BeginPlay()
     Super::BeginPlay();
 
     InitialRotation = Pivot->GetRelativeRotation();
+    if (Door)
+    {
+        InitialRotation = Door->GetRelativeRotation();
+        Door->OnComponentBeginOverlap.AddDynamic(this, &ASafeActor::OnOverLapBegin);
+        Door->OnComponentEndOverlap.AddDynamic(this, &ASafeActor::OnOverLapEnd);
+        UMaterialInterface* BaseM = Door->GetMaterial(0);
+        if (BaseM)
+        {
+            DynamicMaterial = UMaterialInstanceDynamic::Create(BaseM,this);
+            Door->SetMaterial(0, DynamicMaterial);
+        }
+		
+    }
     
 }
 
@@ -81,12 +97,45 @@ void ASafeActor::Activate()
 
     if (!bIsOpen)
     {
+        Door->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECR_Overlap);
+
+        FTimerHandle InteractionTimer;
+        TWeakObjectPtr<ASafeActor> WeakThis(this);
+        GetWorld()->GetTimerManager().SetTimer(InteractionTimer, FTimerDelegate::CreateLambda([WeakThis]() {
+            WeakThis->Door->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECR_Block);
+            }), 1.0f, false);
         DoorTimelineComp->Play();
         bIsOpen = true;
         //Mesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Overlap);
     }
     NavModifier->SetAreaClass(UNavArea_Null::StaticClass());
     SetBCanInteract(false);
+}
+
+void ASafeActor::OnOverLapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor,
+    class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+    if (OtherActor && (OtherActor != this))
+    {
+        APrototypeCharacter* Player = Cast<APrototypeCharacter>(OtherActor);
+        if (Player && OtherComp == Player->GetCapsuleComponent())
+        {
+            DynamicMaterial->SetScalarParameterValue(FName("OpacityParam"),0.3f);
+        }
+    }
+}
+
+void ASafeActor::OnOverLapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor,
+    class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+    if (OtherActor && (OtherActor != this))
+    {
+        APrototypeCharacter* Player = Cast<APrototypeCharacter>(OtherActor);
+        if (Player && OtherComp == Player->GetCapsuleComponent())
+        {
+            DynamicMaterial->SetScalarParameterValue(FName("OpacityParam"),1.0f);
+        }
+    }
 }
 
 EInteractionType ASafeActor::GetInteractionType_Implementation() const
