@@ -116,6 +116,7 @@ void UPlayerStatusComponent::SpawnHealItemVisual(USkeletalMeshComponent* Mesh)
 	{
 		CurrHealItem->AttachToComponent(Mesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("HealItemSocket"));
 		CurrHealItem->SetActorRelativeScale3D(FVector(0.5f, 0.5f, 0.5f));
+		CurrHealItem->SetActorEnableCollision(false);
 
 		IInteractionBase* Interactable = Cast<IInteractionBase>(CurrHealItem);
 		if (Interactable)
@@ -138,7 +139,7 @@ void UPlayerStatusComponent::DestroyHealItemVisual()
 	{
 		CurrHealItem->SetActorEnableCollision(false);
 		CurrHealItem->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-		CurrHealItem = nullptr;
+		CurrHealItem->SetActorHiddenInGame(true);
 	}
 }
 

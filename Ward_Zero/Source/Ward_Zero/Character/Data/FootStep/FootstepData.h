@@ -9,9 +9,15 @@ struct FFootstepInfo
 {
     GENERATED_BODY()
 
+    FFootstepInfo()
+        : StepSound(nullptr)
+        , NoiseLoudness(0.4f)
+        , NoiseRange(1000.0f)
+    {}
+
     UPROPERTY(EditAnywhere) USoundBase* StepSound;
-    UPROPERTY(EditAnywhere) float NoiseLoudness = 0.4f;
-    UPROPERTY(EditAnywhere) float NoiseRange = 1000.0f;
+    UPROPERTY(EditAnywhere) float NoiseLoudness; 
+    UPROPERTY(EditAnywhere) float NoiseRange;
 };
 
 UCLASS()

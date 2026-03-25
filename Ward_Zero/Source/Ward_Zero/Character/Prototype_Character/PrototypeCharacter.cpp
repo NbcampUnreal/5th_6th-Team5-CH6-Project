@@ -257,7 +257,6 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 {
 	if (CombatComp && CombatComp->IsAiming()) return;
 	if (StatusComp && !StatusComp->CanSprint()) return;
-	if (GetIsReloading()) return;
 
 	FVector LastInput = GetLastMovementInputVector();
 	FVector LocalInput = GetActorRotation().UnrotateVector(LastInput);
@@ -768,7 +767,10 @@ void APrototypeCharacter::StartHeal()
 	if (AnimData && AnimData->HealMontage)
 	{
 		if (bIsRunning) EndRunning(FInputActionValue());
-
+		if (CameraBoom)
+		{
+			CameraBoom->bDoCollisionTest = false;
+		}
 		PlayAnimMontage(AnimData->HealMontage);
 		StatusComp->HealingItemCount--;
 		if (CombatComp) CombatComp->StopFire();

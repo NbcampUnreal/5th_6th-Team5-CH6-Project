@@ -209,7 +209,34 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
         return; 
     }
 
-    // 부드러운 보간 적용 
+    float TargetSlopeOffset = 0.0f;
+
+    if (!Combat->IsAiming() && Speed > 10.0f)
+    {
+        if (UCharacterMovementComponent* MovementComp = OwnerCharacter->GetCharacterMovement())
+        {
+            if (MovementComp->IsMovingOnGround())
+            {
+                FVector FloorNormal = MovementComp->CurrentFloor.HitResult.ImpactNormal;
+                FVector CameraForward = MainCamera->GetForwardVector();
+                CameraForward.Z = 0.0f;
+                CameraForward.Normalize();
+
+                float SlopeDot = FVector::DotProduct(FloorNormal, CameraForward);
+
+                if (SlopeDot < -0.05f)
+                {
+                    TargetSlopeOffset = SlopeDot * 150.0f;
+                    TargetSlopeOffset = FMath::Clamp(TargetSlopeOffset, -40.0f, 0.0f);
+                }
+            }
+        }
+    }
+
+    CurrentSlopeOffset = FMath::FInterpTo(CurrentSlopeOffset, TargetSlopeOffset, DeltaTime, 4.0f);
+
+    TargetSocketOffset.Z += CurrentSlopeOffset;
+
     float Interp = CameraData->InterpSpeed;
     CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, TargetArmLength, DeltaTime, Interp);
     MainCamera->FieldOfView = FMath::FInterpTo(MainCamera->FieldOfView, TargetFOV, DeltaTime, Interp);
