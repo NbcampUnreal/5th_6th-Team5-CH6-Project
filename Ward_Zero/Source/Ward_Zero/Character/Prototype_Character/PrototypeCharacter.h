@@ -112,6 +112,7 @@ public:
 	virtual bool GetbIsWeaponDrawn() const override; 
 	virtual bool GetIsInjured() const override;
 	virtual void ExecuteHealPoint() override;
+	virtual bool GetIsInteracting() const override;
 #pragma endregion
 
 	void Move(const FInputActionValue& Value);
@@ -235,4 +236,12 @@ public:
 
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+	bool bIsInVent = false;
+
+	UFUNCTION()
+	void SetIsVent(bool IsVent) { bIsInVent = IsVent;}
+
+	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+	virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
 };

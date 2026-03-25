@@ -127,7 +127,6 @@ void UPlayerStatusComponent::SpawnHealItemVisual(USkeletalMeshComponent* Mesh)
 		AHealItemActor* HealProp = Cast<AHealItemActor>(CurrHealItem);
 		if (HealProp)
 		{
-			if (HealProp->MarkerPillar) HealProp->MarkerPillar->SetHiddenInGame(true);
 			if (HealProp->InteractWidget) HealProp->InteractWidget->SetVisibility(false);
 		}
 	}

@@ -10,6 +10,7 @@
 #include "GameFramework/Character.h"
 #include "Weapon/Weapon.h"
 #include "Weapon/Data/WeaponData.h"
+#include "Kismet/GameplayStatics.h"
 
 UFlashlightComponent::UFlashlightComponent()
 {
@@ -100,6 +101,8 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 	bool bIsUnarmed = !CachedCombatComp->IsWeaponDrawn();
 	bool bIsPistol = AnimIF->GetIsPistolEquipped();
 	bool bIsAiming = AnimIF->GetIsAiming();
+	bool bIsInteracting = AnimIF->GetIsInteracting();
+	bool bIsVentMode = Player->bIsInVent && Player->bIsCrouched;
 
 	USpotLightComponent* ActiveSpot = nullptr;
 	float BaseIntensity = TargetData->Intensity;
@@ -128,6 +131,11 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 
 		// 최종 타겟 = 몸 방향 + 제한된 카메라 차이값
 		TargetRotation = ActorRot + DeltaRot;
+
+		if (bIsVentMode && AnimIF->GetIsSMGEquipped())
+		{
+			TargetRotation.Pitch += 15.0f;
+		}
 	}
 	if (DeltaTime <= 0.0f) CurrentLightRotation = TargetRotation;
 	else CurrentLightRotation = FMath::RInterpTo(CurrentLightRotation, TargetRotation, DeltaTime, 20.0f);
@@ -161,7 +169,7 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 	else
 	{
 		// SMG 상태이거나 "권총이면서 조준 중"일 때 무기의 라이트 사용
-		if ((AnimIF->GetIsSMGEquipped() || (bIsPistol && bIsAiming)) && CurrentWeapon && CurrentWeapon->SMGSpotLight)
+		if (!bIsInteracting && (AnimIF->GetIsSMGEquipped() || (bIsPistol && bIsAiming)) && CurrentWeapon && CurrentWeapon->SMGSpotLight)
 		{
 			FlashLightActor->SetActorHiddenInGame(true);
 			FlashLightSpot->SetVisibility(false);
@@ -190,14 +198,20 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 		{
 			if (CurrentWeapon && CurrentWeapon->SMGSpotLight) CurrentWeapon->SMGSpotLight->SetVisibility(false);
 
-			bool bShouldHide = (AnimIF->GetIsReloading() || AnimIF->IsEquipping()) && !bIsUnarmed;
+			bool bShouldHide = (AnimIF->GetIsReloading() || AnimIF->IsEquipping() || bIsInteracting) && !bIsUnarmed;
+
+			bool bShowMesh = bIsUnarmed;
+			if (bIsVentMode && bIsUnarmed)
+			{
+				bShowMesh = false; // 환풍구 안에서는 Unarmed용 손전등 숨기기 
+			}
+
 			FName SocketName = (bIsPistol) ? TEXT("BodyLightSocket") : TEXT("FlashLightSocket_Normal");
 
 			FlashLightActor->AttachToComponent(Player->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
 			FlashLightActor->SetActorHiddenInGame(false);
 			if (FlashLightMesh)
 			{
-				bool bShowMesh = bIsUnarmed;
 				FlashLightMesh->SetVisibility(bShowMesh && !bShouldHide);
 				FlashLightMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), bShowMesh ? TargetEmissive : 0.0f);
 			}
@@ -261,7 +275,11 @@ void UFlashlightComponent::ToggleFlashlight()
     if (!Player || !CachedCombatComp) return;
 
     bIsUseFlashlight = !bIsUseFlashlight;
-
+	USoundBase* SoundToPlay = bIsUseFlashlight ? DefaultFlashlightData->OnSound : DefaultFlashlightData->OffSound;
+	if (SoundToPlay)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, SoundToPlay, GetOwner()->GetActorLocation());
+	}
     if (!CachedCombatComp->IsWeaponDrawn())
     {
         UAnimMontage* MontageToPlay = bIsUseFlashlight ? RaiseLightMontage : LowerLightMontage;

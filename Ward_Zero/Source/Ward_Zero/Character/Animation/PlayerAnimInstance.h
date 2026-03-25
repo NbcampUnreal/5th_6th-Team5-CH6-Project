@@ -227,6 +227,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
 	FVector LeverTargetLocation;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
+	FRotator LeverTargetRotation;
+
 	// IK Joint 
 	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
 	FVector DynamicLeverJointTarget;

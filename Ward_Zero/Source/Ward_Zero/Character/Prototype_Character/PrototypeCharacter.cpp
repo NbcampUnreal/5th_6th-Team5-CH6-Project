@@ -572,6 +572,12 @@ float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 	// 데미지 적용 (HP 감소 및 사망 판정)
 	float ActualDamage = StatusComp->ApplyDamage(DamageAmount);
 
+	// 피격 사운드 재생
+	if (!StatusComp->IsDead() && StatusData && StatusData->HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, StatusData->HitSound, GetActorLocation());
+	}
+
 	// 피격 화면 흔들림
 	if (HitCameraShakeClass)
 	{
@@ -640,6 +646,11 @@ void APrototypeCharacter::PlayHitReaction(const FVector& ToAttackerDir)
 
 void APrototypeCharacter::PlayDeathReaction(const FVector& ToAttackerDir)
 {
+	// 사망 사운드 재생
+	if (StatusData && StatusData->DeathSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, StatusData->DeathSound, GetActorLocation());
+	}
 	EPlayerHitDirection HitDir = GetHitDirection(ToAttackerDir);
 	UAnimMontage* MontageToPlay = (AnimData) ? AnimData->DeathMontages.FindRef(HitDir) : nullptr;
 
@@ -916,6 +927,11 @@ void APrototypeCharacter::ExecuteHealPoint()
 	}
 }
 
+bool APrototypeCharacter::GetIsInteracting() const
+{
+	return bIsInteractingDoor;
+}
+
 bool APrototypeCharacter::IsEquipping() const
 {
 	if (!CombatComp) return false;
@@ -987,5 +1003,23 @@ void APrototypeCharacter::AbortAllActions()
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		EnableInput(PC);
+	}
+}
+
+void APrototypeCharacter::NotifyActorBeginOverlap(AActor* OtherActor)
+{
+	Super::NotifyActorBeginOverlap(OtherActor);
+	if (OtherActor && OtherActor->ActorHasTag(TEXT("VentBegin")))
+	{
+		bIsInVent = true;
+	}
+}
+
+void APrototypeCharacter::NotifyActorEndOverlap(AActor* OtherActor)
+{
+	Super::NotifyActorEndOverlap(OtherActor);
+	if (OtherActor && OtherActor->ActorHasTag(TEXT("VentEnd")))
+	{
+		bIsInVent = false;
 	}
 }

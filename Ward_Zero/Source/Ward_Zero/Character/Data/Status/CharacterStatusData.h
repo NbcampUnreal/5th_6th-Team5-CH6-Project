@@ -24,4 +24,10 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Heath|Heal")
     float HealAmount = 30.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Sound")
+    TObjectPtr<USoundBase> HitSound;
+
+    UPROPERTY(EditAnywhere, Category = "Sound")
+    TObjectPtr<USoundBase> DeathSound;
 };

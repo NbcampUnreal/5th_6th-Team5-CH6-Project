@@ -49,4 +49,11 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Focus Settings")
     float CloseRangeIntensityMultiplier = 1.5f;
+
+    UPROPERTY(EditAnywhere, Category = "Sound")
+    USoundBase* OnSound;
+
+
+    UPROPERTY(EditAnywhere, Category = "Sound")
+    USoundBase* OffSound;
 };

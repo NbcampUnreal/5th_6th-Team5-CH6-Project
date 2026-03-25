@@ -37,6 +37,8 @@ private:
 
 	bool bWasCrouched = false;
 
+	bool bIsInVent = false;
+
 	UPROPERTY()
 	TObjectPtr<class UPlayerCombatComponent> CachedCombatComp; 
 };

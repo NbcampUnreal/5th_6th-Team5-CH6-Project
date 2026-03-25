@@ -10,6 +10,7 @@
 #include "Gimmic_CY/Object/Lever/Lever.h"
 #include "Gimmic_CY/Items/ItemBase.h"
 #include "Gimmic_CY/Object/Door/SingleDoor.h"
+#include "Gimmic_CY/Object/Door/SafeActor.h"
 #include "GameFramework/SpringArmComponent.h"
 
 UInteractionComponent::UInteractionComponent()
@@ -103,11 +104,21 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 	LastInteractedDoorActor = DoorActor;
 	LastDoorInteractTime = CurrentTime;
 
+	ASingleDoor* SingleDoor = Cast<ASingleDoor>(DoorActor);
+	ASafeActor* SafeDoor = Cast<ASafeActor>(DoorActor);
+
+	if (!SingleDoor && !SafeDoor)
+	{
+		IInteractionBase::Execute_OnIneracted(DoorActor, OwnerCharacter);
+		return;
+	}
+
 	if (bIsInteractingDoor) return;
 	bIsInteractingDoor = true;
 	OwnerCharacter->bIsInteractingDoor = true;
 
 	PendingDoorActor = DoorActor;
+	CurrentInteractingItem = DoorActor;
 	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(PendingDoorActor);
 
 	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
@@ -119,54 +130,51 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 	// Push/Pull 에 따른 워핑 로직 분리
 	if (OwnerCharacter->MotionWarpingComp)
 	{
-		ASingleDoor* SingleDoor = Cast<ASingleDoor>(DoorActor);
-
-		// 문의 실제 정면 방향 <= Mesh 기즈모는 반대여서 손잡이 위치를 기준. 
-		FVector HandleLocation = CurrentPickupLocation;
-		FVector CharacterLocation = OwnerCharacter->GetActorLocation();
-
-		// 평면상의 방향 벡터 (캐릭터 -> 손잡이)
-		FVector DirToHandle = (HandleLocation - CharacterLocation).GetSafeNormal2D();
-
 		FVector TargetWarpLocation;
 		FRotator TargetWarpRotation;
 
-		if (SingleDoor && SingleDoor->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
+		UAnimMontage* SelectedMontage = nullptr;
+		if (SingleDoor)
 		{
-			/** * PULL(당기기): 손잡이에서 캐릭터 쪽으로 90유닛 후퇴
-			 * + 문이 열릴 때 몸에 걸리지 않게 살짝 옆으로 비켜남 (SideOffset)
-			 */
-			FVector PullDir = -DirToHandle; // 캐릭터가 물러날 방향
-			FVector SideDir = FVector::CrossProduct(PullDir, FVector::UpVector); // 옆 방향
+			if (SingleDoor->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
+			{
+				TargetWarpLocation = SingleDoor->PullPoint->GetComponentLocation();
+				TargetWarpRotation = SingleDoor->PullPoint->GetComponentRotation();
+				SelectedMontage = OwnerCharacter->AnimData->DoorPullOpenMontage;
+			}
+			else
+			{
+				FVector HandleLocation = CurrentPickupLocation;
+				FVector CharacterLocation = OwnerCharacter->GetActorLocation();
 
-			TargetWarpLocation = HandleLocation + (PullDir * 95.0f) + (SideDir * 20.0f);
-			TargetWarpRotation = (HandleLocation - TargetWarpLocation).Rotation();
+				// 캐릭터에서 손잡이를 바라보는 방향 계산
+				FVector DirToHandle = (HandleLocation - CharacterLocation).GetSafeNormal2D();
+
+				// 손잡이 정면에서 85유닛 떨어진 곳을 타겟으로 설정
+				TargetWarpLocation = HandleLocation - (DirToHandle * 85.0f);
+				TargetWarpRotation = DirToHandle.Rotation();
+				SelectedMontage = OwnerCharacter->AnimData->DoorPushOpenMontage;
+			}
 		}
-		else
+		// 금고 - Pull
+		else if (SafeDoor)
 		{
-			/** * PUSH(밀기): 손잡이 정면에서 적정 거리 유지
-			 */
-			TargetWarpLocation = HandleLocation - (DirToHandle * 85.0f);
-			TargetWarpRotation = DirToHandle.Rotation();
+			// 금고에 설정된 타겟 위치(Pull Point) 사용
+			TargetWarpLocation = CurrentPickupLocation;
+			TargetWarpRotation = (OwnerCharacter->GetActorLocation() - DoorActor->GetActorLocation()).Rotation();
+			SelectedMontage = OwnerCharacter->AnimData->DoorPullOpenMontage;
 		}
 
-		// 수평 고정
 		TargetWarpRotation.Pitch = 0.f;
 		TargetWarpRotation.Roll = 0.f;
 
 		OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("DoorWarp"), TargetWarpLocation, TargetWarpRotation);
-	}
 
-	// 몽타주 분기 및 실행
-	UAnimMontage* SelectedMontage = OwnerCharacter->AnimData->DoorPushOpenMontage;
-	if (ASingleDoor* SingleDoor = Cast<ASingleDoor>(DoorActor))
-	{
-		SelectedMontage = (SingleDoor->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
-			? OwnerCharacter->AnimData->DoorPullOpenMontage
-			: OwnerCharacter->AnimData->DoorPushOpenMontage;
+		if (SelectedMontage)
+		{
+			OwnerCharacter->PlayAnimMontage(SelectedMontage);
+		}
 	}
-
-	if (SelectedMontage) OwnerCharacter->PlayAnimMontage(SelectedMontage);
 	IInteractionBase::Execute_OnIneracted(DoorActor, OwnerCharacter);
 }
 

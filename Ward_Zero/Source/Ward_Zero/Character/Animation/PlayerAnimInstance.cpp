@@ -65,6 +65,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		CombatComp = AnimInterface->GetCombatComp();
 		bIsWeaponDrawn = AnimInterface->GetbIsWeaponDrawn();
 		bIsInjured = AnimInterface->GetIsInjured();
+		bIsInteracting = AnimInterface->GetIsInteracting();
 
 		WeaponMesh = AnimInterface->GetEquippedWeaponMesh();
 		EquippedWeapon = AnimInterface->GetEquippedWeapon();
@@ -185,7 +186,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 			}
 
 			// 조인트(팔꿈치) 위치 업데이트
-			FVector NewLeverJointTarget = FVector(-15.f, 30.f, 0.f);
+			FVector NewLeverJointTarget = FVector(-15.f, -70.f, 0.f);
 			DynamicLeverJointTarget = FMath::VInterpTo(DynamicLeverJointTarget, NewLeverJointTarget, DeltaSeconds, 5.0f);
 		}
 	}
@@ -197,13 +198,15 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		if (ASingleDoor* Door = Cast<ASingleDoor>(InteractingActor))
 		{
 			LeverTargetLocation = Door->Mesh->GetSocketLocation(TEXT("HandleSocket"));
+			LeverTargetRotation = Door->Mesh->GetSocketRotation(TEXT("HandleSocket"));
+
 			float LeverCurveValue = GetCurveValue(TEXT("LeverIK"));
 			LeverIKAlpha = FMath::FInterpTo(LeverIKAlpha, LeverCurveValue, DeltaSeconds, 15.0f);
 
 			FVector NewLeverJointTarget;
 			if (Door->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
 			{
-				NewLeverJointTarget = FVector(-40.f, -80.f, -10.f);
+				NewLeverJointTarget = FVector(40.f, -80.f, 0.f);
 			}
 			else
 			{
@@ -211,6 +214,10 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 			}
 			DynamicLeverJointTarget = FMath::VInterpTo(DynamicLeverJointTarget, NewLeverJointTarget, DeltaSeconds, 5.0f);
 		}
+	}
+	if (LeverIKAlpha > 0.1)
+	{
+		DrawDebugSphere(GetWorld(), LeverTargetLocation, 5.0f, 12, FColor::Green, false, -1.f);
 	}
 }
 void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)

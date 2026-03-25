@@ -42,4 +42,5 @@ public:
     virtual bool GetbIsWeaponDrawn() const = 0;
     virtual bool GetIsInjured() const = 0;
     virtual void ExecuteHealPoint() = 0;
+    virtual bool GetIsInteracting() const = 0;
 };

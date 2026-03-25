@@ -6,6 +6,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Character/Data/Camera/CameraData.h"
 #include "Character/Components/Interaction/InteractionComponent.h"
+#include "Weapon/Weapon.h"
+#include "Components/CapsuleComponent.h"
 
 UPlayerCameraComponent::UPlayerCameraComponent() { PrimaryComponentTick.bCanEverTick = true; }
 
@@ -43,11 +45,87 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
     UPlayerCombatComponent* Combat = CachedCombatComp;
     float Speed = OwnerCharacter->GetVelocity().Size();
 
+    // 환풍구 1인칭 모드 판정
+    bool bIsInVentNow = OwnerCharacter->bIsInVent;
+
+    // 환풍구 진입 순간
+    if (bIsInVentNow && !bIsInVent)
+    {
+        // 부모 Capsule -> Head Bone 
+        CameraBoom->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+        CameraBoom->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("head"));
+
+        CameraBoom->bDoCollisionTest = false;
+        // 모든 오프셋을 0으로 
+        CameraBoom->TargetArmLength = 0.0f;
+        CameraBoom->SocketOffset = FVector::ZeroVector;
+        CameraBoom->TargetOffset = FVector::ZeroVector;
+        CameraBoom->SetRelativeLocation(FVector::ZeroVector);
+        CameraBoom->SetRelativeRotation(FRotator::ZeroRotator);
+
+        OwnerCharacter->GetMesh()->SetOwnerNoSee(true);
+
+        TArray<USceneComponent*> AttachedComps;
+        OwnerCharacter->GetMesh()->GetChildrenComponents(true, AttachedComps);
+        for (USceneComponent* Comp : AttachedComps)
+        {
+            UMeshComponent* MeshComp = Cast<UMeshComponent>(Comp);
+            if (MeshComp)
+            {
+                MeshComp->SetOwnerNoSee(true);
+            }
+        }
+
+        if (Combat->GetEquippedWeapon())
+            Combat->GetEquippedWeapon()->WeaponMesh->SetOwnerNoSee(true);
+
+        bIsInVent = true;
+    }
+    // 환풍구 나가는 순간 트리거 박스 
+    else if (!bIsInVentNow && bIsInVent)
+    {
+        // 부모 Head Bone -> Capsule 
+        CameraBoom->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+        CameraBoom->AttachToComponent(OwnerCharacter->GetCapsuleComponent(), FAttachmentTransformRules::KeepWorldTransform);
+
+        CameraBoom->bDoCollisionTest = true;
+        CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f)); 
+        CameraBoom->SetRelativeRotation(FRotator::ZeroRotator);
+        CameraBoom->SocketOffset = OriginalSocketOffset;
+        CameraBoom->TargetOffset = OriginalTargetOffset;
+
+        OwnerCharacter->GetMesh()->SetOwnerNoSee(false);
+
+        TArray<USceneComponent*> AttachedComps;
+        OwnerCharacter->GetMesh()->GetChildrenComponents(true, AttachedComps);
+        for (USceneComponent* Comp : AttachedComps)
+        {
+            UMeshComponent* MeshComp = Cast<UMeshComponent>(Comp);
+            if (MeshComp)
+            {
+                MeshComp->SetOwnerNoSee(false);
+            }
+        }
+        if (Combat->GetEquippedWeapon() && Combat->GetEquippedWeapon()->WeaponMesh)
+        {
+            Combat->GetEquippedWeapon()->WeaponMesh->SetOwnerNoSee(false);
+        }
+        bIsInVent = false;
+    }
 
     // 목표 수치 초기화 
     float TargetArmLength = CameraData->DefaultArmLength;
     float TargetFOV = CameraData->DefaultFOV;
     FVector TargetSocketOffset = CameraData->DefaultSocketOffset;
+
+    bool bIsFPSMode = OwnerCharacter->bIsCrouched && OwnerCharacter->bIsInVent;
+
+    if (bIsFPSMode)
+    {
+        TargetArmLength = 0.0f; 
+        TargetSocketOffset = FVector::ZeroVector;
+        TargetFOV = 90.0f; 
+    }
 
     // 조준 상태 판별
     if (Combat->IsAiming())
@@ -123,6 +201,13 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
         else { BobTime = FMath::FInterpTo(BobTime, 0.0f, DeltaTime, 5.0f); }
     }
 
+    if (bIsFPSMode)
+    {
+        CameraBoom->TargetArmLength = 0.0f;
+        TargetSocketOffset = FVector(10.0f, 0.0f, 0.0f);
+        TargetFOV = 90.0f;
+        return; 
+    }
 
     // 부드러운 보간 적용 
     float Interp = CameraData->InterpSpeed;
