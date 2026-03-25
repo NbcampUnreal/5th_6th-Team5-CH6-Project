@@ -29,7 +29,10 @@ struct FMonsterStateSettings
 	GENERATED_BODY()
 	
 	UPROPERTY(EditAnywhere)
-	float MovementSpeed = 600.f;
+	float MaxMovementSpeed = 300.f;
+	
+	UPROPERTY(EditAnywhere)
+	float MinMovementSpeed = 150.f;
 	
 	UPROPERTY(EditAnywhere)
 	class USoundBase* StateLoopSound = nullptr;

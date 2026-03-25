@@ -384,7 +384,8 @@ void ABaseZombie::OnConstruction(const FTransform& Transform)
 		{
 			if (MonsterData->StateConfigMap.Find(EMonsterMainState::Idle) != nullptr)
 			{
-				GetCharacterMovement()->MaxWalkSpeed = MonsterData->StateConfigMap[EMonsterMainState::Idle].MovementSpeed;
+				GetCharacterMovement()->MaxWalkSpeed = FMath::RandRange(MonsterData->StateConfigMap[EMonsterMainState::Idle].MaxMovementSpeed,MonsterData->StateConfigMap[EMonsterMainState::Idle].MinMovementSpeed);
+				
 			}
 		}
 	}
@@ -446,7 +447,7 @@ void ABaseZombie::HandleStateChange(EMonsterMainState NewState)
 	{
 		if (GetCharacterMovement())
 		{
-			GetCharacterMovement()->MaxWalkSpeed = MonsterData->StateConfigMap[NewState].MovementSpeed;
+			GetCharacterMovement()->MaxWalkSpeed = FMath::RandRange(MonsterData->StateConfigMap[NewState].MaxMovementSpeed,MonsterData->StateConfigMap[NewState].MinMovementSpeed);
 		}
 		
 		if (Settings->StateLoopSound && AudioLoopComponent->GetSound() != Settings->StateLoopSound)

@@ -15,16 +15,29 @@ class WARD_ZERO_API ABaseZombieActivateTrigger : public AActor
 
 public:
 	ABaseZombieActivateTrigger();
+	
+	UFUNCTION(BlueprintCallable)
+	void WakeUpZombies();
 
+	FTimerHandle WaveTimerHandle;
+	
 protected:
 	virtual void BeginPlay() override;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trigger")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UBoxComponent* TriggerVolume;
 	
-	UPROPERTY(EditInstanceOnly, Category = "Trigger Setup")
+	UPROPERTY(EditInstanceOnly, Category = "Setting")
 	TArray<ABaseZombie*> Zombies;
 	
+	UPROPERTY(EditInstanceOnly, Category = "Setting")
+	int ZombieNumPerOneWave = 2;
+	
+	UPROPERTY(EditInstanceOnly, Category = "Setting")
+	float WaveInterval = 5.0f;
+	
+	int ZomIdx = 0;
+	int ZombieNum = 0;
 	bool bHasTriggered;
 	
 	UFUNCTION()

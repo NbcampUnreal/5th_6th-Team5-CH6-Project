@@ -57,6 +57,11 @@ public:
 	
 	virtual void Activate() override;
 	
+	UFUNCTION()
+	void OnOverLapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION()
+	void OnOverLapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	
 	virtual EInteractionType GetInteractionType_Implementation() const override;
 	ESingleDoorAnimationType GetSingleDoorAnimationType() const;
 	UPROPERTY(EditInstanceOnly, Category = "Editor")

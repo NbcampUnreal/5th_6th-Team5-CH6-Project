@@ -23,6 +23,8 @@ public:
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	virtual EInteractionType GetInteractionType_Implementation() const override;
+	
+	UFUNCTION(BlueprintCallable)
 	ESingleDoorAnimationType GetSingleDoorAnimationType() const;
 
 	
