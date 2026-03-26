@@ -24,6 +24,7 @@ UWardSaveGame::UWardSaveGame()
 	// 파트 진행도
 	CurrentPart = 0;
 	CurrentSubPart = 0;
+	StageIndex = 0;
 
 	// 오브젝트 상태 (TMap은 빈 상태로 초기화됨)
 }

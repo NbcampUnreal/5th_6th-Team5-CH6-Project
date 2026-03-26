@@ -105,6 +105,10 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "SaveData|Progress")
 	int32 CurrentSubPart = 0;
 
+	/** 스테이지 인덱스 (0=지하1층, 1=1층, 2=2층) */
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Progress")
+	int32 StageIndex = 0;
+
 	// ══════════════════════════════════════════
 	//  오브젝트 상태 (GUID 기반)
 	//  각 액터가 GUID + Active/Interaction 상태를 저장
