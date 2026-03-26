@@ -163,12 +163,10 @@ void UInteractionComponent::ShowInteractionHint()
 
 void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 {
-	if (!OwnerCharacter) return;
-	if (bIsInteractingDoor) return;
+	if (!OwnerCharacter || bIsInteractingDoor) return;
 
-	bool bIsSameDoor = (DoorActor == LastInteractedDoorActor);
 	float CurrentTime = GetWorld()->GetTimeSeconds();
-	if (bIsSameDoor && (CurrentTime - LastDoorInteractTime) < 2.5f) return;
+	if (DoorActor == LastInteractedDoorActor && (CurrentTime - LastDoorInteractTime) < 2.5f) return;
 
 	LastInteractedDoorActor = DoorActor;
 	LastDoorInteractTime = CurrentTime;
@@ -182,32 +180,26 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 	{
 		OwnerCharacter->GetCameraBoom()->bDoCollisionTest = false;
 	}
-
-	ASingleDoor* SingleDoor = Cast<ASingleDoor>(DoorActor);
-	ASafeActor* SafeDoor = Cast<ASafeActor>(DoorActor);
-
-	if (!SingleDoor && !SafeDoor)
+	
+	if (DoorActor->IsA(ASlidingDoor::StaticClass()) || DoorActor->IsA(ADoubleDoor::StaticClass()))
 	{
+		bIsInteractingDoor = true;
 		USoundBase* SoundToPlay = nullptr;
 
-		if (DoorActor->IsA(ASlidingDoor::StaticClass()))
-		{
-			SoundToPlay = OwnerCharacter->AnimData->SlidingDoorSound;
-		}
-		else if (DoorActor->IsA(ADoubleDoor::StaticClass()))
-		{
-			SoundToPlay = OwnerCharacter->AnimData->DoubleDoorSound;
-		}
 		if (SoundToPlay)
 		{
 			UGameplayStatics::PlaySoundAtLocation(this, SoundToPlay, DoorActor->GetActorLocation());
 		}
+
 		IInteractionBase::Execute_OnIneracted(DoorActor, OwnerCharacter);
+
 		if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
 		{
 			OwnerCharacter->EnableInput(PC);
-			PC->ResetIgnoreInputFlags(); 
+			PC->ResetIgnoreInputFlags();
 		}
+
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this]() { bIsInteractingDoor = false; });
 		return;
 	}
 
@@ -219,6 +211,7 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 	CurrentInteractingItem = DoorActor;
 	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(PendingDoorActor);
 
+	EInteractionType Type = IInteractionBase::Execute_GetInteractionType(DoorActor);
 	FVector TargetWarpLocation = FVector::ZeroVector;
 	FRotator TargetWarpRotation = FRotator::ZeroRotator;
 	UAnimMontage* SelectedMontage = nullptr;
@@ -226,33 +219,28 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 	// Push/Pull 에 따른 워핑 로직 분리
 	if (OwnerCharacter->MotionWarpingComp)
 	{
-		if (SingleDoor)
+		if (ASingleDoor* SingleDoor = Cast<ASingleDoor>(DoorActor))
 		{
 			if (SingleDoor->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
 			{
 				TargetWarpLocation = IInteractionBase::Execute_GetInteractionTargetLocation(DoorActor);
 				FVector DirToDoor = (DoorActor->GetActorLocation() - TargetWarpLocation).GetSafeNormal2D();
 				TargetWarpRotation = DirToDoor.Rotation();
-
 				SelectedMontage = OwnerCharacter->AnimData->DoorPullOpenMontage;
 			}
 			else
 			{
-				FVector HandleLocation = CurrentPickupLocation;
-				FVector CharacterLocation = OwnerCharacter->GetActorLocation();
-				FVector DirToHandle = (HandleLocation - CharacterLocation).GetSafeNormal2D();
-
-				TargetWarpLocation = HandleLocation - (DirToHandle * 85.0f);
+				FVector DirToHandle = (CurrentPickupLocation - OwnerCharacter->GetActorLocation()).GetSafeNormal2D();
+				TargetWarpLocation = CurrentPickupLocation - (DirToHandle * 85.0f);
 				TargetWarpRotation = DirToHandle.Rotation();
 				SelectedMontage = OwnerCharacter->AnimData->DoorPushOpenMontage;
 			}
 		}
-		else if (SafeDoor)
+		else if (Type == EInteractionType::SafeBox)
 		{
 			TargetWarpLocation = CurrentPickupLocation;
 			FVector DirToDoor = (DoorActor->GetActorLocation() - OwnerCharacter->GetActorLocation()).GetSafeNormal2D();
 			TargetWarpRotation = DirToDoor.Rotation();
-
 			SelectedMontage = OwnerCharacter->AnimData->DoorPullOpenMontage;
 		}
 
