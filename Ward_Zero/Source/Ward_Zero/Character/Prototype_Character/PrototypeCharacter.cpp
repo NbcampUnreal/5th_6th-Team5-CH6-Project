@@ -164,20 +164,18 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	UPlayerAnimInstance* AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
 	bool bIsTurningNow = (AnimInst && AnimInst->bIsTurn);
 
-	if (bIsTurningNow || GetIsQuickTurning())
+	if (bIsTurningNow || GetIsQuickTurning() || GetIsInteracting()) 
 	{
-		// 턴 중에는 모든 자동 회전 로직을 물리적으로 차단
 		bUseControllerRotationYaw = false;
 		if (GetCharacterMovement())
 		{
 			GetCharacterMovement()->bOrientRotationToMovement = false;
-			// 중요: 회전 속도를 0으로 만들어 루트 모션 외의 간섭을 차단
 			GetCharacterMovement()->RotationRate = FRotator(0.f, 0.f, 0.f);
 		}
 	}
 	else
 	{
-		// 턴 중이 아닐 때의 로직 (기본값 복구)
+		// 턴 중이 아닐 때의 로직
 		if (GetIsAiming())
 		{
 			bUseControllerRotationYaw = true;
@@ -257,6 +255,7 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 {
 	if (CombatComp && CombatComp->IsAiming()) return;
 	if (StatusComp && !StatusComp->CanSprint()) return;
+	if (bIsInVent) return;
 
 	FVector LastInput = GetLastMovementInputVector();
 	FVector LocalInput = GetActorRotation().UnrotateVector(LastInput);
@@ -294,8 +293,8 @@ void APrototypeCharacter::EndRunning(const FInputActionValue& Value)
 
 void APrototypeCharacter::ToggleCrouch(const FInputActionValue& Value)
 {
+	if (bIsInVent && bIsCrouched) return;
 	if (bIsRunning || GetIsReloading() || IsEquipping()) return;
-
 	if (!bIsCrouched && GetIsAiming())
 	{
 		StopAiming(Value);
@@ -542,12 +541,13 @@ void APrototypeCharacter::OnDeath()
 	bIsRunning = false;
 	if (QuickTurnComp) QuickTurnComp->StopQuickTurn();
 
-	if (CombatComp)
-	{
-		CombatComp->StopFire();
-		CombatComp->StopAiming();
-	}
-
+	AbortAllActions(); // 모든 진행 중인 행동 강제 종료
+	
+	// 물리 및 충돌 설정 (래그돌)
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+	GetMesh()->SetSimulatePhysics(true);
+	
 	// 입력 컴포넌트 비활성화 및 UI 모드 전환
 	if (APlayerController* PC = Cast<APlayerController>(Controller))
 	{
@@ -556,12 +556,15 @@ void APrototypeCharacter::OnDeath()
 
 		FInputModeUIOnly InputMode;
 		PC->SetInputMode(InputMode);
-	}
 
-	// 물리 및 충돌 설정 (래그돌)
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
-	GetMesh()->SetSimulatePhysics(true);
+		if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
+		{
+			if (UGameOverSubsystem* GameOverSystem = LocalPlayer->GetSubsystem<UGameOverSubsystem>())
+			{
+				GameOverSystem->ShowGameOver();
+			}
+		}
+	}
 }
 
 float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -931,7 +934,12 @@ void APrototypeCharacter::ExecuteHealPoint()
 
 bool APrototypeCharacter::GetIsInteracting() const
 {
-	return bIsInteractingDoor;
+	return bIsInteractingDoor || (InteractionComp && InteractionComp->CurrentInteractingItem != nullptr);
+}
+
+bool APrototypeCharacter::GetIsInVent() const
+{
+	return bIsInVent;
 }
 
 bool APrototypeCharacter::IsEquipping() const
@@ -974,7 +982,10 @@ void APrototypeCharacter::SetDoorPasscode(int32 Passcode)
 void APrototypeCharacter::AbortAllActions()
 {
 	// 모든 몽타주 중단
-	StopAnimMontage();
+	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+	{
+		AnimInst->Montage_Stop(0.2f);
+	}
 
 	// 인터렉션 상태 강제 종료
 	if (InteractionComp)
@@ -985,11 +996,11 @@ void APrototypeCharacter::AbortAllActions()
 	}
 
 	// 전투 관련 상태 초기화
-	if (CombatComp)
+	CombatComp->StopFire();
+	if (CombatComp->IsAiming()) CombatComp->StopAiming();
+	if (CombatComp->GetEquippedWeapon())
 	{
-		CombatComp->StopFire();
-		// 조준 중이었다면 조준 해제 
-		if (CombatComp->IsAiming()) CombatComp->StopAiming();
+		CombatComp->GetEquippedWeapon()->SetIsReloading(false);
 	}
 
 	// 루트 모션 및 이동 잠금 해제
@@ -1004,24 +1015,21 @@ void APrototypeCharacter::AbortAllActions()
 	}
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
-		EnableInput(PC);
+		InteractionComp->EndInteraction();
 	}
 }
 
 void APrototypeCharacter::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
-	if (OtherActor && OtherActor->ActorHasTag(TEXT("VentBegin")))
+
+	if (OtherActor && (OtherActor->ActorHasTag(TEXT("VentBegin")) || OtherActor->ActorHasTag(TEXT("VentEnd"))))
 	{
-		bIsInVent = true;
+		bIsInVent = !bIsInVent;
 	}
 }
 
 void APrototypeCharacter::NotifyActorEndOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorEndOverlap(OtherActor);
-	if (OtherActor && OtherActor->ActorHasTag(TEXT("VentEnd")))
-	{
-		bIsInVent = false;
-	}
 }
