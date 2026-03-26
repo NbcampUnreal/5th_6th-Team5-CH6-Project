@@ -3,6 +3,7 @@
 
 #include "SavePoint.h"
 
+#include "WardGameInstanceSubsystem.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "UI_KWJ/Save/SaveSubsystem.h"
 
@@ -31,12 +32,20 @@ void ASavePoint::HandleInteraction_Implementation(APrototypeCharacter* Character
 	{
 		return;
 	}
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>())
+		{
+			SaveGI->SetCurrentStage(StageIndex);
+		}
+	}
 	if (APlayerController* PC = Cast<APlayerController>(Character->GetController()))
 	{
 		if (ULocalPlayer* LP = Cast<ULocalPlayer>(PC->GetLocalPlayer()))
 		{
 			if (USaveSubsystem* SaveSubsys = LP->GetSubsystem<USaveSubsystem>())
 			{
+				
 				SaveSubsys->ShowSaveUI();
 			}
 		}

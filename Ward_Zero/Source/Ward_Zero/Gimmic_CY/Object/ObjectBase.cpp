@@ -45,7 +45,6 @@ void AObjectBase::BeginPlay()
 {
 	Super::BeginPlay();
 	//SetBCanInteract(bDefaultInteractable);
-	bCanInteract = bDefaultInteractable;
 	bGamePlay = true;
 	
 	if (UWorld* World = GetWorld())
@@ -66,6 +65,16 @@ void AObjectBase::BeginPlay()
 					}else
 					{
 						SetBCanInteract(false);
+					}
+				}else
+				{
+					bCanInteract = bDefaultInteractable;
+					if (bCanInteract)
+					{
+						ChangeColorLampGreen();
+					}else
+					{
+						ChangeColorLampRed();
 					}
 				}
 			}
@@ -111,11 +120,13 @@ bool AObjectBase::SetBCanInteract(bool IsCanInteract)
 {
 	bCanInteract = IsCanInteract;
 	SaveActorState();
-	
 	if (bCanInteract)
 	{
 		ChangeColorLampGreen();
-	}else if (!bActivated)
+	}else if (bActivated)
+	{
+		ChangeColorLampGreen();
+	}else
 	{
 		ChangeColorLampRed();
 	}

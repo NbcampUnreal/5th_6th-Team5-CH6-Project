@@ -9,6 +9,7 @@
 #include "GameFramework/PlayerController.h"
 #include "UI_KWJ/Loading/LoadingScreenSubsystem.h"
 #include "UI_KWJ/Save/SaveSubsystem.h"
+#include "WardGameInstanceSubsystem.h"
 #include "Ward_Zero.h"
 
 void UMainMenuWidget::NativeOnInitialized()
@@ -116,14 +117,26 @@ void UMainMenuWidget::HideMenuAndPlay()
 	APlayerController* PC = GetOwningPlayer();
 	if (PC)
 	{
+		// 새 게임 — 인스턴스 데이터 초기화
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			if (UGameInstance* GI = LP->GetGameInstance())
+			{
+				if (UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>())
+				{
+					SaveGI->ResetForNewGame();
+				}
+			}
+		}
+
 		FInputModeGameOnly InputMode;
 		PC->SetInputMode(InputMode);
 		PC->SetShowMouseCursor(false);
 
 		// 로딩 화면 표시
-		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		if (ULocalPlayer* LP2 = PC->GetLocalPlayer())
 		{
-			if (ULoadingScreenSubsystem* LoadingSys = LP->GetSubsystem<ULoadingScreenSubsystem>())
+			if (ULoadingScreenSubsystem* LoadingSys = LP2->GetSubsystem<ULoadingScreenSubsystem>())
 			{
 				LoadingSys->ShowLoading(FText::FromString(TEXT("Loading...")));
 			}

@@ -324,13 +324,14 @@ UWardSaveGame* USaveSubsystem::CollectCurrentGameState()
 	SaveData->SaveDateTime = FDateTime::Now();
 	SaveData->PlayTimeSeconds = 0.f; // TODO: 별도 추적
 
-	// 오브젝트 상태 (GameInstanceSubsystem → 세이브 데이터)
+	// 오브젝트 상태 + 스테이지 (GameInstanceSubsystem → 세이브 데이터)
 	UGameInstance* GI = GetLocalPlayer()->GetGameInstance();
 	if (GI)
 	{
 		if (UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>())
 		{
 			SaveData->ObjectStates = SaveGI->GetRuntimeObjectStates();
+			SaveData->StageIndex = SaveGI->GetCurrentStage();
 		}
 	}
 
@@ -411,13 +412,14 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 		SaveData->CurrentHealth, SaveData->MaxHealth,
 		SaveData->CurrentStamina, SaveData->MaxStamina);
 
-	// 오브젝트 상태 → GameInstanceSubsystem에 전달
+	// 오브젝트 상태 + 스테이지 → GameInstanceSubsystem에 전달
 	UGameInstance* GI = GetLocalPlayer()->GetGameInstance();
 	if (GI)
 	{
 		if (UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>())
 		{
 			SaveGI->SetRuntimeObjectStates(SaveData->ObjectStates);
+			SaveGI->SetCurrentStage(SaveData->StageIndex);
 		}
 	}
 }

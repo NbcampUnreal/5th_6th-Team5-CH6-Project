@@ -32,4 +32,8 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Save")
 	UStaticMeshComponent* SaveMesh;
+
+	/** 이 세이브 포인트의 스테이지 (에디터에서 설정) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Save")
+	int32 StageIndex = 0;
 };

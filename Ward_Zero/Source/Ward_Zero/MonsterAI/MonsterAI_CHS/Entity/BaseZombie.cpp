@@ -77,7 +77,7 @@ void ABaseZombie::OnDeath()
 		AudioLoopComponent->SetSound(MonsterData->DeathSound);
 		AudioLoopComponent->Play();
 	}
-	//SetLifeSpan(5.0f);
+	SetLifeSpan(50.0f);
 }
 
 // Called when the game starts or when spawned

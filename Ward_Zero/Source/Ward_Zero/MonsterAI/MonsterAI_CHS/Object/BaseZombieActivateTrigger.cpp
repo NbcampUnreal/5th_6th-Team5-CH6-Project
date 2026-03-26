@@ -2,6 +2,8 @@
 
 
 #include "BaseZombieActivateTrigger.h"
+
+#include "WardGameInstanceSubsystem.h"
 #include "MonsterAI/MonsterAI_CHS/Entity/BaseZombie.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/Character.h"
@@ -41,6 +43,15 @@ void ABaseZombieActivateTrigger::WakeUpZombies()
 void ABaseZombieActivateTrigger::BeginPlay()
 {
 	Super::BeginPlay();
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UWardGameInstanceSubsystem* WGI =  GI->GetSubsystem<UWardGameInstanceSubsystem>())
+		{
+			if (StageIndex < WGI->GetCurrentStage()) return;
+		}
+	}
+	
+	
 	if (TriggerVolume)
 	{
 		TriggerVolume->OnComponentBeginOverlap.AddDynamic(this,&ABaseZombieActivateTrigger::OnTriggerOverlap);
