@@ -19,6 +19,7 @@ enum class EInteractionType : uint8
 	Lever,
 	SingleDoor,
 	Button,
+	SafeBox
 };
 
 UENUM(BlueprintType)

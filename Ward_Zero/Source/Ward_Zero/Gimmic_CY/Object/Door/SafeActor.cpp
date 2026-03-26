@@ -140,8 +140,7 @@ void ASafeActor::OnOverLapEnd(class UPrimitiveComponent* OverlappedComp, class A
 
 EInteractionType ASafeActor::GetInteractionType_Implementation() const
 {
-    //return EInteractionType::SingleDoor;
-    return EInteractionType::Door;
+    return EInteractionType::SafeBox;
 }
 
 ESingleDoorAnimationType ASafeActor::GetSingleDoorAnimationType() const
