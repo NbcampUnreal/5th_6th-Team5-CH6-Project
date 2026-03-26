@@ -19,6 +19,9 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Setting")
+	int32 StageIndex;
 
 public:
 	// Called every frame

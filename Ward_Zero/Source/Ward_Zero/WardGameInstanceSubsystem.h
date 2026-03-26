@@ -96,6 +96,25 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Document")
 	bool GetDocumentEntry(int32 DocIndex, FWardDocumentEntry& OutEntry) const;
 
+	// ══════════════════════════════════════════
+	//  스테이지 관리
+	//  층별 전체 프리셋 (0=지하1층, 1=1층, 2=2층)
+	//  세이브 액터가 저장 시 스테이지 인덱스 전달
+	//  각 오브젝트는 자기 스테이지와 비교해 활성화 여부 판단
+	// ══════════════════════════════════════════
+
+	/** 현재 스테이지 설정 (Max 비교 — 역행 방지) */
+	UFUNCTION(BlueprintCallable, Category = "Stage")
+	void SetCurrentStage(int32 InStage);
+
+	/** 현재 스테이지 가져오기 */
+	UFUNCTION(BlueprintPure, Category = "Stage")
+	int32 GetCurrentStage() const { return CurrentStage; }
+
+	/** 새 게임 시작 시 모든 데이터 초기화 */
+	UFUNCTION(BlueprintCallable, Category = "Save")
+	void ResetForNewGame();
+
 private:
 
 	UPROPERTY()
@@ -105,4 +124,7 @@ private:
 
 	/** 활성화된 문서/아이템 인덱스 세트 */
 	TSet<int32> ActiveDocumentIndices;
+
+	/** 현재 스테이지 (역행 방지 — Max로만 갱신) */
+	int32 CurrentStage = 0;
 };

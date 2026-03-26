@@ -107,6 +107,23 @@ bool UWardGameInstanceSubsystem::HasObjectState(const FGuid& SaveID) const
 	return false;
 }
 
+// ════════════════════════════════════════════════════════
+//  스테이지 관리
+// ════════════════════════════════════════════════════════
+
+void UWardGameInstanceSubsystem::SetCurrentStage(int32 InStage)
+{
+	// 역행 방지 — 현재보다 높은 스테이지만 저장
+	if (InStage > CurrentStage)
+	{
+		CurrentStage = InStage;
+		UE_LOG(LogWard_Zero, Log, TEXT("스테이지 갱신: %d"), CurrentStage);
+	}
+	else
+	{
+		UE_LOG(LogWard_Zero, Log, TEXT("스테이지 역행 방지: 요청=%d, 현재=%d → 무시"), InStage, CurrentStage);
+	}
+}
 void UWardGameInstanceSubsystem::SetRuntimeObjectStates(const TMap<FGuid, FObjectSaveData>& States)
 {
 	RuntimeObjectStates = States;
@@ -168,4 +185,18 @@ bool UWardGameInstanceSubsystem::GetDocumentEntry(int32 DocIndex, FWardDocumentE
 	}
 
 	return false;
+}
+
+// ════════════════════════════════════════════════════════
+//  새 게임 초기화
+// ════════════════════════════════════════════════════════
+
+void UWardGameInstanceSubsystem::ResetForNewGame()
+{
+	RuntimeObjectStates.Empty();
+	ActiveDocumentIndices.Empty();
+	CurrentStage = 0;
+	PendingSaveData = nullptr;
+
+	UE_LOG(LogWard_Zero, Log, TEXT("새 게임 — 인스턴스 데이터 초기화 완료"));
 }

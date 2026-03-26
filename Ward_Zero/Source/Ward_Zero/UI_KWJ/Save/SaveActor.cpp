@@ -2,6 +2,7 @@
 
 #include "UI_KWJ/Save/SaveActor.h"
 #include "UI_KWJ/Save/SaveSubsystem.h"
+#include "WardGameInstanceSubsystem.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -43,7 +44,16 @@ void ASaveActor::OnIneracted_Implementation(APrototypeCharacter* Character)
 {
 	if (!Character) return;
 
-	UE_LOG(LogWard_Zero, Log, TEXT("세이브 포인트 상호작용"));
+	UE_LOG(LogWard_Zero, Log, TEXT("세이브 포인트 상호작용 (스테이지: %d)"), StageIndex);
+
+	// 스테이지 갱신 (역행 방지 — Max 비교)
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>())
+		{
+			SaveGI->SetCurrentStage(StageIndex);
+		}
+	}
 
 	APlayerController* PC = Cast<APlayerController>(Character->GetController());
 	if (!PC) return;

@@ -36,6 +36,9 @@ protected:
 	UPROPERTY(EditInstanceOnly, Category = "Setting")
 	float WaveInterval = 5.0f;
 	
+	UPROPERTY(EditInstanceOnly, Category = "Setting")
+	int32 StageIndex = 0;
+	
 	int ZomIdx = 0;
 	int ZombieNum = 0;
 	bool bHasTriggered;

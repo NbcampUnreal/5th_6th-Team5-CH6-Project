@@ -621,7 +621,6 @@ void UPlayerCombatComponent::HandleWeaponAttachment(bool bToHand)
 			EquippedWeapon->WeaponMesh->SetRelativeRotation(FRotator::ZeroRotator);
 		}
 
-		// ⭐⭐⭐ [추가해야 할 부분!] 손에 다시 쥐었으니 무기 숨김을 해제합니다! ⭐⭐⭐
 		EquippedWeapon->SetActorHiddenInGame(false);
 	}
 	else
