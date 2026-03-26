@@ -68,4 +68,10 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Turn")
     TMap<EWeaponLayerType, UAnimMontage*> TurnRight90Montages;
+
+    UPROPERTY(EditAnywhere, Category = "Interaction|Sound")
+    TObjectPtr<USoundBase> SlidingDoorSound;
+
+    UPROPERTY(EditAnywhere, Category = "Interaction|Sound")
+    TObjectPtr<USoundBase> DoubleDoorSound;
 };

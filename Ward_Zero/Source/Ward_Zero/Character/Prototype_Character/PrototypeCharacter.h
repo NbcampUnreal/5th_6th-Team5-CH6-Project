@@ -113,6 +113,7 @@ public:
 	virtual bool GetIsInjured() const override;
 	virtual void ExecuteHealPoint() override;
 	virtual bool GetIsInteracting() const override;
+	virtual bool GetIsInVent() const override;
 #pragma endregion
 
 	void Move(const FInputActionValue& Value);

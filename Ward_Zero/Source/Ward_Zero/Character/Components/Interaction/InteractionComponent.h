@@ -22,6 +22,10 @@ public:
 	void Initialize(APrototypeCharacter* InCharacter);
 	void TryInteract();
 
+	void RefreshInteractionUI();
+
+	void ShowInteractionHint();
+
 	void HandleDoorInteraction(AActor* DoorActor);
 	void HandleItemInteraction(AActor* ItemActor);
 	void HandleLeverInteraction(AActor* LeverActor);

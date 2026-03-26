@@ -7,10 +7,12 @@
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Character/Animation/Interface/PlayerAnimInterface.h"
 #include "Character/Components/Status/PlayerStatusComponent.h"
+#include "Character/Components/Interaction/InteractionComponent.h"
 #include "GameFramework/Character.h"
 #include "Weapon/Weapon.h"
 #include "Weapon/Data/WeaponData.h"
 #include "Kismet/GameplayStatics.h"
+#include "Gimmic_CY/Object/Lever/Lever.h"
 
 UFlashlightComponent::UFlashlightComponent()
 {
@@ -108,6 +110,27 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 	float BaseIntensity = TargetData->Intensity;
 	float BaseOuterAngle = TargetData->OuterConeAngle;
 
+	float VentIntensityMultiplier = (Player->bIsInVent) ? 1.5f : 1.0f;
+	float VentOuterConeAngleMultiplier = (Player->bIsInVent) ? 1.5f : 1.0f;
+
+	bool bIsLever = false;
+	if (Player->InteractionComp->CurrentInteractingItem && Player->InteractionComp->CurrentInteractingItem->IsA(ALever::StaticClass()))
+	{
+		bIsLever = true;
+	}
+	bool bHandIsBusy = bIsInteracting && bIsUnarmed && !bIsLever;
+	if (!bIsUseFlashlight || bHandIsBusy)
+	{
+		FlashLightActor->SetActorHiddenInGame(true);
+		FlashLightSpot->SetVisibility(false);
+		if (FlashLightMesh) FlashLightMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), 0.0f);
+
+		// 이전 무기 라이트 정리
+		if (LastEquippedWeapon && LastEquippedWeapon->SMGSpotLight)
+			LastEquippedWeapon->SMGSpotLight->SetVisibility(false);
+
+		return;
+	}
 
 	FRotator TargetRotation;
 	// 걷거나 비무장일 땐 카메라(Control) 방향, 무장/달리기 시엔 캐릭터 방향
@@ -131,11 +154,6 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 
 		// 최종 타겟 = 몸 방향 + 제한된 카메라 차이값
 		TargetRotation = ActorRot + DeltaRot;
-
-		if (bIsVentMode && AnimIF->GetIsSMGEquipped())
-		{
-			TargetRotation.Pitch += 15.0f;
-		}
 	}
 	if (DeltaTime <= 0.0f) CurrentLightRotation = TargetRotation;
 	else CurrentLightRotation = FMath::RInterpTo(CurrentLightRotation, TargetRotation, DeltaTime, 20.0f);
@@ -175,14 +193,19 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 			FlashLightSpot->SetVisibility(false);
 			if (FlashLightMesh) FlashLightMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), 0.0f);
 
+			FRotator FinalLightRotation = CurrentLightRotation; // 환풍구에서 적용할 SMG SpotLight 로테이션 
+			if (bIsVentMode && AnimIF->GetIsSMGEquipped())
+			{
+				FinalLightRotation.Pitch += 8.0f;
+			}
 			// 무기 라이트 활성화
 			CurrentWeapon->SMGSpotLight->SetVisibility(true);
 			CurrentWeapon->SMGSpotLight->SetUsingAbsoluteRotation(true);
-			CurrentWeapon->SMGSpotLight->SetWorldRotation(CurrentLightRotation);
+			CurrentWeapon->SMGSpotLight->SetWorldRotation(FinalLightRotation);
 
 			// 무기 데이터 에셋의 값 적용
-			CurrentWeapon->SMGSpotLight->SetIntensity(BaseIntensity);
-			CurrentWeapon->SMGSpotLight->SetOuterConeAngle(BaseOuterAngle);
+			CurrentWeapon->SMGSpotLight->SetIntensity(BaseIntensity * VentIntensityMultiplier);
+			CurrentWeapon->SMGSpotLight->SetOuterConeAngle(BaseOuterAngle * VentOuterConeAngleMultiplier);
 			CurrentWeapon->SMGSpotLight->SetAttenuationRadius(TargetData->AttenuationRadius);
 			CurrentWeapon->SMGSpotLight->SetInnerConeAngle(BaseOuterAngle * TargetData->InnerConeRatio);
 			CurrentWeapon->SMGSpotLight->SetCastShadows(TargetData->bCastShadows);
@@ -222,8 +245,8 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 				FlashLightSpot->SetUsingAbsoluteRotation(true);
 				// 권총 비조준이면 몸 방향, 비무장이면 카메라 방향
 				FlashLightSpot->SetWorldRotation(CurrentLightRotation);
-				FlashLightSpot->SetIntensity(BaseIntensity);
-				FlashLightSpot->SetOuterConeAngle(BaseOuterAngle);
+				FlashLightSpot->SetIntensity(BaseIntensity * VentIntensityMultiplier);
+				FlashLightSpot->SetOuterConeAngle(BaseOuterAngle * VentOuterConeAngleMultiplier);
 				FlashLightSpot->SetAttenuationRadius(TargetData->AttenuationRadius);
 			}
 

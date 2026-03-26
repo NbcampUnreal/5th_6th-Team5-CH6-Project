@@ -11,8 +11,12 @@
 #include "Gimmic_CY/Items/ItemBase.h"
 #include "Gimmic_CY/Object/Door/SingleDoor.h"
 #include "Gimmic_CY/Object/Door/SafeActor.h"
+#include "Gimmic_CY/Interface/InteractionBase.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "UI_KWJ/InteractionHint/InteractionHintSubsystem.h"
+#include "Kismet/GameplayStatics.h"
+#include "Gimmic_CY/Object/Door/SlidingDoor.h"
+#include "Gimmic_CY/Object/Door/DoubleDoor.h"
 
 UInteractionComponent::UInteractionComponent()
 {
@@ -41,45 +45,55 @@ void UInteractionComponent::Initialize(APrototypeCharacter* InCharacter)
 void UInteractionComponent::TryInteract()
 {
 	if (!OwnerCharacter || !InteractionSphere) return;
-
+	if (OwnerCharacter->GetIsReloading() || OwnerCharacter->IsFiring() || OwnerCharacter->IsEquipping()) return;
 	TArray<AActor*> OverlappingActors;
 	InteractionSphere->GetOverlappingActors(OverlappingActors);
 
 	AActor* ClosestInteractable = nullptr;
-	float MinDistanceSquared = MAX_FLT;
+	AActor* ClosetLockedDoor = nullptr; 
+
+	float MinInteractDistSq = MAX_FLT;
+	float MinLockedDistSq = MAX_FLT;
+
 	FVector PlayerLocation = OwnerCharacter->GetActorLocation();
 
 	for (AActor* Actor : OverlappingActors)
 	{
-		if (!Actor || Actor == OwnerCharacter) continue;
+		if (!IsValid(Actor) || Actor == OwnerCharacter) continue;
+		if (!Actor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass())) continue;
 
-		bool bIsValidInteractable = false;
+		IInteractionBase* InteractInterface = Cast<IInteractionBase>(Actor);
+		if (!InteractInterface) continue; 
 
-		if (Actor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+		float DistSq = FVector::DistSquared(PlayerLocation, Actor->GetActorLocation());
+
+		// 상호작용 가능
+		if (InteractInterface->GetBCanInteract())
 		{
-			IInteractionBase* InteractInterface = Cast<IInteractionBase>(Actor);
-			if (InteractInterface && InteractInterface->GetBCanInteract())
+			if (DistSq < MinInteractDistSq)
 			{
-				bIsValidInteractable = true;
-			}
-		}
-
-		if (bIsValidInteractable)
-		{
-			float DistSq = FVector::DistSquared(PlayerLocation, Actor->GetActorLocation());
-			if (DistSq < MinDistanceSquared)
-			{
-				MinDistanceSquared = DistSq;
+				MinInteractDistSq = DistSq;
 				ClosestInteractable = Actor;
 			}
 		}
+		// 상호작용 불가능 & 타입 Door의 경우  
+		else 
+		{
+			EInteractionType Type = IInteractionBase::Execute_GetInteractionType(Actor);
+			if (Type == EInteractionType::Door || Type == EInteractionType::SingleDoor)
+			{
+				if (DistSq < MinLockedDistSq)
+				{
+					MinLockedDistSq = DistSq;
+					ClosetLockedDoor = Actor;
+				}
+			}
+		}
 	}
-
-	if (!ClosestInteractable) return;
-
-	if (ClosestInteractable->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+	
+	// 상호작용 실행 
+	if (ClosestInteractable)
 	{
-		IInteractionBase::Execute_HidePressEWidget(ClosestInteractable);
 		EInteractionType Type = IInteractionBase::Execute_GetInteractionType(ClosestInteractable);
 
 		if (Type == EInteractionType::Door) HandleDoorInteraction(ClosestInteractable);
@@ -91,12 +105,66 @@ void UInteractionComponent::TryInteract()
 		{
 			IInteractionBase::Execute_OnIneracted(ClosestInteractable, OwnerCharacter);
 		}
+		return;
 	}
+	// 상호작용은 못하지만, 잠긴 문이 오버랩 영역에 있는 경우 힌트 출력 
+	if (ClosetLockedDoor) ShowInteractionHint();
+}
+
+void UInteractionComponent::RefreshInteractionUI()
+{
+	TArray<AActor*> OverlappingActors;
+	InteractionSphere->GetOverlappingActors(OverlappingActors);
+
+	AActor* BestTarget = nullptr;
+	float MinDistSq = MAX_FLT;
+
+	for (AActor* Actor : OverlappingActors)
+	{
+		if (Actor && Actor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
+		{
+			IInteractionBase* Interface = Cast<IInteractionBase>(Actor);
+			if (Interface && Interface->GetBCanInteract())
+			{
+				float DistSq = FVector::DistSquared(OwnerCharacter->GetActorLocation(), Actor->GetActorLocation());
+				if (DistSq < MinDistSq)
+				{
+					MinDistSq = DistSq;
+					BestTarget = Actor;
+				}
+			}
+		}
+	}
+
+	if (BestTarget)
+	{
+		IInteractionBase::Execute_ShowPressEWidget(BestTarget);
+	}
+}
+
+void UInteractionComponent::ShowInteractionHint()
+{
+	UE_LOG(LogTemp, Warning, TEXT("ShowInteractionHint Called!"));
+	if (!OwnerCharacter) return;
+	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
+	{
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			if (UInteractionHintSubsystem* HintSubsystem = LP->GetSubsystem<UInteractionHintSubsystem>())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Subsystem Found! Showing Hint..."));
+				HintSubsystem->ShowHint(2.0f);
+				return;
+			}
+		}
+	}
+	UE_LOG(LogTemp, Error, TEXT("Failed to find Subsystem or PlayerController!"));
 }
 
 void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 {
 	if (!OwnerCharacter) return;
+	if (bIsInteractingDoor) return;
 
 	bool bIsSameDoor = (DoorActor == LastInteractedDoorActor);
 	float CurrentTime = GetWorld()->GetTimeSeconds();
@@ -105,12 +173,41 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 	LastInteractedDoorActor = DoorActor;
 	LastDoorInteractTime = CurrentTime;
 
+	OwnerCharacter->AbortAllActions();
+	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
+	{
+		OwnerCharacter->DisableInput(PC);
+	}
+	if (OwnerCharacter->GetCameraBoom())
+	{
+		OwnerCharacter->GetCameraBoom()->bDoCollisionTest = false;
+	}
+
 	ASingleDoor* SingleDoor = Cast<ASingleDoor>(DoorActor);
 	ASafeActor* SafeDoor = Cast<ASafeActor>(DoorActor);
 
 	if (!SingleDoor && !SafeDoor)
 	{
+		USoundBase* SoundToPlay = nullptr;
+
+		if (DoorActor->IsA(ASlidingDoor::StaticClass()))
+		{
+			SoundToPlay = OwnerCharacter->AnimData->SlidingDoorSound;
+		}
+		else if (DoorActor->IsA(ADoubleDoor::StaticClass()))
+		{
+			SoundToPlay = OwnerCharacter->AnimData->DoubleDoorSound;
+		}
+		if (SoundToPlay)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, SoundToPlay, DoorActor->GetActorLocation());
+		}
 		IInteractionBase::Execute_OnIneracted(DoorActor, OwnerCharacter);
+		if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
+		{
+			OwnerCharacter->EnableInput(PC);
+			PC->ResetIgnoreInputFlags(); 
+		}
 		return;
 	}
 
@@ -122,47 +219,40 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 	CurrentInteractingItem = DoorActor;
 	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(PendingDoorActor);
 
-	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
-	{
-		PC->SetIgnoreMoveInput(true);
-		PC->SetIgnoreLookInput(true);
-	}
+	FVector TargetWarpLocation = FVector::ZeroVector;
+	FRotator TargetWarpRotation = FRotator::ZeroRotator;
+	UAnimMontage* SelectedMontage = nullptr;
 
 	// Push/Pull 에 따른 워핑 로직 분리
 	if (OwnerCharacter->MotionWarpingComp)
 	{
-		FVector TargetWarpLocation;
-		FRotator TargetWarpRotation;
-
-		UAnimMontage* SelectedMontage = nullptr;
 		if (SingleDoor)
 		{
 			if (SingleDoor->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
 			{
-				TargetWarpLocation = SingleDoor->PullPoint->GetComponentLocation();
-				TargetWarpRotation = SingleDoor->PullPoint->GetComponentRotation();
+				TargetWarpLocation = IInteractionBase::Execute_GetInteractionTargetLocation(DoorActor);
+				FVector DirToDoor = (DoorActor->GetActorLocation() - TargetWarpLocation).GetSafeNormal2D();
+				TargetWarpRotation = DirToDoor.Rotation();
+
 				SelectedMontage = OwnerCharacter->AnimData->DoorPullOpenMontage;
 			}
 			else
 			{
 				FVector HandleLocation = CurrentPickupLocation;
 				FVector CharacterLocation = OwnerCharacter->GetActorLocation();
-
-				// 캐릭터에서 손잡이를 바라보는 방향 계산
 				FVector DirToHandle = (HandleLocation - CharacterLocation).GetSafeNormal2D();
 
-				// 손잡이 정면에서 85유닛 떨어진 곳을 타겟으로 설정
 				TargetWarpLocation = HandleLocation - (DirToHandle * 85.0f);
 				TargetWarpRotation = DirToHandle.Rotation();
 				SelectedMontage = OwnerCharacter->AnimData->DoorPushOpenMontage;
 			}
 		}
-		// 금고 - Pull
 		else if (SafeDoor)
 		{
-			// 금고에 설정된 타겟 위치(Pull Point) 사용
 			TargetWarpLocation = CurrentPickupLocation;
-			TargetWarpRotation = (OwnerCharacter->GetActorLocation() - DoorActor->GetActorLocation()).Rotation();
+			FVector DirToDoor = (DoorActor->GetActorLocation() - OwnerCharacter->GetActorLocation()).GetSafeNormal2D();
+			TargetWarpRotation = DirToDoor.Rotation();
+
 			SelectedMontage = OwnerCharacter->AnimData->DoorPullOpenMontage;
 		}
 
@@ -173,6 +263,10 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 
 		if (SelectedMontage)
 		{
+			if (UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance())
+			{
+				AnimInst->RootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
+			}
 			OwnerCharacter->PlayAnimMontage(SelectedMontage);
 		}
 	}
@@ -182,9 +276,16 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)
 {
 	if (!OwnerCharacter || !ItemActor) return;
-	if (OwnerCharacter->GetMesh()->GetAnimInstance()->IsAnyMontagePlaying() || CurrentInteractingItem) return;
-	if (CurrentInteractingItem) ConsumeInteractingItem();
+	if (OwnerCharacter->GetMesh()->GetAnimInstance()->IsAnyMontagePlaying()) return;
+	if (CurrentInteractingItem)
+	{
+		ConsumeInteractingItem();
+	}
 
+	// 현재 픽업한 아이템 UI를 우선적으로 숨김 
+	IInteractionBase::Execute_HidePressEWidget(ItemActor);
+
+	// 충돌을 꺼서 연속 상호작용 방지 
 	ItemActor->SetActorEnableCollision(false);
 
 	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
@@ -215,15 +316,17 @@ void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)
 	FVector LocalItemPos = OwnerCharacter->GetActorTransform().InverseTransformPosition(CurrentPickupLocation);
 	UAnimMontage* MontageToPlay = (LocalItemPos.Z < -50.0f) ? OwnerCharacter->AnimData->PickupLowMontage : OwnerCharacter->AnimData->PickupHighMontage;
 
+
 	if (MontageToPlay)
 	{
 		if (UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance())
 		{
 			AnimInst->RootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
 		}
-
 		OwnerCharacter->PlayAnimMontage(MontageToPlay);
 	}
+	// 주변에 다른 아이템이 있는 경우 0.1초 뒤 UI 갱신 
+	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UInteractionComponent::RefreshInteractionUI);
 }
 
 void UInteractionComponent::HandleLeverInteraction(AActor* LeverActor)
@@ -257,6 +360,10 @@ void UInteractionComponent::HandleLeverInteraction(AActor* LeverActor)
 
 	if (OwnerCharacter->AnimData && OwnerCharacter->AnimData->LeverMontage)
 	{
+		if (UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance())
+		{
+			AnimInst->RootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
+		}
 		OwnerCharacter->PlayAnimMontage(OwnerCharacter->AnimData->LeverMontage);
 	}
 }
@@ -276,7 +383,6 @@ void UInteractionComponent::ConsumeInteractingItem()
 	if (CurrentInteractingItem && OwnerCharacter)
 	{
 		IInteractionBase::Execute_OnIneracted(CurrentInteractingItem, OwnerCharacter);
-		CurrentInteractingItem->Destroy(); // 월드에서 진짜 액터 삭제
 		CurrentInteractingItem = nullptr;
 	}
 }
@@ -303,6 +409,9 @@ void UInteractionComponent::OnInteractableEndedOverlap(UPrimitiveComponent* Over
 	if (OtherActor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass()))
 	{
 		IInteractionBase::Execute_HidePressEWidget(OtherActor);
+
+		// 아이템이 사라졌으므로, 주변에 남은 다른 아이템이 있는지 체크 후 UI 띄움.
+		RefreshInteractionUI();
 	}
 }
 
@@ -327,9 +436,8 @@ void UInteractionComponent::EndInteraction()
 
 		if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
 		{
-			PC->SetIgnoreMoveInput(false);
-			PC->SetIgnoreLookInput(false);
 			OwnerCharacter->EnableInput(PC);
+			PC->ResetIgnoreInputFlags();
 		}
 		if (OwnerCharacter->GetCameraBoom())
 		{
