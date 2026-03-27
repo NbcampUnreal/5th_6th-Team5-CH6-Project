@@ -676,10 +676,10 @@ void APrototypeCharacter::PlayDeathReaction(const FVector& ToAttackerDir)
 	if (MontageToPlay)
 	{
 		float Duration = PlayAnimMontage(MontageToPlay);
-		float SafeDuration = FMath::Max(Duration, 1.5f);
+		float SafeWaitTime = (Duration > 0.1f) ? Duration * 0.8f : 1.5f;
 
 		FTimerHandle DeathTimer;
-		GetWorldTimerManager().SetTimer(DeathTimer, this, &APrototypeCharacter::OnDeath, SafeDuration * 0.8f, false);
+		GetWorldTimerManager().SetTimer(DeathTimer, this, &APrototypeCharacter::OnDeath, SafeWaitTime, false);
 	}
 	else
 	{
@@ -777,12 +777,7 @@ void APrototypeCharacter::StartHeal()
 	if (!StatusComp || StatusComp->IsDead()) return;
 	if (StatusComp->HealingItemCount <= 0) return;
 	if (GetIsReloading() || GetIsAiming() || IsEquipping()) return;
-
-	if (StatusComp->CurrHealth >= StatusComp->MaxHealth)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("이미 체력이 가득 참 (HP: %f)"), StatusComp->CurrHealth);
-		return;
-	}
+	if (StatusComp->CurrHealth >= StatusComp->MaxHealth) return; 
 
 	if (AnimData && AnimData->HealMontage)
 	{
@@ -1003,7 +998,7 @@ void APrototypeCharacter::AbortAllActions()
 	{
 		AnimInst->Montage_Stop(0.2f);
 	}
-
+	DestroyHealItemVisual();
 	// 인터렉션 상태 강제 종료
 	if (InteractionComp)
 	{

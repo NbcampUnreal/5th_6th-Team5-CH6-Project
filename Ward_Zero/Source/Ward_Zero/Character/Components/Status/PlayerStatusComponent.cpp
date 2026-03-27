@@ -139,9 +139,8 @@ void UPlayerStatusComponent::DestroyHealItemVisual()
 {
 	if (CurrHealItem)
 	{
-		CurrHealItem->SetActorEnableCollision(false);
-		CurrHealItem->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-		CurrHealItem->SetActorHiddenInGame(true);
+		CurrHealItem->Destroy(); 
+		CurrHealItem = nullptr;
 	}
 }
 
