@@ -4,6 +4,7 @@
 #include "Engine/Light.h"
 #include "Components/LightComponent.h"
 #include "Engine/PostProcessVolume.h"
+#include "Kismet/GameplayStatics.h"
 
 AEnvManager::AEnvManager()
 {
@@ -17,86 +18,73 @@ AEnvManager::AEnvManager()
 
 void AEnvManager::BeginPlay()
 {
-    Super::BeginPlay();
-
+    Super::BeginPlay(); 
 
     for (FZoneConfig& Config : ZoneConfigs)
     {
-        if (Config.ZonePostProcess)
-        {
-            Config.ZonePostProcess->bEnabled = false;
-        }
+        SetZoneState(Config, false);
+    }
 
-        for (ALight* Light : Config.ZoneLights)
+    if (BaseNormalBGM)
+    {
+        PlayFadeMusic(BaseNormalBGM);
+    }
+
+    CurrentZone = EEnvZone::None;
+    SwitchZone(EEnvZone::B1F);
+}
+
+
+void AEnvManager::SetZoneState(FZoneConfig& Config, bool bActive)
+{
+    
+    if (Config.ZonePostProcess)
+    {
+        Config.ZonePostProcess->bEnabled = bActive;
+        if (bActive)
         {
-            if (Light && Light->GetLightComponent())
-            {
-                ULightComponent* LightComp = Light->GetLightComponent();
-                LightComp->bAffectsWorld = false;
-                LightComp->SetCastShadows(false);
-                LightComp->SetVisibility(false);
-                LightComp->MarkRenderStateDirty();
-            }
+            Config.ZonePostProcess->Priority = 10.0f;
         }
     }
 
-    if (BaseNormalBGM) PlayFadeMusic(BaseNormalBGM);
+    for (ALight* Light : Config.ZoneLights)
+    {
+        if (Light && Light->GetLightComponent())
+        {
+            ULightComponent* LightComp = Light->GetLightComponent();
 
-    
-    SwitchZone(EEnvZone::B1F);
+            LightComp->SetVisibility(bActive);
+            LightComp->bAffectsWorld = bActive;
+            LightComp->SetCastShadows(bActive);
+            LightComp->MarkRenderStateDirty();
+        }
+    }
 }
 
 void AEnvManager::SwitchZone(EEnvZone NewZone)
 {
-    if (CurrentZone == NewZone) return;
+    if (CurrentZone == NewZone || NewZone == EEnvZone::None) return;
 
-    
-    for (FZoneConfig& Config : ZoneConfigs)
+    if (FZoneConfig* CurrentConfig = GetConfig(CurrentZone))
     {
-        if (Config.ZonePostProcess) Config.ZonePostProcess->bEnabled = false;
-
-        for (ALight* Light : Config.ZoneLights)
-        {
-            if (Light && Light->GetLightComponent())
-            {
-                ULightComponent* LightComp = Light->GetLightComponent();
-                LightComp->SetVisibility(false);
-                LightComp->bAffectsWorld = false;
-                LightComp->MarkRenderStateDirty();
-            }
-        }
+        SetZoneState(*CurrentConfig, false);
     }
 
     CurrentZone = NewZone;
-
-    
     if (FZoneConfig* NewConfig = GetConfig(CurrentZone))
     {
-        if (NewConfig->ZonePostProcess)
-        {
-            NewConfig->ZonePostProcess->bEnabled = true;
-            NewConfig->ZonePostProcess->Priority = 10.0f;
-        }
-
-        for (ALight* Light : NewConfig->ZoneLights)
-        {
-            if (Light && Light->GetLightComponent())
-            {
-                ULightComponent* LightComp = Light->GetLightComponent();
-                LightComp->SetVisibility(true);
-                LightComp->bAffectsWorld = true;
-                LightComp->MarkRenderStateDirty();
-            }
-        }
+        SetZoneState(*NewConfig, true);
     }
 }
-
 
 FZoneConfig* AEnvManager::GetConfig(EEnvZone Zone)
 {
     for (FZoneConfig& Config : ZoneConfigs)
     {
-        if (Config.ZoneType == Zone) return &Config;
+        if (Config.ZoneType == Zone)
+        {
+            return &Config;
+        }
     }
     return nullptr;
 }
@@ -104,6 +92,7 @@ FZoneConfig* AEnvManager::GetConfig(EEnvZone Zone)
 void AEnvManager::PlayFadeMusic(USoundBase* NewMusic)
 {
     if (!NewMusic || !BGMComponent) return;
+
     if (BGMComponent->IsPlaying() && BGMComponent->GetSound() == NewMusic) return;
 
     BGMComponent->bAllowSpatialization = false;
@@ -113,7 +102,6 @@ void AEnvManager::PlayFadeMusic(USoundBase* NewMusic)
     BGMComponent->SetSound(NewMusic);
     BGMComponent->FadeIn(1.5f, 1.0f, 0.0f);
 }
-
 
 void AEnvManager::PlayHutonBGM() { PlayFadeMusic(HutonBGM); }
 void AEnvManager::PlayHutonPhase2BGM() { PlayFadeMusic(HutonPhase2BGM); }

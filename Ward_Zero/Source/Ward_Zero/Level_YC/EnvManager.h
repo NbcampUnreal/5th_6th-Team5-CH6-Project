@@ -12,7 +12,11 @@ class APostProcessVolume;
 UENUM(BlueprintType)
 enum class EEnvZone : uint8
 {
-    B1F, F1, F2, BossRoom, None
+    B1F,
+    F1,
+    F2,
+    BossRoom,
+    None 
 };
 
 USTRUCT(BlueprintType)
@@ -48,14 +52,13 @@ public:
 
     
     UPROPERTY(EditAnywhere, Category = "Environment|Sound")
-    USoundBase* BaseNormalBGM; 
+    USoundBase* BaseNormalBGM;
 
     UPROPERTY(EditAnywhere, Category = "Environment|Sound")
     USoundBase* HutonBGM;
 
     UPROPERTY(EditAnywhere, Category = "Environment|Sound")
-    class USoundBase* HutonPhase2BGM; 
-
+    USoundBase* HutonPhase2BGM;
 
     UPROPERTY(EditAnywhere, Category = "Environment|Sound")
     USoundBase* TentacleBGM;
@@ -64,7 +67,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Environment")
     void SwitchZone(EEnvZone NewZone);
 
-    // AI 호출용 BGM 함수들 
+    
     UFUNCTION(BlueprintCallable, Category = "Environment|Sound")
     void PlayHutonBGM();
 
@@ -78,13 +81,16 @@ public:
     void RestoreNormalBGM();
 
 private:
+    
     UPROPERTY(VisibleAnywhere, Category = "Environment")
     EEnvZone CurrentZone = EEnvZone::None;
 
     UPROPERTY(VisibleAnywhere, Category = "Environment")
     UAudioComponent* BGMComponent;
 
+    void SetZoneState(FZoneConfig& Config, bool bActive);
+
     FZoneConfig* GetConfig(EEnvZone Zone);
+
     void PlayFadeMusic(USoundBase* NewMusic);
 };
-
