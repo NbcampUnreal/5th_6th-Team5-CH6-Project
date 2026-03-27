@@ -40,6 +40,8 @@ void UGameOverWidget::NativeConstruct()
 
 void UGameOverWidget::PlayFadeIn()
 {
+	UpdateButtonAvailability();
+
 	if (Anim_FadeIn)
 	{
 		PlayAnimation(Anim_FadeIn);
@@ -52,6 +54,18 @@ void UGameOverWidget::PlayFadeIn()
 		if (TXT_GameOver) TXT_GameOver->SetRenderOpacity(1.0f);
 		if (Panel_Buttons) Panel_Buttons->SetRenderOpacity(1.0f);
 	}
+}
+
+void UGameOverWidget::UpdateButtonAvailability()
+{
+	ULocalPlayer* LP = GetOwningLocalPlayer();
+	if (!LP) return;
+
+	USaveSubsystem* SaveSys = LP->GetSubsystem<USaveSubsystem>();
+	bool bHasSaves = SaveSys && SaveSys->GetSaveFileList().Num() > 0;
+
+	if (BTN_LoadLastSave) BTN_LoadLastSave->SetIsEnabled(bHasSaves);
+	if (BTN_LoadSave)     BTN_LoadSave->SetIsEnabled(bHasSaves);
 }
 
 // ══════════════════════════════════════════

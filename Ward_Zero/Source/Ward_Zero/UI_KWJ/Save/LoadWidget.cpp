@@ -4,6 +4,7 @@
 #include "UI_KWJ/Save/SaveSubsystem.h"
 #include "UI_KWJ/Save/SaveSlotItem.h"
 #include "UI_KWJ/PauseMenu/PauseMenuSubsystem.h"
+#include "UI_KWJ/GameOver/GameOverSubsystem.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "Components/ScrollBox.h"
@@ -113,9 +114,18 @@ void ULoadWidget::OnCloseClicked()
 		SaveSub->HideLoadUI();
 	}
 
-	// 메인메뉴에서 열렸으면 PauseMenu 안 열기
-	if (!bOpenedFromMainMenu)
+	if (bOpenedFromGameOver)
 	{
+		// 게임오버에서 열었으면 게임오버 화면으로 복귀
+		UGameOverSubsystem* GameOverSys = LP->GetSubsystem<UGameOverSubsystem>();
+		if (GameOverSys)
+		{
+			GameOverSys->ShowGameOver();
+		}
+	}
+	else if (!bOpenedFromMainMenu)
+	{
+		// 인게임 ESC에서 열었으면 PauseMenu로 복귀
 		UPauseMenuSubsystem* PauseSys = LP->GetSubsystem<UPauseMenuSubsystem>();
 		if (PauseSys)
 		{
@@ -226,12 +236,8 @@ FReply ULoadWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent
 {
 	if (InKeyEvent.GetKey() == EKeys::Escape)
 	{
-		// 나가기 버튼이 보이면 (게임오버가 아니면) ESC로 닫기
-		if (BTN_Close && BTN_Close->IsVisible())
-		{
-			OnCloseClicked();
-			return FReply::Handled();
-		}
+		OnCloseClicked();
+		return FReply::Handled();
 	}
 
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);

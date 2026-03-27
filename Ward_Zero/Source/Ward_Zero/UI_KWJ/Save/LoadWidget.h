@@ -82,6 +82,9 @@ public:
 	/** 메인메뉴에서 열렸는지 표시 */
 	void SetOpenedFromMainMenu(bool bFromMainMenu) { bOpenedFromMainMenu = bFromMainMenu; }
 
+	/** 게임오버 UI에서 열렸는지 표시 (ESC 시 게임오버로 복귀) */
+	void SetOpenedFromGameOver(bool bVal) { bOpenedFromGameOver = bVal; }
+
 protected:
 
 	virtual void NativeOnInitialized() override;
@@ -106,4 +109,5 @@ private:
 	void UpdateDetailPanel(const FSaveFileInfo& Info);
 
 	bool bOpenedFromMainMenu = false;
+	bool bOpenedFromGameOver = false;
 };

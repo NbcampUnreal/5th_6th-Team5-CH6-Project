@@ -11,6 +11,7 @@
 #include "Engine/Texture2D.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Ward_Zero.h"
 
 void USaveWidget::NativeOnInitialized()
@@ -42,6 +43,17 @@ void USaveWidget::NativeOnInitialized()
 void USaveWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+}
+
+FReply USaveWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (InKeyEvent.GetKey() == EKeys::Escape)
+	{
+		OnCloseClicked();
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
 
 // ════════════════════════════════════════════════════════

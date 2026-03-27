@@ -259,6 +259,7 @@ void UOptionsWidget::OnApplyClicked()
 	Settings->SetOverallScalabilityLevel(QualityIndex);
 
 	// ── 적용 & 저장 ──
+	Settings->ApplyResolutionSettings(false);
 	Settings->ApplySettings(false);
 	Settings->SaveSettings();
 
