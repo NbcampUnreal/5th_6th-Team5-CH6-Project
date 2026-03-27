@@ -96,7 +96,8 @@ void UInteractionComponent::TryInteract()
 	{
 		EInteractionType Type = IInteractionBase::Execute_GetInteractionType(ClosestInteractable);
 
-		if (Type == EInteractionType::Door) HandleDoorInteraction(ClosestInteractable);
+		if (Type == EInteractionType::Door || Type == EInteractionType::SingleDoor || Type == EInteractionType::SafeBox)
+			HandleDoorInteraction(ClosestInteractable);
 		else if (Type == EInteractionType::Ammo || Type == EInteractionType::Heal || Type == EInteractionType::Key)
 			HandleItemInteraction(ClosestInteractable);
 		else if (Type == EInteractionType::Lever)
