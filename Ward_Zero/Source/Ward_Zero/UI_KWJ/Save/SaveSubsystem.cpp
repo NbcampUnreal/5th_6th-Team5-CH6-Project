@@ -7,6 +7,7 @@
 #include "UI_KWJ/Save/LoadWidget.h"
 #include "UI_KWJ/GameOver/GameOverSubsystem.h"
 #include "UI_KWJ/Loading/LoadingScreenSubsystem.h"
+#include "Level_YC/EnvManager.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Character/Components/Status/PlayerStatusComponent.h"
 #include "Character/Components/Combat/PlayerCombatComponent.h"
@@ -422,6 +423,31 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 			SaveGI->SetCurrentStage(SaveData->StageIndex);
 		}
 	}
+
+	// 스테이지 인덱스에 따라 환경 구역 전환
+	AActor* FoundActor = UGameplayStatics::GetActorOfClass(World, AEnvManager::StaticClass());
+	AEnvManager* EnvManager = Cast<AEnvManager>(FoundActor);
+	if (EnvManager)
+	{
+		EEnvZone TargetZone = EEnvZone::B1F;
+		switch (SaveData->StageIndex)
+		{
+		case 0: case 1:
+			TargetZone = EEnvZone::B1F;
+			break;
+		case 2: case 3:
+			TargetZone = EEnvZone::F2;
+			break;
+		case 4: case 5:
+			TargetZone = EEnvZone::F1;
+			break;
+		default:
+			TargetZone = EEnvZone::B1F;
+			break;
+		}
+		EnvManager->SwitchZone(TargetZone);
+	}
+
 }
 
 // ════════════════════════════════════════════════════════
@@ -554,6 +580,9 @@ void USaveSubsystem::ShowSaveUI()
 		Widget->SetVisibility(ESlateVisibility::Visible);
 		Widget->SetKeyboardFocus();
 
+		// 게임 일시정지
+		UGameplayStatics::SetGamePaused(GetWorld(), true);
+
 		APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
 		if (PC)
 		{
@@ -572,6 +601,9 @@ void USaveSubsystem::HideSaveUI()
 	{
 		SaveWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
+
+	// 게임 일시정지 해제
+	UGameplayStatics::SetGamePaused(GetWorld(), false);
 
 	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
 	if (PC)
@@ -597,8 +629,9 @@ void USaveSubsystem::ShowLoadUI(bool bFromGameOver, bool bFromMainMenu)
 	if (Widget)
 	{
 		Widget->RefreshSaveList();
-		Widget->SetCloseButtonVisible(!bFromGameOver);
+		Widget->SetCloseButtonVisible(true);
 		Widget->SetOpenedFromMainMenu(bFromMainMenu);
+		Widget->SetOpenedFromGameOver(bFromGameOver);
 		Widget->SetVisibility(ESlateVisibility::Visible);
 		Widget->SetKeyboardFocus();
 
