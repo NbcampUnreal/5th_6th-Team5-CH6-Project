@@ -5,6 +5,7 @@
 #include "InputActionValue.h"
 #include "Character/Enum/CharacterType.h"
 #include "Character/Animation/Interface/PlayerAnimInterface.h"
+#include "Components/TimelineComponent.h"
 #include "PrototypeCharacter.generated.h"
 
 UENUM(BlueprintType)
@@ -245,4 +246,29 @@ public:
 
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 	virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
+
+	//UPROPERTY()
+	//FTimeline ReviveCameraTimeline;
+
+	//UPROPERTY(EditAnywhere, Category = "Camera")
+	//UCurveFloat* ReviveCameraCurve; // 0초에서 -60(아래), 끝날 때 0(정면)으로 변하는 커브 설정
+
+	/*UFUNCTION()
+	void UpdateReviveCamera(float Value);*/
+
+	UPROPERTY(EditAnywhere, Category = "CameraShake")
+	TSubclassOf<UCameraShakeBase> IdleShakeClass;
+
+	UPROPERTY(EditAnywhere, Category = "CameraShake")
+	TSubclassOf<UCameraShakeBase> WalkShakeClass;
+
+	UPROPERTY(EditAnywhere, Category = "CameraShake")
+	TSubclassOf<UCameraShakeBase> RunShakeClass;
+
+	UPROPERTY()
+	UCameraShakeBase* CurrentCameraShake;
+
+	// ABP Base에서 State(Idle/Walk/Run) 호출할 노티파이 이벤트
+	UFUNCTION(BlueprintCallable, Category = "Camera")
+	void ChangeLocomotionCameraShake(int32 StateIndex);
 };

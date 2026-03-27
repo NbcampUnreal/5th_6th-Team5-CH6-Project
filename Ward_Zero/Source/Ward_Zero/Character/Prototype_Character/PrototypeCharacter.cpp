@@ -29,6 +29,7 @@
 #include "Gimmic_CY/Interface/InteractionBase.h"
 #include "Gimmic_CY/Object/Lever/Lever.h"
 #include "MotionWarpingComponent.h"
+#include "Components/TimelineComponent.h"
 
 APrototypeCharacter::APrototypeCharacter()
 {
@@ -153,6 +154,12 @@ void APrototypeCharacter::BeginPlay()
 		// 캐릭터의 계산이 다 끝난 "다음에" 카메라 틱을 돌리라고 명시하는 것
 		CustomCameraComp->AddTickPrerequisiteActor(this);
 	}
+	/*if (ReviveCameraCurve)
+	{
+		FOnTimelineFloat TimelineProgress;
+		TimelineProgress.BindUFunction(this, FName("UpdateReviveCamera"));
+		ReviveCameraTimeline.AddInterpFloat(ReviveCameraCurve, TimelineProgress);
+	}*/
 }
 
 void APrototypeCharacter::Tick(float DeltaTime)
@@ -188,8 +195,17 @@ void APrototypeCharacter::Tick(float DeltaTime)
 			GetCharacterMovement()->RotationRate = FRotator(0.0f, 240.0f, 0.0f);
 		}
 	}
+	if (MainCamera && GetMesh())
+	{
+		// 카메라와 캐릭터 메쉬 중심 간의 거리 계산
+		float DistanceToCamera = FVector::Dist(MainCamera->GetComponentLocation(), GetMesh()->GetComponentLocation());
+
+		// 거리가 60 미만으로 너무 가까워지면 메쉬를 숨김 (숫자는 테스트하며 조절)
+		GetMesh()->SetOwnerNoSee(DistanceToCamera < 60.0f);
+	}
 
 	UpdateBodyRotation(DeltaTime);
+	/*ReviveCameraTimeline.TickTimeline(DeltaTime);*/
 }
 
 #pragma region Input Biding
@@ -330,12 +346,10 @@ void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 	{
 		TargetLayer = (CombatComp->GetCurrentWeaponIndex() == 1) ? PistolLayer : SMGLayer;
 
-		// ⭐ [추가] C++에서도 현재 레이어 타입을 확실하게 업데이트!
 		CurrentLayerType = (CombatComp->GetCurrentWeaponIndex() == 1) ? EWeaponLayerType::Pistol : EWeaponLayerType::SMG;
 	}
 	else
 	{
-		// ⭐ [추가] 무기를 집어넣었으니 Unarmed 상태로 변경!
 		CurrentLayerType = EWeaponLayerType::Unarmed;
 	}
 	AnimInst->LinkAnimClassLayers(TargetLayer);
@@ -726,10 +740,10 @@ void APrototypeCharacter::Revive()
 		}
 	}
 
-	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+	/*if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
 	{
 		AnimInst->StopAllMontages(0.0f);
-	}
+	}*/
 
 	// 몽타주 재생 및 길이(시간) 가져오기
 	float MontageDuration = 0.0f;
@@ -1032,4 +1046,39 @@ void APrototypeCharacter::NotifyActorBeginOverlap(AActor* OtherActor)
 void APrototypeCharacter::NotifyActorEndOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorEndOverlap(OtherActor);
+}
+
+//void APrototypeCharacter::UpdateReviveCamera(float Value)
+//{
+//	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+//	{
+//		FRotator CurrentRot = PC->GetControlRotation();
+//		CurrentRot.Pitch = Value; // 커브 값에 따라 Pitch 조절
+//		PC->SetControlRotation(CurrentRot);
+//	}
+//}
+
+void APrototypeCharacter::ChangeLocomotionCameraShake(int32 StateIndex)
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC || !PC->PlayerCameraManager) return;
+
+	// 기존 쉐이크 중지
+	if (CurrentCameraShake)
+	{
+		PC->PlayerCameraManager->StopCameraShake(CurrentCameraShake, false);
+	}
+
+	TSubclassOf<UCameraShakeBase> ShakeToPlay = nullptr;
+	switch (StateIndex)
+	{
+	case 0: ShakeToPlay = IdleShakeClass; break;
+	case 1: ShakeToPlay = WalkShakeClass; break;
+	case 2: ShakeToPlay = RunShakeClass; break;
+	}
+
+	if (ShakeToPlay)
+	{
+		CurrentCameraShake = PC->PlayerCameraManager->StartCameraShake(ShakeToPlay, 1.0f);
+	}
 }
