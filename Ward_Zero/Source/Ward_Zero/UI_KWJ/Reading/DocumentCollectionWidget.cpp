@@ -164,5 +164,6 @@ void UDocumentCollectionWidget::OnDocumentIndexClicked(int32 DocIndex)
 	if (DocSys)
 	{
 		DocSys->OpenDocumentByIndex(DocIndex);
+		DocSys->bOpenedFromCollection = true;
 	}
 }

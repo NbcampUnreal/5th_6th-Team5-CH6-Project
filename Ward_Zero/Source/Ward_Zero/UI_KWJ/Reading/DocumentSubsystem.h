@@ -83,7 +83,8 @@ public:
 	/** 서류 수집 UI가 열려있는지 */
 	UFUNCTION(BlueprintPure, Category = "Document|Collection")
 	bool IsCollectionOpen() const;
-
+	/** 수집 UI에서 서류를 열었는지 여부 */
+	bool bOpenedFromCollection = false;
 protected:
 
 	UPROPERTY()
@@ -113,4 +114,6 @@ protected:
 	UDocumentCollectionWidget* CollectionWidget;
 
 	UDocumentCollectionWidget* GetOrCreateCollection();
+
+
 };
