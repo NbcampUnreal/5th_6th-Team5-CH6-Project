@@ -1,7 +1,6 @@
 // DocumentCollectionItem.cpp
 
 #include "UI_KWJ/Reading/DocumentCollectionItem.h"
-#include "UI_KWJ/Reading/DocumentData.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
@@ -18,60 +17,29 @@ void UDocumentCollectionItem::NativeOnInitialized()
 	}
 }
 
-void UDocumentCollectionItem::SetDocumentInfo(UDocumentData* InDocument, bool bUnlocked)
+void UDocumentCollectionItem::SetDocumentInfoFromEntry(const FWardDocumentEntry& Entry, bool bUnlocked)
 {
-	CachedDocument = InDocument;
+	CachedDocIndex = Entry.DocIndex;
 	bIsUnlocked = bUnlocked;
-
-	if (!InDocument)
-	{
-		// 빈 슬롯
-		if (TXT_Title) TXT_Title->SetText(FText::FromString(TEXT("???")));
-		if (TXT_PageCount) TXT_PageCount->SetVisibility(ESlateVisibility::Collapsed);
-		if (IMG_Lock) IMG_Lock->SetVisibility(ESlateVisibility::Visible);
-		if (BTN_Item) BTN_Item->SetIsEnabled(false);
-		return;
-	}
 
 	// 제목
 	if (TXT_Title)
 	{
-		if (bUnlocked)
-		{
-			TXT_Title->SetText(InDocument->DocumentTitle);
-		}
-		else
-		{
-			TXT_Title->SetText(FText::FromString(TEXT("???")));
-		}
+		TXT_Title->SetText(bUnlocked ? Entry.Title : FText::FromString(TEXT("???")));
 	}
 
 	// 페이지 수
 	if (TXT_PageCount)
 	{
-		if (bUnlocked)
-		{
-			FString PageStr = FString::Printf(TEXT("Pages: %d"), InDocument->Pages.Num());
-			TXT_PageCount->SetText(FText::FromString(PageStr));
-			TXT_PageCount->SetVisibility(ESlateVisibility::Visible);
-		}
-		else
-		{
-			TXT_PageCount->SetVisibility(ESlateVisibility::Collapsed);
-		}
+		TXT_PageCount->SetVisibility(bUnlocked ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
 
-	// 썸네일 (배경 텍스처 사용)
+	// 썸네일
 	if (IMG_Thumbnail)
 	{
-		if (bUnlocked && InDocument->BackgroundTexture.IsValid())
+		if (bUnlocked && Entry.ThumbnailImage.IsValid())
 		{
-			UTexture2D* Tex = InDocument->BackgroundTexture.Get();
-			if (!Tex)
-			{
-				Tex = InDocument->BackgroundTexture.LoadSynchronous();
-			}
-
+			UTexture2D* Tex = Entry.ThumbnailImage.LoadSynchronous();
 			if (Tex)
 			{
 				FSlateBrush Brush;
@@ -84,8 +52,7 @@ void UDocumentCollectionItem::SetDocumentInfo(UDocumentData* InDocument, bool bU
 		}
 		else
 		{
-			// 잠금 상태 — 어둡게
-			IMG_Thumbnail->SetColorAndOpacity(FLinearColor(0.2f, 0.2f, 0.2f, 1.0f));
+			IMG_Thumbnail->SetColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 1.f));
 		}
 	}
 
@@ -95,7 +62,7 @@ void UDocumentCollectionItem::SetDocumentInfo(UDocumentData* InDocument, bool bU
 		IMG_Lock->SetVisibility(bUnlocked ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 	}
 
-	// 버튼 활성화
+	// 버튼
 	if (BTN_Item)
 	{
 		BTN_Item->SetIsEnabled(bUnlocked);
@@ -104,8 +71,8 @@ void UDocumentCollectionItem::SetDocumentInfo(UDocumentData* InDocument, bool bU
 
 void UDocumentCollectionItem::OnItemClicked()
 {
-	if (bIsUnlocked && CachedDocument)
+	if (bIsUnlocked && CachedDocIndex >= 0)
 	{
-		OnClicked_Item.ExecuteIfBound(CachedDocument);
+		OnClicked_Index.ExecuteIfBound(CachedDocIndex);
 	}
 }

@@ -15,6 +15,15 @@ void UInteractionHintSubsystem::ShowHint(float Duration)
 	}
 }
 
+void UInteractionHintSubsystem::ShowHintWithText(const FText& Message, float Duration)
+{
+	UInteractionHintWidget* Widget = GetOrCreateWidget();
+	if (Widget)
+	{
+		Widget->ShowMessageWithText(Message, Duration);
+	}
+}
+
 void UInteractionHintSubsystem::HideHint()
 {
 	if (HintWidget)

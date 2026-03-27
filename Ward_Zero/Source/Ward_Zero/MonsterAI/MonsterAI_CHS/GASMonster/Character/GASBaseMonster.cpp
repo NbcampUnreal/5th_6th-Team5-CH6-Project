@@ -44,7 +44,7 @@ void AGASBaseMonster::Die()
 		}
 	}), 2.0f, false);
 	
-	OnDeathDelegate.Broadcast();
+	OnDeathDelegate.Broadcast(this);
 	
 }
 

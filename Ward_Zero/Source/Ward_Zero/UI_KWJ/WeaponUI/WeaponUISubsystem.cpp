@@ -37,20 +37,31 @@ void UWeaponUISubsystem::BindToStatusComponent(UPlayerStatusComponent* StatusCom
 	// 이전 바인딩 해제 (ServerTravel 후 새 캐릭터에 재바인딩)
 	if (BoundStatusComp && IsValid(BoundStatusComp))
 	{
-		BoundStatusComp->OnPistolAmmoChanged.RemoveDynamic(this, &UWeaponUISubsystem::OnAmmoChanged);
-		BoundStatusComp->OnSMGAmmoChanged.RemoveDynamic(this, &UWeaponUISubsystem::OnAmmoChanged);
+		BoundStatusComp->OnPistolAmmoChanged.RemoveDynamic(this, &UWeaponUISubsystem::OnPistolAmmoChanged);
+		BoundStatusComp->OnSMGAmmoChanged.RemoveDynamic(this, &UWeaponUISubsystem::OnSMGAmmoChanged);
 	}
 
 	// 새 StatusComp에 바인딩
-	StatusComp->OnPistolAmmoChanged.AddDynamic(this, &UWeaponUISubsystem::OnAmmoChanged);
-	StatusComp->OnSMGAmmoChanged.AddDynamic(this, &UWeaponUISubsystem::OnAmmoChanged);
+	StatusComp->OnPistolAmmoChanged.AddDynamic(this, &UWeaponUISubsystem::OnPistolAmmoChanged);
+	StatusComp->OnSMGAmmoChanged.AddDynamic(this, &UWeaponUISubsystem::OnSMGAmmoChanged);
 
 	BoundStatusComp = StatusComp;
 	UE_LOG(LogWard_Zero, Log, TEXT("WeaponUI: StatusComp 탄약 델리게이트 바인딩 완료"));
 }
 
-void UWeaponUISubsystem::OnAmmoChanged(int32 Current, int32 Max, int32 Reserve)
+void UWeaponUISubsystem::OnPistolAmmoChanged(int32 Current, int32 Max, int32 Reserve)
 {
+	if (WeaponIdx != 1) return;
+	UWeaponStatusWidget* Widget = GetOrCreateWidget();
+	if (Widget)
+	{
+		Widget->UpdateAmmoDisplay(Current, Max, Reserve);
+	}
+}
+
+void UWeaponUISubsystem::OnSMGAmmoChanged(int32 Current, int32 Max, int32 Reserve)
+{
+	if (WeaponIdx != 2) return;
 	UWeaponStatusWidget* Widget = GetOrCreateWidget();
 	if (Widget)
 	{
@@ -65,6 +76,7 @@ void UWeaponUISubsystem::OnAmmoChanged(int32 Current, int32 Max, int32 Reserve)
 void UWeaponUISubsystem::NotifyWeaponChanged(int32 NewWeaponIndex, bool bIsDrawn)
 {
 	UWeaponStatusWidget* Widget = GetOrCreateWidget();
+	WeaponIdx = NewWeaponIndex;
 	if (Widget)
 	{
 		Widget->OnWeaponChanged(NewWeaponIndex, bIsDrawn);

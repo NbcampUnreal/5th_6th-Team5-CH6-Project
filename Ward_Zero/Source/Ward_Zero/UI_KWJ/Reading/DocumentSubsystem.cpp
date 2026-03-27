@@ -69,16 +69,27 @@ void UDocumentSubsystem::CloseDocument()
 		ViewerWidget->CloseDocument();
 	}
 
-	// 게임 재개
-	UGameplayStatics::SetGamePaused(GetWorld(), false);
-
 	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
 	if (PC)
 	{
-		FInputModeGameOnly InputMode;
-		PC->SetInputMode(InputMode);
-		PC->SetShowMouseCursor(false);
+		if (bOpenedFromCollection)
+		{
+			// 수집 UI에서 열었으면 커서 유지
+			FInputModeUIOnly InputMode;
+			PC->SetInputMode(InputMode);
+			PC->SetShowMouseCursor(true);
+		}
+		else
+		{
+			// 인게임에서 열었으면 게임 재개
+			UGameplayStatics::SetGamePaused(GetWorld(), false);
+			FInputModeGameOnly InputMode;
+			PC->SetInputMode(InputMode);
+			PC->SetShowMouseCursor(false);
+		}
 	}
+
+	bOpenedFromCollection = false;
 }
 
 void UDocumentSubsystem::OpenDocumentByIndex(int32 DocIndex)
@@ -115,6 +126,7 @@ void UDocumentSubsystem::OpenDocumentByIndex(int32 DocIndex)
 		TempDoc->BackgroundTexture = Entry.BackgroundImage;
 	}
 
+	bOpenedFromCollection = false;
 	OpenDocument(TempDoc);
 
 	UE_LOG(LogWard_Zero, Log, TEXT("서류 열기 (인덱스 %d): %s"), DocIndex, *Entry.Title.ToString());
@@ -182,7 +194,7 @@ UDocumentViewerWidget* UDocumentSubsystem::GetOrCreateViewer()
 	ViewerWidget = CreateWidget<UDocumentViewerWidget>(PC, ViewerWidgetClass);
 	if (ViewerWidget)
 	{
-		ViewerWidget->AddToViewport(100);
+		ViewerWidget->AddToViewport(500);
 		ViewerWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 

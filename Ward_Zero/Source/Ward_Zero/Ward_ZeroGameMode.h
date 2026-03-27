@@ -18,6 +18,7 @@ public:
 	
 	/** Constructor */
 	AWard_ZeroGameMode();
+	
 };
 
 
