@@ -100,6 +100,8 @@ bool UPlayerStatusComponent::AddHealingItem(int32 Amount)
 	if (HealingItemCount >= MaxHealingItemCount) return false;
 
 	HealingItemCount = FMath::Clamp(HealingItemCount + Amount, 0, MaxHealingItemCount);
+
+	OnHealingItemCountChanged.Broadcast(HealingItemCount); 
 	return true;
 }
 

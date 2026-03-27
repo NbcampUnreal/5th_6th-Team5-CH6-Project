@@ -103,13 +103,16 @@ void UInteractionComponent::TryInteract()
 			HandleLeverInteraction(ClosestInteractable);
 		else
 		{
-			IInteractionBase::Execute_HidePressEWidget(ClosestInteractable);
+			/*IInteractionBase::Execute_HidePressEWidget(ClosestInteractable);*/
 			IInteractionBase::Execute_OnIneracted(ClosestInteractable, OwnerCharacter);
 		}
 		return;
 	}
 	// 상호작용은 못하지만, 잠긴 문이 오버랩 영역에 있는 경우 힌트 출력 
-	if (ClosetLockedDoor) ShowInteractionHint();
+	if (ClosetLockedDoor)
+	{
+		ShowInteractionHint(TEXT("문이 굳게 잠겨 있다. 열쇠가 필요할 것 같다."), 3.0f);
+	}
 }
 
 void UInteractionComponent::RefreshInteractionUI()
@@ -143,9 +146,8 @@ void UInteractionComponent::RefreshInteractionUI()
 	}
 }
 
-void UInteractionComponent::ShowInteractionHint()
+void UInteractionComponent::ShowInteractionHint(FString Message, float Duration)
 {
-	UE_LOG(LogTemp, Warning, TEXT("ShowInteractionHint Called!"));
 	if (!OwnerCharacter) return;
 	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
 	{
@@ -153,13 +155,11 @@ void UInteractionComponent::ShowInteractionHint()
 		{
 			if (UInteractionHintSubsystem* HintSubsystem = LP->GetSubsystem<UInteractionHintSubsystem>())
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Subsystem Found! Showing Hint..."));
-				HintSubsystem->ShowHint(2.0f);
+				HintSubsystem->ShowHintWithText(FText::FromString(Message), Duration);
 				return;
 			}
 		}
 	}
-	UE_LOG(LogTemp, Error, TEXT("Failed to find Subsystem or PlayerController!"));
 }
 
 void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)

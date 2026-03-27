@@ -8,6 +8,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerDied);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, float, Current, float, Max);
 // 탄약 변경 델리게이트 (현재 탄수, 최대 탄창 용량, 예비 탄수)
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAmmoChanged, int32, Current, int32, Max, int32, Reserve);
+// 힐템 수량 변경 델리게이트 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealingItemCountChanged, int32, NewCount);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class WARD_ZERO_API UPlayerStatusComponent : public UActorComponent
@@ -73,6 +75,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
 	int32 MaxHealingItemCount = 5;
+
+	// 힐템 수량 변경 델리게이트
+	UPROPERTY(BlueprintAssignable, Category = "Status|Events")
+	FOnHealingItemCountChanged OnHealingItemCountChanged;
 
 	// 회복약 습득 시 호출될 함수
 	bool AddHealingItem(int32 Amount);

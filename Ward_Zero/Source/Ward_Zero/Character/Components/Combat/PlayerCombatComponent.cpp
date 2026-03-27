@@ -590,23 +590,19 @@ UAnimMontage* UPlayerCombatComponent::GetCurrentEquipMontage(bool bEquip)
 void UPlayerCombatComponent::HandleWeaponAttachment(bool bToHand)
 {
 	if (!EquippedWeapon) return;
-	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
+	APrototypeCharacter* OwnerChar = Cast<APrototypeCharacter>(GetOwner());
 	if (!OwnerChar) return;
+
+	// 환풍구 안에 있는지 여부 확인
+	bool bIsInVent = OwnerChar->GetIsInVent(); // 캐릭터에 해당 변수가 있다고 가정
 
 	if (bToHand)
 	{
 		FName TargetSocketName;
-
 		if (CurrentWeaponIndex == 1) // Pistol
 		{
-			if (bIsAiming)
-			{
-				TargetSocketName = OwnerChar->bIsCrouched ? TEXT("WeaponSocket_Crouch") : TEXT("WeaponSocket");
-			}
-			else
-			{
-				TargetSocketName = TEXT("PistolRelaxSocket");
-			}
+			if (bIsAiming) TargetSocketName = OwnerChar->bIsCrouched ? TEXT("WeaponSocket_Crouch") : TEXT("WeaponSocket");
+			else TargetSocketName = TEXT("PistolRelaxSocket");
 		}
 		else // SMG
 		{
@@ -621,19 +617,22 @@ void UPlayerCombatComponent::HandleWeaponAttachment(bool bToHand)
 			EquippedWeapon->WeaponMesh->SetRelativeRotation(FRotator::ZeroRotator);
 		}
 
-		EquippedWeapon->SetActorHiddenInGame(false);
+		EquippedWeapon->SetActorHiddenInGame(false); 
+		EquippedWeapon->WeaponMesh->SetOwnerNoSee(bIsInVent);
 	}
 	else
 	{
-		if (CurrentWeaponIndex == 2)
+		if (CurrentWeaponIndex == 2) // SMG 등을 등에 멜 때
 		{
 			EquippedWeapon->AttachToComponent(OwnerChar->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("BackWeaponSocket"));
+			// 환풍구 안이면 등에서도 숨김
 			EquippedWeapon->SetActorHiddenInGame(false);
+			EquippedWeapon->WeaponMesh->SetOwnerNoSee(bIsInVent);
 		}
-		else
+		else // 권총 홀스터 등
 		{
 			EquippedWeapon->AttachToComponent(OwnerChar->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("HolsterSocket"));
-			EquippedWeapon->SetActorHiddenInGame(true);
+			EquippedWeapon->SetActorHiddenInGame(true); // 권총은 평소에도 숨김 처리라면 유지
 		}
 	}
 }
