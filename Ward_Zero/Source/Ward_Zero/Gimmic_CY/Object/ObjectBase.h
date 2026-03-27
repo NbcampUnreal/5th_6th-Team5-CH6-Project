@@ -32,7 +32,9 @@ public:
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
 	virtual EInteractionType GetInteractionType_Implementation() const override;
+	UFUNCTION(BlueprintCallable)
 	virtual bool SetBCanInteract(bool IsCanInteract) override;
+	UFUNCTION(BlueprintCallable)
 	virtual bool GetBCanInteract() const override;
 	virtual void ShowPressEWidget_Implementation() override;
 	virtual void HidePressEWidget_Implementation() override;
