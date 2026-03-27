@@ -10,7 +10,7 @@
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAttributeChangedDelegate,float,CurrentValue,float,MaxValue);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeathDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeathDelegate,AGASBaseMonster*,BossMonster);
 
 UCLASS()
 class WARD_ZERO_API AGASBaseMonster : public ACharacter, public IAbilitySystemInterface
@@ -65,4 +65,5 @@ public:
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnAttributeChangedDelegate OnStaminaChanged;
+	
 };
