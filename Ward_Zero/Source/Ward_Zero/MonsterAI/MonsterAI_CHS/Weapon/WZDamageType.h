@@ -15,7 +15,8 @@ enum class EDamageSource : uint8
 	None        UMETA(DisplayName = "None"),
 	Melee       UMETA(DisplayName = "Melee"),
 	Gun			UMETA(DisplayName = "Gun"),
-	Explosion   UMETA(DisplayName = "Explosion")
+	Explosion   UMETA(DisplayName = "Explosion"),
+	BossRush	UMETA(DisplayName = "BossRush")
 };
 UCLASS()
 class WARD_ZERO_API UWZDamageType : public UDamageType

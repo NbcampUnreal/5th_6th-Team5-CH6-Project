@@ -42,6 +42,10 @@ public:
 	
 	virtual void PostActorCreated() override;
 	
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UStaticMeshComponent* Lamp;
+	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void ChangeColorLampRed();
 

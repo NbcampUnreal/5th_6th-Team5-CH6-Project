@@ -35,7 +35,7 @@ ABaseZombie::ABaseZombie()
 	}
 }
 
-void ABaseZombie::OnDeath()
+void ABaseZombie::OnDeath(FVector HitDir, float HitForce)
 {
 	if (StatusComponent)
 	{
@@ -76,6 +76,11 @@ void ABaseZombie::OnDeath()
 	{
 		AudioLoopComponent->SetSound(MonsterData->DeathSound);
 		AudioLoopComponent->Play();
+	}
+	if (GetMesh())
+	{
+		FVector NormalizedDir = HitDir.GetSafeNormal();
+		GetMesh()->AddImpulseToAllBodiesBelow(NormalizedDir * HitForce, NAME_None, false, true);
 	}
 	SetLifeSpan(50.0f);
 }
@@ -126,7 +131,8 @@ float ABaseZombie::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 		CombatComponent->SpawnHitEffect(DamageEvent);
 		if (StatusComponent->ApplyDamage(ActualDamage,true) <= 0.f)
 		{
-			OnDeath();
+			FVector HitDir = GetActorLocation() - DamageCauser->GetActorLocation();
+			OnDeath(HitDir,500);
 		}
 	}
 
@@ -268,7 +274,7 @@ void ABaseZombie::Activate()
 	
 }
 
-void ABaseZombie::StartRagdollKnockdown(EHitDirection HitDir)
+void ABaseZombie::StartRagdollKnockdown(FVector HitDir,FName HitBone,float HitForce)
 {
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	USkeletalMeshComponent* ZombieMesh = GetMesh();
@@ -278,9 +284,13 @@ void ABaseZombie::StartRagdollKnockdown(EHitDirection HitDir)
 	
 	if (auto* AIC = Cast<ABaseZombie_AIController>(GetController()))
 	{
-		AIC->StopMovement();
+		GetCharacterMovement()->DisableMovement();
 		AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsKnockedDown, true);
 	}
+	FVector NormalizedDir = HitDir.GetSafeNormal();
+	ZombieMesh->AddImpulseToAllBodiesBelow(NormalizedDir * HitForce, NAME_None, false, true);
+	
+	
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(
@@ -319,6 +329,9 @@ void ABaseZombie::RecoverFromRagdoll()
 	FVector PelvisUp = FRotationMatrix(PelvisRot).GetScaledAxis(EAxis::Z);
 	bool bIsFaceUp = (PelvisUp.Z > 0.0f);
 	
+	
+	
+	
 	ZombieMesh->SetSimulatePhysics(false);
 	ZombieMesh->SetCollisionProfileName(TEXT("Custom"));
 	ZombieMesh->SetCollisionResponseToChannel(ECC_Visibility,ECR_Block);
@@ -326,10 +339,32 @@ void ABaseZombie::RecoverFromRagdoll()
 	ZombieMesh->SetRelativeLocationAndRotation(FVector(0,0,-90),FRotator(0,-90,0));
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	
-	UAnimMontage* MontageToPlay = bIsFaceUp ? MonsterData->GetUpMontages.FromFaceUp : MonsterData->GetUpMontages.FromFaceDown;
+	UAnimMontage* MontageToPlay = bIsFaceUp ?  MonsterData->GetUpMontages.FromFaceDown: MonsterData->GetUpMontages.FromFaceUp;
+	FTimerHandle Recovertimer;
+	
 	if (MontageToPlay)
 	{
-		PlayAnimM(MontageToPlay);
+		
+		float montagetime = PlayAnimMontage(MontageToPlay);
+		TWeakObjectPtr<ABaseZombie> WeakThis(this);
+		GetWorld()->GetTimerManager().SetTimer(Recovertimer, FTimerDelegate::CreateLambda([WeakThis]()
+			{
+				if (WeakThis.IsValid() && WeakThis->GetMesh())
+				{
+					if (auto* AIC = Cast<ABaseZombie_AIController>(WeakThis->GetController()))
+					{
+						
+						if (!WeakThis->StatusComponent->GetIsDead())
+						{
+							
+							WeakThis->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+							AIC->GetBlackboardComponent()->SetValueAsBool(WZAIKeys::IsKnockedDown, false);
+							WeakThis->StatusComponent->SetMainState(EMonsterMainState::Combat);
+							
+						}
+					}
+				}
+			}), montagetime, false);
 	}
 }
 

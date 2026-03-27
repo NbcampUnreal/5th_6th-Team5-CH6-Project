@@ -13,6 +13,9 @@ class UStatusComponent;
 class UMonsterDataAsset;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnActivateDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRagdollDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRecoverDelegate);
+
 
 UCLASS()
 class WARD_ZERO_API ABaseZombie : public ACharacter
@@ -23,7 +26,7 @@ public:
 	// Sets default values for this character's properties
 	ABaseZombie();
 
-	virtual void OnDeath();
+	virtual void OnDeath(FVector HitDir, float HitForce);
 	virtual void Tick(float DeltaSeconds) override;
 	bool bIsActivated = false;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
@@ -57,9 +60,15 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnActivateDelegate OnActivate;
 	
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnRagdollDelegate OnRagdoll;
+	
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnRagdollDelegate OnRecover;
+	
 	UFUNCTION(BlueprintCallable, Category = "Activate", meta = (DisplayName="Activate Zombie"))
 	void Activate();
-	void StartRagdollKnockdown(EHitDirection HitDir);
+	void StartRagdollKnockdown(FVector HitDir,FName BoneName,float HitForce);
 	void CheckRagdollVelocity();
 	void RecoverFromRagdoll();
 	

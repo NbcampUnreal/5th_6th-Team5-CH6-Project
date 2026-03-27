@@ -52,9 +52,7 @@ protected:
 	UNavModifierComponent* NavModifier;
 	
 	
-	// Lamp Mesh
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	UStaticMeshComponent* Lamp;
+	
 	
 
 	UFUNCTION()

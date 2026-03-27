@@ -34,7 +34,7 @@ protected:
 	
 	void ApplyKnockdown(EHitDirection HitDir);
 	void ApplyStun(EHitDirection HitDir, EHitPart HitPart);
-	void OnDeath();
+	void OnDeath(FVector HitDir, float HitForce);
 	
 
 	EHitDirection GetHitDirection(const FVector& ShotDirection);

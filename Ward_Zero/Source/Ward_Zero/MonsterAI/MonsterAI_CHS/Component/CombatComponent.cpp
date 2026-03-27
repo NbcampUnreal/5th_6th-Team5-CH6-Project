@@ -195,7 +195,7 @@ void UCombatComponent::ApplyStun(EHitDirection HitDir, EHitPart HitPart)
 }
 
 
-void UCombatComponent::OnDeath()
+void UCombatComponent::OnDeath(FVector HitDir, float HitForce)
 {
 	if (StatusComp && StatusComp->GetIsDead())
 	{
@@ -203,7 +203,7 @@ void UCombatComponent::OnDeath()
 	}
 	if (ABaseZombie* Owner = Cast<ABaseZombie>(GetOwner()))
 	{
-		Owner->OnDeath();
+		Owner->OnDeath(HitDir, HitForce);
 	}
 }
 
@@ -275,7 +275,7 @@ void UCombatComponent::ProcessDamageLogic(float Damage, EHitPart HitPart, const 
 		if (StatusComp->ApplyDamage(Damage,true) <= 0.0f)
 		{
 			UE_LOG(LogTemp,Warning,TEXT("Death"));
-			OnDeath();
+			OnDeath(AttackDir,DamageType->DamageImpulse);
 		}else if (FMath::RandRange(0.0f,100.0f) < KnockdownChance)
 		{
 			UE_LOG(LogTemp,Warning,TEXT("Knockdown"));
@@ -288,7 +288,7 @@ void UCombatComponent::ProcessDamageLogic(float Damage, EHitPart HitPart, const 
 	{
 		if (StatusComp->ApplyDamage(Damage,false) <= 0.0f)
 		{
-			OnDeath();
+			OnDeath(AttackDir,DamageType->DamageImpulse);
 		}
 		if (StatusComp->GetIsRecoveringCC() && StatusComp->GetIsKnockdownSuperArmor())
 		{
@@ -304,6 +304,7 @@ void UCombatComponent::HandleAllDamage(float Damage, FDamageEvent const& DamageE
 {
 	const UWZDamageType* WZDamageType = Cast<UWZDamageType>(DamageEvent.DamageTypeClass.GetDefaultObject());
 	
+	
 	FVector HitDir = FVector::ZeroVector;
 	EHitPart HitPart = EHitPart::Body;
 	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
@@ -312,36 +313,52 @@ void UCombatComponent::HandleAllDamage(float Damage, FDamageEvent const& DamageE
 		
 		const FPointDamageEvent* PointDamageEvent = static_cast<const FPointDamageEvent*>(&DamageEvent);
 		FHitResult HitInfo = PointDamageEvent->HitInfo;
-		
+		HitDir = PointDamageEvent->ShotDirection;
 		SpawnHitEffect(DamageEvent);
 		
-		
-		if (UTagPhysicalMaterial* PM = Cast<UTagPhysicalMaterial>(PointDamageEvent->HitInfo.PhysMaterial.Get()))
+		if (WZDamageType)
 		{
-			FGameplayTag HitTag = PM->HitPartTag;
-			if (HitTag.MatchesTag(FGameplayTag::RequestGameplayTag(GPTags::Head)))
+			if (WZDamageType->DamageSource == EDamageSource::BossRush)
 			{
-				UE_LOG(LogTemp,Warning,TEXT("Hit Tag Head"))
-				HitPart = EHitPart::Head;
-			}else if (HitTag.MatchesTag(FGameplayTag::RequestGameplayTag(GPTags::LegLeft)))
+				ABaseZombie* Owner = Cast<ABaseZombie>(GetOwner());
+				if (StatusComp->ApplyDamage(Damage,true) <= 0.0f)
+				{
+					UE_LOG(LogTemp,Warning,TEXT("Death"));
+					OnDeath(HitDir, WZDamageType->DamageImpulse);
+				}else
+				{
+					Owner->StartRagdollKnockdown(HitDir,HitInfo.BoneName,WZDamageType->DamageImpulse);
+				}
+				return;
+			}
+			if (UTagPhysicalMaterial* PM = Cast<UTagPhysicalMaterial>(PointDamageEvent->HitInfo.PhysMaterial.Get()))
 			{
-				UE_LOG(LogTemp,Warning,TEXT("Hit Tag Letf Leg"))
+				FGameplayTag HitTag = PM->HitPartTag;
+				if (HitTag.MatchesTag(FGameplayTag::RequestGameplayTag(GPTags::Head)))
+				{
+					UE_LOG(LogTemp,Warning,TEXT("Hit Tag Head"))
+					HitPart = EHitPart::Head;
+				}else if (HitTag.MatchesTag(FGameplayTag::RequestGameplayTag(GPTags::LegLeft)))
+				{
+					UE_LOG(LogTemp,Warning,TEXT("Hit Tag Letf Leg"))
 
-				HitPart = EHitPart::LegLeft;
-			}else if (HitTag.MatchesTag(FGameplayTag::RequestGameplayTag(GPTags::LegRight)))
-			{
-				UE_LOG(LogTemp,Warning,TEXT("Hit Tag Right Leg"))
+					HitPart = EHitPart::LegLeft;
+				}else if (HitTag.MatchesTag(FGameplayTag::RequestGameplayTag(GPTags::LegRight)))
+				{
+					UE_LOG(LogTemp,Warning,TEXT("Hit Tag Right Leg"))
 
-				HitPart = EHitPart::LegRight;
+					HitPart = EHitPart::LegRight;
+				}
 			}
 		}
-		HitDir = PointDamageEvent->ShotDirection;
 	}
 	else
 	{
 		if (DamageCauser)
 		{
 			HitDir = GetOwner()->GetActorLocation() - DamageCauser->GetActorLocation();
+			
+			
 		}
 	}
 
