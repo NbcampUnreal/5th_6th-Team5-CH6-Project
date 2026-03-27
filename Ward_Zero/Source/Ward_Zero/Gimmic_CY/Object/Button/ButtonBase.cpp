@@ -24,8 +24,8 @@ void AButtonBase::HandleInteraction_Implementation(APrototypeCharacter* Characte
 
 EInteractionType AButtonBase::GetInteractionType_Implementation() const
 {
-	//return EInteractionType::Button;
-	return EInteractionType::Door;
+	return EInteractionType::Button;
+	//return EInteractionType::Door;
 }
 
 void AButtonBase::Activate()
