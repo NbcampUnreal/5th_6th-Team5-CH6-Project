@@ -103,6 +103,7 @@ void UInteractionComponent::TryInteract()
 			HandleLeverInteraction(ClosestInteractable);
 		else
 		{
+			IInteractionBase::Execute_HidePressEWidget(ClosestInteractable);
 			IInteractionBase::Execute_OnIneracted(ClosestInteractable, OwnerCharacter);
 		}
 		return;
@@ -170,6 +171,8 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 
 	LastInteractedDoorActor = DoorActor;
 	LastDoorInteractTime = CurrentTime;
+
+	IInteractionBase::Execute_HidePressEWidget(DoorActor);
 
 	OwnerCharacter->AbortAllActions();
 	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
@@ -323,6 +326,8 @@ void UInteractionComponent::HandleLeverInteraction(AActor* LeverActor)
 
 	ALever* Lever = Cast<ALever>(LeverActor);
 	if (!Lever) return;
+
+	IInteractionBase::Execute_HidePressEWidget(LeverActor);
 
 	CurrentInteractingItem = LeverActor;
 	bIsInteractingDoor = true;
