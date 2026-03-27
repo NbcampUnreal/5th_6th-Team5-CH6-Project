@@ -44,9 +44,16 @@ private:
 
 	UWeaponStatusWidget* GetOrCreateWidget();
 
-	/** OnPistolAmmoChanged / OnSMGAmmoChanged 콜백 */
+	/** OnPistolAmmoChanged 콜백 */
 	UFUNCTION()
-	void OnAmmoChanged(int32 Current, int32 Max, int32 Reserve);
+	void OnPistolAmmoChanged(int32 Current, int32 Max, int32 Reserve);
+
+	/** OnSMGAmmoChanged 콜백 */
+	UFUNCTION()
+	void OnSMGAmmoChanged(int32 Current, int32 Max, int32 Reserve);
+
+	/** 현재 무기 인덱스 (1=Pistol, 2=SMG) */
+	int32 WeaponIdx = 1;
 
 	/** 현재 바인딩된 StatusComp (재바인딩 시 이전 것 해제용) */
 	UPROPERTY()

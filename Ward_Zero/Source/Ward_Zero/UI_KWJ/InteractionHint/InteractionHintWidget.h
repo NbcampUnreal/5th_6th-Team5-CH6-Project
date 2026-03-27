@@ -16,8 +16,11 @@ class WARD_ZERO_API UInteractionHintWidget : public UUserWidget
 
 public:
 
-	/** 메시지 표시 후 자동 숨김 */
+	/** 위젯 고정 텍스트로 표시 후 자동 숨김 */
 	void ShowMessage(float Duration = 3.0f);
+
+	/** 커스텀 텍스트로 표시 후 자동 숨김 */
+	void ShowMessageWithText(const FText& Message, float Duration = 3.0f);
 
 	/** 즉시 숨기기 */
 	void HideMessage();

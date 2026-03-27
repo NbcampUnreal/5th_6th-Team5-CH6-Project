@@ -109,7 +109,7 @@ void UPauseMenuWidget::OnOptionsClicked()
 {
 	UE_LOG(LogWard_Zero, Log, TEXT("일시정지: 옵션"));
 
-	if (!OptionsWidget)
+	if (!IsValid(OptionsWidget))
 	{
 		TSubclassOf<UOptionsWidget> OptionsClass = LoadClass<UOptionsWidget>(
 			nullptr,
@@ -128,13 +128,21 @@ void UPauseMenuWidget::OnOptionsClicked()
 		OptionsWidget = CreateWidget<UOptionsWidget>(PC, OptionsClass);
 		if (OptionsWidget)
 		{
-			OptionsWidget->AddToViewport(410); // 일시정지 메뉴(400) 위에
+			OptionsWidget->AddToViewport(410);
+		}
+	}
+	else
+	{
+		// IsValid하지만 뷰포트에 없으면 다시 추가
+		if (!OptionsWidget->IsInViewport())
+		{
+			OptionsWidget->AddToViewport(410);
 		}
 	}
 
 	if (OptionsWidget)
 	{
-		OptionsWidget->bIsMainMenuMode = true; // 닫아도 UI 모드 유지
+		OptionsWidget->bIsMainMenuMode = true;
 		OptionsWidget->SetVisibility(ESlateVisibility::Visible);
 	}
 }

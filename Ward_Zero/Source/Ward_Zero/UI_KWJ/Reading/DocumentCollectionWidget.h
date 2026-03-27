@@ -13,6 +13,7 @@ class UButton;
 class UTextBlock;
 class UUniformGridPanel;
 class UScrollBox;
+class UWrapBox;
 
 UCLASS(BlueprintType, Blueprintable)
 class WARD_ZERO_API UDocumentCollectionWidget : public UUserWidget
@@ -31,9 +32,13 @@ public:
 	//  BindWidget
 	// ══════════════════════════════════════════
 
-	/** 서류 목록 (그리드 or 스크롤) */
+	/** 서류 목록 스크롤 */
 	UPROPERTY(meta = (BindWidget))
 	UScrollBox* ScrollBox_Documents;
+
+	/** 서류 목록 가로 배치 (ScrollBox 안에 배치) */
+	UPROPERTY(meta = (BindWidgetOptional))
+	UWrapBox* WrapBox_Documents;
 
 	/** 닫기 버튼 */
 	UPROPERTY(meta = (BindWidget))
@@ -61,8 +66,8 @@ private:
 	UFUNCTION()
 	void OnCloseClicked();
 
-	/** 서류 클릭 시 뷰어 열기 */
-	void OnDocumentItemClicked(UDocumentData* Document);
+	/** 서류 클릭 시 뷰어 열기 (인덱스 기반) */
+	void OnDocumentIndexClicked(int32 DocIndex);
 
 	/** 아이템 위젯 클래스 */
 	UPROPERTY(EditDefaultsOnly, Category = "Document")

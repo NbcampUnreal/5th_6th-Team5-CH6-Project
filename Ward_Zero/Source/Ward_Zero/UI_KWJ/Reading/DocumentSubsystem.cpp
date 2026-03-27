@@ -69,15 +69,22 @@ void UDocumentSubsystem::CloseDocument()
 		ViewerWidget->CloseDocument();
 	}
 
-	// 게임 재개
-	UGameplayStatics::SetGamePaused(GetWorld(), false);
-
 	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
 	if (PC)
 	{
-		FInputModeGameOnly InputMode;
-		PC->SetInputMode(InputMode);
-		PC->SetShowMouseCursor(false);
+		if (UGameplayStatics::IsGamePaused(GetWorld()))
+		{
+			FInputModeUIOnly InputMode;
+			PC->SetInputMode(InputMode);
+			PC->SetShowMouseCursor(true);
+		}
+		else
+		{
+			UGameplayStatics::SetGamePaused(GetWorld(), false);
+			FInputModeGameOnly InputMode;
+			PC->SetInputMode(InputMode);
+			PC->SetShowMouseCursor(false);
+		}
 	}
 }
 
@@ -182,7 +189,7 @@ UDocumentViewerWidget* UDocumentSubsystem::GetOrCreateViewer()
 	ViewerWidget = CreateWidget<UDocumentViewerWidget>(PC, ViewerWidgetClass);
 	if (ViewerWidget)
 	{
-		ViewerWidget->AddToViewport(100);
+		ViewerWidget->AddToViewport(500);
 		ViewerWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 

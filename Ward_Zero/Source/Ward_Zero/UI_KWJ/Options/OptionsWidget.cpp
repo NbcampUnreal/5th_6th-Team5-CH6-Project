@@ -18,14 +18,9 @@
 static const TCHAR* AudioSection = TEXT("WardZero.Audio");
 static const TCHAR* DisplaySection = TEXT("WardZero.Display");
 
-void UOptionsWidget::NativeConstruct()
+void UOptionsWidget::NativeOnInitialized()
 {
-	Super::NativeConstruct();
-
-	// ── 콤보박스 채우기 ──
-	PopulateResolutions();
-	PopulateWindowModes();
-	PopulateQualityLevels();
+	Super::NativeOnInitialized();
 
 	// ── 슬라이더 콜백 ──
 	if (SLD_MasterVolume) SLD_MasterVolume->OnValueChanged.AddDynamic(this, &UOptionsWidget::OnMasterVolumeChanged);
@@ -36,6 +31,16 @@ void UOptionsWidget::NativeConstruct()
 	// ── 버튼 콜백 ──
 	if (BTN_Apply) BTN_Apply->OnClicked.AddDynamic(this, &UOptionsWidget::OnApplyClicked);
 	if (BTN_Back)  BTN_Back->OnClicked.AddDynamic(this, &UOptionsWidget::OnBackClicked);
+}
+
+void UOptionsWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	// ── 콤보박스 채우기 ──
+	PopulateResolutions();
+	PopulateWindowModes();
+	PopulateQualityLevels();
 
 	// ── 저장된 설정 불러오기 ──
 	LoadSettings();

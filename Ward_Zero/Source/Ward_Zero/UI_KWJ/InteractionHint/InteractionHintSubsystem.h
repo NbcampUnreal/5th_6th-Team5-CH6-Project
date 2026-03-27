@@ -16,9 +16,13 @@ class WARD_ZERO_API UInteractionHintSubsystem : public ULocalPlayerSubsystem
 
 public:
 
-	/** 힌트 메시지 표시 (예: "잠겨있다", "열리지 않는다") */
+	/** 힌트 메시지 표시 (위젯 고정 텍스트 사용) */
 	UFUNCTION(BlueprintCallable, Category = "InteractionHint")
 	void ShowHint(float Duration = 3.0f);
+
+	/** 힌트 메시지 표시 (커스텀 텍스트) */
+	UFUNCTION(BlueprintCallable, Category = "InteractionHint")
+	void ShowHintWithText(const FText& Message, float Duration = 3.0f);
 
 	/** 힌트 숨기기 */
 	UFUNCTION(BlueprintCallable, Category = "InteractionHint")

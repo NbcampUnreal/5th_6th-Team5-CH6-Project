@@ -58,6 +58,12 @@ void UWardGameInstanceSubsystem::Initialize(FSubsystemCollectionBase& Collection
 void UWardGameInstanceSubsystem::SetPendingSaveData(UWardSaveGame* SaveData)
 {
 	PendingSaveData = SaveData;
+
+	if (SaveData)
+	{
+		SetCurrentStage(SaveData->StageIndex);
+	}
+	RuntimeObjectStates.Empty();
 }
 
 void UWardGameInstanceSubsystem::ClearPendingSaveData()

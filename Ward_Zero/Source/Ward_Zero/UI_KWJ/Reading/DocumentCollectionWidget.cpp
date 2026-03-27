@@ -4,10 +4,15 @@
 #include "UI_KWJ/Reading/DocumentCollectionItem.h"
 #include "UI_KWJ/Reading/DocumentSubsystem.h"
 #include "UI_KWJ/Reading/DocumentData.h"
+#include "UI_KWJ/Reading/WardDocumentDataTable.h"
+#include "WardGameInstanceSubsystem.h"
 #include "UI_KWJ/PauseMenu/PauseMenuSubsystem.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "Components/ScrollBox.h"
+#include "Components/WrapBox.h"
+#include "Components/WrapBoxSlot.h"
+#include "Components/PanelWidget.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
 #include "Ward_Zero.h"
@@ -38,8 +43,20 @@ FReply UDocumentCollectionWidget::NativeOnKeyDown(const FGeometry& InGeometry, c
 
 void UDocumentCollectionWidget::RefreshDocumentList()
 {
-	if (!ScrollBox_Documents) return;
-	ScrollBox_Documents->ClearChildren();
+	// WrapBox 우선, 없으면 ScrollBox
+	UPanelWidget* TargetPanel = nullptr;
+	if (WrapBox_Documents)
+	{
+		WrapBox_Documents->ClearChildren();
+		TargetPanel = WrapBox_Documents;
+	}
+	else if (ScrollBox_Documents)
+	{
+		ScrollBox_Documents->ClearChildren();
+		TargetPanel = ScrollBox_Documents;
+	}
+
+	if (!TargetPanel) return;
 
 	APlayerController* PC = GetOwningPlayer();
 	if (!PC) return;
@@ -47,8 +64,11 @@ void UDocumentCollectionWidget::RefreshDocumentList()
 	ULocalPlayer* LP = PC->GetLocalPlayer();
 	if (!LP) return;
 
-	UDocumentSubsystem* DocSys = LP->GetSubsystem<UDocumentSubsystem>();
-	if (!DocSys) return;
+	UGameInstance* GI = LP->GetGameInstance();
+	if (!GI) return;
+
+	UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>();
+	if (!SaveGI || !SaveGI->DocumentDataTable) return;
 
 	// 아이템 위젯 클래스 자동 로드
 	if (!DocumentItemClass)
@@ -65,31 +85,49 @@ void UDocumentCollectionWidget::RefreshDocumentList()
 		return;
 	}
 
-	const TArray<UDocumentData*>& AllDocs = DocSys->GetAllDocuments();
-	const TSet<UDocumentData*>& Collected = DocSys->GetCollectedDocuments();
+	const TArray<FWardDocumentEntry>& AllEntries = SaveGI->DocumentDataTable->Entries;
+	const TSet<int32>& ActiveIndices = SaveGI->GetActiveDocumentIndices();
 
-	for (UDocumentData* Doc : AllDocs)
+	int32 TotalDocs = 0;
+	int32 CollectedDocs = 0;
+
+	for (const FWardDocumentEntry& Entry : AllEntries)
 	{
-		if (!Doc) continue;
+		if (Entry.DocIndex < 20) continue;
+		TotalDocs++;
+
+		bool bUnlocked = ActiveIndices.Contains(Entry.DocIndex);
+		if (bUnlocked) CollectedDocs++;
 
 		UDocumentCollectionItem* Item = CreateWidget<UDocumentCollectionItem>(PC, DocumentItemClass);
 		if (!Item) continue;
 
-		bool bUnlocked = Collected.Contains(Doc);
-		Item->SetDocumentInfo(Doc, bUnlocked);
-		Item->OnClicked_Item.BindUObject(this, &UDocumentCollectionWidget::OnDocumentItemClicked);
+		Item->SetDocumentInfoFromEntry(Entry, bUnlocked);
+		Item->OnClicked_Index.BindUObject(this, &UDocumentCollectionWidget::OnDocumentIndexClicked);
 
-		ScrollBox_Documents->AddChild(Item);
+		// WrapBox면 슬롯 크기 지정
+		if (WrapBox_Documents)
+		{
+			UWrapBoxSlot* wrapSlot = Cast<UWrapBoxSlot>(WrapBox_Documents->AddChildToWrapBox(Item));
+			if (wrapSlot)
+			{
+				wrapSlot->SetFillEmptySpace(false);
+				wrapSlot->SetPadding(FMargin(8.f));
+			}
+		}
+		else
+		{
+			TargetPanel->AddChild(Item);
+		}
 	}
 
-	// 헤더 갱신
 	if (TXT_Header)
 	{
-		FString HeaderStr = FString::Printf(TEXT("서류 수집 (%d / %d)"), Collected.Num(), AllDocs.Num());
+		FString HeaderStr = FString::Printf(TEXT("서류 수집 (%d / %d)"), CollectedDocs, TotalDocs);
 		TXT_Header->SetText(FText::FromString(HeaderStr));
 	}
 
-	UE_LOG(LogWard_Zero, Log, TEXT("서류 목록 갱신: %d/%d 수집"), Collected.Num(), AllDocs.Num());
+	UE_LOG(LogWard_Zero, Log, TEXT("서류 목록 갱신: %d/%d 수집"), CollectedDocs, TotalDocs);
 }
 
 // ════════════════════════════════════════════════════════
@@ -114,10 +152,8 @@ void UDocumentCollectionWidget::OnCloseClicked()
 	}
 }
 
-void UDocumentCollectionWidget::OnDocumentItemClicked(UDocumentData* Document)
+void UDocumentCollectionWidget::OnDocumentIndexClicked(int32 DocIndex)
 {
-	if (!Document) return;
-
 	APlayerController* PC = GetOwningPlayer();
 	if (!PC) return;
 
@@ -127,6 +163,6 @@ void UDocumentCollectionWidget::OnDocumentItemClicked(UDocumentData* Document)
 	UDocumentSubsystem* DocSys = LP->GetSubsystem<UDocumentSubsystem>();
 	if (DocSys)
 	{
-		DocSys->OpenDocument(Document);
+		DocSys->OpenDocumentByIndex(DocIndex);
 	}
 }

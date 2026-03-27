@@ -6,7 +6,6 @@
 
 void UInteractionHintWidget::ShowMessage(float Duration)
 {
-
     SetVisibility(ESlateVisibility::HitTestInvisible);
 
     if (UWorld* World = GetWorld())
@@ -17,6 +16,15 @@ void UInteractionHintWidget::ShowMessage(float Duration)
                 HideMessage();
             }, Duration, false);
     }
+}
+
+void UInteractionHintWidget::ShowMessageWithText(const FText& Message, float Duration)
+{
+    if (TXT_Message)
+    {
+        TXT_Message->SetText(Message);
+    }
+    ShowMessage(Duration);
 }
 void UInteractionHintWidget::HideMessage()
 {
