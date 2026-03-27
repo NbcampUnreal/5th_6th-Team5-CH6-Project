@@ -24,7 +24,7 @@ public:
 
 	void RefreshInteractionUI();
 
-	void ShowInteractionHint();
+	void ShowInteractionHint(FString Message, float Duration);
 
 	void HandleDoorInteraction(AActor* DoorActor);
 	void HandleItemInteraction(AActor* ItemActor);

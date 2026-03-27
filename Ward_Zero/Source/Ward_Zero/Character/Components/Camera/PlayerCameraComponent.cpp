@@ -44,76 +44,68 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
 
     UPlayerCombatComponent* Combat = CachedCombatComp;
     float Speed = OwnerCharacter->GetVelocity().Size();
-
-    // 환풍구 1인칭 모드 판정
+    APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController());
+    
     bool bIsInVentNow = OwnerCharacter->bIsInVent;
 
-    // 환풍구 진입 순간
-    if (bIsInVentNow && !bIsInVent)
+    // 환풍구 진입 / 탈출 
+    if (bIsInVentNow && !bIsInVent) // 진입
     {
-        // 부모 Capsule -> Head Bone 
         CameraBoom->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
         CameraBoom->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("head"));
 
         CameraBoom->bDoCollisionTest = false;
-        // 모든 오프셋을 0으로 
         CameraBoom->TargetArmLength = 0.0f;
         CameraBoom->SocketOffset = FVector::ZeroVector;
         CameraBoom->TargetOffset = FVector::ZeroVector;
         CameraBoom->SetRelativeLocation(FVector::ZeroVector);
         CameraBoom->SetRelativeRotation(FRotator::ZeroRotator);
 
-        OwnerCharacter->GetMesh()->SetOwnerNoSee(true);
-
-        TArray<USceneComponent*> AttachedComps;
-        OwnerCharacter->GetMesh()->GetChildrenComponents(true, AttachedComps);
-        for (USceneComponent* Comp : AttachedComps)
+        // 캐릭터 메쉬 전체 숨김
+        TArray<UMeshComponent*> AllMeshes;
+        OwnerCharacter->GetComponents<UMeshComponent>(AllMeshes);
+        for (UMeshComponent* MeshComp : AllMeshes)
         {
-            UMeshComponent* MeshComp = Cast<UMeshComponent>(Comp);
-            if (MeshComp)
-            {
-                MeshComp->SetOwnerNoSee(true);
-            }
+            MeshComp->SetOwnerNoSee(true);
         }
 
-        if (Combat->GetEquippedWeapon())
-            Combat->GetEquippedWeapon()->WeaponMesh->SetOwnerNoSee(true);
-
+        if (PC && PC->PlayerCameraManager)
+        {
+            PC->PlayerCameraManager->ViewPitchMin = -50.0f; 
+            PC->PlayerCameraManager->ViewPitchMax = 7.0f;  
+        }
         bIsInVent = true;
     }
-    // 환풍구 나가는 순간 트리거 박스 
-    else if (!bIsInVentNow && bIsInVent)
+    else if (!bIsInVentNow && bIsInVent) // 탈출
     {
-        // 부모 Head Bone -> Capsule 
         CameraBoom->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
         CameraBoom->AttachToComponent(OwnerCharacter->GetCapsuleComponent(), FAttachmentTransformRules::KeepWorldTransform);
 
         CameraBoom->bDoCollisionTest = true;
-        CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f)); 
+        CameraBoom->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
         CameraBoom->SetRelativeRotation(FRotator::ZeroRotator);
         CameraBoom->SocketOffset = OriginalSocketOffset;
         CameraBoom->TargetOffset = OriginalTargetOffset;
 
-        OwnerCharacter->GetMesh()->SetOwnerNoSee(false);
-
-        TArray<USceneComponent*> AttachedComps;
-        OwnerCharacter->GetMesh()->GetChildrenComponents(true, AttachedComps);
-        for (USceneComponent* Comp : AttachedComps)
+        // 메쉬 복구
+        TArray<UMeshComponent*> MeshComps;
+        OwnerCharacter->GetComponents<UMeshComponent>(MeshComps);
+        for (UMeshComponent* Mesh : MeshComps)
         {
-            UMeshComponent* MeshComp = Cast<UMeshComponent>(Comp);
-            if (MeshComp)
-            {
-                MeshComp->SetOwnerNoSee(false);
-            }
+            Mesh->SetOwnerNoSee(false);
         }
-        if (Combat->GetEquippedWeapon() && Combat->GetEquippedWeapon()->WeaponMesh)
+
+      
+
+        if (PC && PC->PlayerCameraManager)
         {
-            Combat->GetEquippedWeapon()->WeaponMesh->SetOwnerNoSee(false);
+            PC->PlayerCameraManager->ViewPitchMin = -89.0f;
+            PC->PlayerCameraManager->ViewPitchMax = 89.0f;
         }
         bIsInVent = false;
     }
 
-    // 목표 수치 초기화 
+    // 카메라 목표 수치 및 업데이트
     float TargetArmLength = CameraData->DefaultArmLength;
     float TargetFOV = CameraData->DefaultFOV;
     FVector TargetSocketOffset = CameraData->DefaultSocketOffset;
@@ -122,17 +114,14 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
 
     if (bIsFPSMode)
     {
-        TargetArmLength = 0.0f; 
-        TargetSocketOffset = FVector::ZeroVector;
-        TargetFOV = 90.0f; 
+        TargetArmLength = 0.0f;
+        TargetSocketOffset = FVector(25.0f, 0.0f, 10.0f);
+        TargetFOV = 90.0f;
     }
-
-    // 조준 상태 판별
-    if (Combat->IsAiming())
+    else if (Combat->IsAiming())
     {
         TargetArmLength = CameraData->AimArmLength;
         TargetFOV = CameraData->AimFOV;
-
         TargetSocketOffset = (Combat->GetCurrentWeaponIndex() == 2) ? CameraData->SMGAimSocketOffset : CameraData->PistolAimSocketOffset;
 
         if (!Combat->IsRecoiling())
@@ -141,7 +130,6 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
         }
 
         float CurrentSway = (Speed > 10.f) ? CameraData->WalkSwayIntensity : CameraData->BreathSwayIntensity;
-
         float SwayPitch = FMath::Sin(BobTime * 2.0f) * CurrentSway * 0.05f;
         float SwayYaw = FMath::Cos(BobTime * 1.0f) * CurrentSway * 0.05f;
 
@@ -165,53 +153,36 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
             LastSwayRot = FRotator::ZeroRotator;
         }
 
-        // 비조준 상태
         if (OwnerCharacter->bIsCrouched)
         {
             TargetArmLength = CameraData->CrouchedArmLength;
-
             TargetSocketOffset = FVector(0.0f, 0.0f, CameraData->CrouchedCameraHeight);
         }
 
-        // 이동 시 흔들림 (Bobbing) - 비조준 
+        // Bobbing
         if (Speed > 10.f && OwnerCharacter->GetCharacterMovement()->IsMovingOnGround())
         {
             float Freq = CameraData->BobFrequency;
             float Amp = CameraData->BobAmplitude;
-            float SpeedFactor = 1.0f;
+            float SpeedFactor = (OwnerCharacter->bIsCrouched) ? Speed / 150.f : Speed / 150.f;
 
-            if (OwnerCharacter->bIsCrouched) { Freq *= 0.8f; Amp *= 0.5f; SpeedFactor = Speed / 150.f; }
-            else if (OwnerCharacter->GetIsRunning())
+            if (!OwnerCharacter->bIsCrouched && OwnerCharacter->GetIsRunning())
             {
                 Freq *= CameraData->RunFrequencyAmplify;
                 Amp *= CameraData->RunAmplitudeAmplify;
                 SpeedFactor = 1.0f;
             }
-            else
-            {
-                SpeedFactor = Speed / 150.f;
-            }
 
-            BobTime += DeltaTime * SpeedFactor * Freq;
-            TargetSocketOffset.Z += FMath::Sin(BobTime) * Amp;
-
-            float HorizontalAmp = CameraData->BobHorizontalAmplitude * (OwnerCharacter->GetIsRunning() ? 1.5f : 1.0f);
-            TargetSocketOffset.Y += FMath::Cos(BobTime * 0.5f) * HorizontalAmp;
+            BobTime += DeltaTime * SpeedFactor * (OwnerCharacter->bIsCrouched ? Freq * 0.8f : Freq);
+            TargetSocketOffset.Z += FMath::Sin(BobTime) * (OwnerCharacter->bIsCrouched ? Amp * 0.5f : Amp);
+            TargetSocketOffset.Y += FMath::Cos(BobTime * 0.5f) * (CameraData->BobHorizontalAmplitude * (OwnerCharacter->GetIsRunning() ? 1.5f : 1.0f));
         }
         else { BobTime = FMath::FInterpTo(BobTime, 0.0f, DeltaTime, 5.0f); }
     }
 
-    if (bIsFPSMode)
-    {
-        CameraBoom->TargetArmLength = 0.0f;
-        TargetSocketOffset = FVector(10.0f, 0.0f, 0.0f);
-        TargetFOV = 90.0f;
-        return; 
-    }
-
+    // 경사로 오프셋
     float TargetSlopeOffset = 0.0f;
-
-    if (!Combat->IsAiming() && Speed > 10.0f)
+    if (!bIsFPSMode && !Combat->IsAiming() && Speed > 10.0f)
     {
         if (UCharacterMovementComponent* MovementComp = OwnerCharacter->GetCharacterMovement())
         {
@@ -223,18 +194,15 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
                 CameraForward.Normalize();
 
                 float SlopeDot = FVector::DotProduct(FloorNormal, CameraForward);
-
                 if (SlopeDot < -0.05f)
                 {
-                    TargetSlopeOffset = SlopeDot * 150.0f;
-                    TargetSlopeOffset = FMath::Clamp(TargetSlopeOffset, -40.0f, 0.0f);
+                    TargetSlopeOffset = FMath::Clamp(SlopeDot * 150.0f, -40.0f, 0.0f);
                 }
             }
         }
     }
 
     CurrentSlopeOffset = FMath::FInterpTo(CurrentSlopeOffset, TargetSlopeOffset, DeltaTime, 4.0f);
-
     TargetSocketOffset.Z += CurrentSlopeOffset;
 
     float Interp = CameraData->InterpSpeed;

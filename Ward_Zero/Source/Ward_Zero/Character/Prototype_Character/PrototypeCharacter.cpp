@@ -311,7 +311,7 @@ void APrototypeCharacter::ToggleCrouch(const FInputActionValue& Value)
 {
 	if (bIsInVent && bIsCrouched) return;
 	if (bIsRunning || GetIsReloading() || IsEquipping()) return;
-	if (!bIsCrouched && GetIsAiming())
+	if (!bIsCrouched && GetIsAiming() && !GetIsSMGEquipped())
 	{
 		StopAiming(Value);
 	}
@@ -380,7 +380,8 @@ void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 
 void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 {
-	if (bIsCrouched) return;
+	if (bIsInVent) return;
+	if (bIsCrouched && !GetIsSMGEquipped()) return;
 
 	if (CombatComp && CombatComp->StartAiming())
 	{
@@ -462,8 +463,9 @@ void APrototypeCharacter::CheckRunState()
 
 void APrototypeCharacter::Fire(const FInputActionValue& Value)
 {
-	if (bIsCrouched) return;
-
+	if (StatusComp && StatusComp->IsDead()) return;
+	if (bIsCrouched && !GetIsSMGEquipped()) return;
+	if (bIsInVent) return;
 	if (CombatComp)
 	{
 		TSubclassOf<UCameraShakeBase> FinalCamShake = nullptr;
@@ -560,6 +562,7 @@ void APrototypeCharacter::OnDeath()
 	// 물리 및 충돌 설정 (래그돌)
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetMesh()->SetSimulatePhysics(true);
 	
 	// 입력 컴포넌트 비활성화 및 UI 모드 전환
@@ -669,14 +672,14 @@ void APrototypeCharacter::PlayDeathReaction(const FVector& ToAttackerDir)
 	}
 	EPlayerHitDirection HitDir = GetHitDirection(ToAttackerDir);
 	UAnimMontage* MontageToPlay = (AnimData) ? AnimData->DeathMontages.FindRef(HitDir) : nullptr;
-
+	
 	if (MontageToPlay)
 	{
 		float Duration = PlayAnimMontage(MontageToPlay);
+		float SafeDuration = FMath::Max(Duration, 1.5f);
 
-		// 몽타주가 끝날 때쯤 OnDeath(래그돌)를 호출하도록 타이머 설정
 		FTimerHandle DeathTimer;
-		GetWorldTimerManager().SetTimer(DeathTimer, this, &APrototypeCharacter::OnDeath, Duration * 0.8f, false);
+		GetWorldTimerManager().SetTimer(DeathTimer, this, &APrototypeCharacter::OnDeath, SafeDuration * 0.8f, false);
 	}
 	else
 	{
@@ -789,7 +792,7 @@ void APrototypeCharacter::StartHeal()
 			CameraBoom->bDoCollisionTest = false;
 		}
 		PlayAnimMontage(AnimData->HealMontage);
-		StatusComp->HealingItemCount--;
+		StatusComp->AddHealingItem(-1);
 		if (CombatComp) CombatComp->StopFire();
 	}
 }
@@ -1033,19 +1036,47 @@ void APrototypeCharacter::AbortAllActions()
 	}
 }
 
+void APrototypeCharacter::UpdateVentState()
+{
+	bool bNowInVent = (VentOverlapCount > 0);
+
+	if (bIsInVent != bNowInVent)
+	{
+		bIsInVent = bNowInVent;
+
+		// 캐릭터 본체 메시 숨기기 (카메라에만 안 보이게)
+		if (GetMesh())
+		{
+			GetMesh()->SetOwnerNoSee(bIsInVent);
+		}
+
+		// 무기 메시 업데이트
+		if (CombatComp)
+		{
+			CombatComp->HandleWeaponAttachment(CombatComp->IsWeaponDrawn());
+		}
+	}
+}
+
 void APrototypeCharacter::NotifyActorBeginOverlap(AActor* OtherActor)
 {
-	Super::NotifyActorBeginOverlap(OtherActor);
+	Super::NotifyActorBeginOverlap(OtherActor); 
 
-	if (OtherActor && (OtherActor->ActorHasTag(TEXT("VentBegin")) || OtherActor->ActorHasTag(TEXT("VentEnd"))))
+	if (OtherActor && OtherActor->ActorHasTag(TEXT("VentArea")))
 	{
-		bIsInVent = !bIsInVent;
+		VentOverlapCount++;
+		UpdateVentState();
 	}
 }
 
 void APrototypeCharacter::NotifyActorEndOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorEndOverlap(OtherActor);
+	if (OtherActor && OtherActor->ActorHasTag(TEXT("VentArea")))
+	{
+		VentOverlapCount = FMath::Max(0, VentOverlapCount - 1);
+		UpdateVentState();
+	}
 }
 
 //void APrototypeCharacter::UpdateReviveCamera(float Value)

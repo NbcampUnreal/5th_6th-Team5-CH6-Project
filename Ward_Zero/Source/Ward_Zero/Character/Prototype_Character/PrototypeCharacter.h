@@ -244,6 +244,9 @@ public:
 	UFUNCTION()
 	void SetIsVent(bool IsVent) { bIsInVent = IsVent;}
 
+	int32 VentOverlapCount = 0;
+
+	void UpdateVentState();
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 	virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
 
