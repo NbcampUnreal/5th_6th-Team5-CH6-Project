@@ -2,6 +2,7 @@
 
 #include "UI_KWJ/HealItem/HealItemSubsystem.h"
 #include "UI_KWJ/HealItem/HealItemWidget.h"
+#include "Character/Components/Status/PlayerStatusComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/LocalPlayer.h"
 #include "Ward_Zero.h"
@@ -22,6 +23,34 @@ void UHealItemSubsystem::SetHealUIVisible(bool bVisible)
 	{
 		Widget->SetHealUIVisible(bVisible);
 	}
+}
+
+void UHealItemSubsystem::BindToStatusComponent(UPlayerStatusComponent* StatusComp)
+{
+	if (!StatusComp) return;
+
+	// 이전 바인딩 해제
+	if (BoundStatusComp && BoundStatusComp != StatusComp)
+	{
+		BoundStatusComp->OnHealingItemCountChanged.RemoveDynamic(
+			this, &UHealItemSubsystem::OnHealingItemCountChanged);
+	}
+
+	BoundStatusComp = StatusComp;
+	CachedMaxCount = StatusComp->MaxHealingItemCount;
+
+	StatusComp->OnHealingItemCountChanged.AddDynamic(
+		this, &UHealItemSubsystem::OnHealingItemCountChanged);
+
+	// 초기값 즉시 반영
+	UpdateHealCount(StatusComp->HealingItemCount, CachedMaxCount);
+
+	UE_LOG(LogWard_Zero, Log, TEXT("HealItemSubsystem: StatusComp 바인딩 완료"));
+}
+
+void UHealItemSubsystem::OnHealingItemCountChanged(int32 NewCount)
+{
+	UpdateHealCount(NewCount, CachedMaxCount);
 }
 
 UHealItemWidget* UHealItemSubsystem::GetOrCreateWidget()

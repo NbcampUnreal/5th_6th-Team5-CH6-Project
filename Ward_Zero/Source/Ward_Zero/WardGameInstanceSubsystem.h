@@ -111,6 +111,21 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Stage")
 	int32 GetCurrentStage() const { return CurrentStage; }
 
+	// ══════════════════════════════════════════
+	//  보스 격파 관리
+	// ══════════════════════════════════════════
+
+	/** 보스 격파 등록 (보스 사망 시 호출) */
+	UFUNCTION(BlueprintCallable, Category = "Boss")
+	void SetBossDefeated(FName BossID);
+
+	/** 보스가 이미 격파되었는지 확인 */
+	UFUNCTION(BlueprintPure, Category = "Boss")
+	bool IsBossDefeated(FName BossID) const;
+
+	const TSet<FName>& GetDefeatedBosses() const { return DefeatedBosses; }
+	void SetDefeatedBosses(const TSet<FName>& Bosses) { DefeatedBosses = Bosses; }
+
 	/** 새 게임 시작 시 모든 데이터 초기화 */
 	UFUNCTION(BlueprintCallable, Category = "Save")
 	void ResetForNewGame();
@@ -127,4 +142,7 @@ private:
 
 	/** 현재 스테이지 (역행 방지 — Max로만 갱신) */
 	int32 CurrentStage = 0;
+
+	/** 런타임 보스 격파 목록 */
+	TSet<FName> DefeatedBosses;
 };

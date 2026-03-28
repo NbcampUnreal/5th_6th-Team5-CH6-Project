@@ -109,6 +109,10 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "SaveData|Progress")
 	int32 StageIndex = 0;
 
+	/** 격파된 보스 ID 목록 (예: "Huton") */
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Progress")
+	TSet<FName> DefeatedBosses;
+
 	// ══════════════════════════════════════════
 	//  오브젝트 상태 (GUID 기반)
 	//  각 액터가 GUID + Active/Interaction 상태를 저장

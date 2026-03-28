@@ -333,6 +333,7 @@ UWardSaveGame* USaveSubsystem::CollectCurrentGameState()
 		{
 			SaveData->ObjectStates = SaveGI->GetRuntimeObjectStates();
 			SaveData->StageIndex = SaveGI->GetCurrentStage();
+			SaveData->DefeatedBosses = SaveGI->GetDefeatedBosses();
 		}
 	}
 
@@ -421,6 +422,7 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 		{
 			SaveGI->SetRuntimeObjectStates(SaveData->ObjectStates);
 			SaveGI->SetCurrentStage(SaveData->StageIndex);
+			SaveGI->SetDefeatedBosses(SaveData->DefeatedBosses);
 		}
 	}
 
