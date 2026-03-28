@@ -8,8 +8,7 @@ ADoorBase::ADoorBase()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	Lamp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Lamp"));
-	Lamp->SetupAttachment(CollisionBox);
+	
 
 	DoorTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("DoorTimeline"));
 

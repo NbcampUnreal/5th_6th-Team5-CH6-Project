@@ -21,6 +21,9 @@ AObjectBase::AObjectBase()
 	Mesh->SetupAttachment(CollisionBox);
 	Mesh->SetCollisionResponseToChannels(ECR_Block);
 	
+	Lamp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Lamp"));
+	Lamp->SetupAttachment(CollisionBox);
+	
 	InteractWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("InteractWidget"));
 	InteractWidget->SetupAttachment(RootComponent);
 	InteractWidget->SetWidgetSpace(EWidgetSpace::Screen);

@@ -307,6 +307,21 @@ void UCombatComponent::HandleAllDamage(float Damage, FDamageEvent const& DamageE
 	
 	FVector HitDir = FVector::ZeroVector;
 	EHitPart HitPart = EHitPart::Body;
+	if (DamageEvent.IsOfType(FRadialDamageEvent::ClassID))
+	{
+		//const FRadialDamageEvent* RadialDamageEvent = static_cast<const FRadialDamageEvent*>(&DamageEvent);
+		
+		if (WZDamageType)
+		{
+			EDamageSource DamageSource = WZDamageType->DamageSource;
+			if (DamageSource == EDamageSource::Explosion)
+			{
+				OnDeath(HitDir, WZDamageType->DamageImpulse);
+			}
+		}
+		
+	}
+	
 	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
 	{
 		StatusComp->SetMainState(EMonsterMainState::Combat);
@@ -318,7 +333,8 @@ void UCombatComponent::HandleAllDamage(float Damage, FDamageEvent const& DamageE
 		
 		if (WZDamageType)
 		{
-			if (WZDamageType->DamageSource == EDamageSource::BossRush)
+			EDamageSource DamageSource = WZDamageType->DamageSource;
+			if (DamageSource == EDamageSource::BossRush||DamageSource == EDamageSource::Explosion)
 			{
 				ABaseZombie* Owner = Cast<ABaseZombie>(GetOwner());
 				if (StatusComp->ApplyDamage(Damage,true) <= 0.0f)
