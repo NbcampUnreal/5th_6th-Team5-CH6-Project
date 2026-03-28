@@ -993,6 +993,25 @@ void APrototypeCharacter::SetDoorPasscode(int32 Passcode)
 
 void APrototypeCharacter::AbortAllActions()
 {
+	if (InteractionComp && InteractionComp->CurrentInteractingItem != nullptr)
+	{
+		AActor* Item = InteractionComp->CurrentInteractingItem;
+
+		if (Item->GetAttachParentActor() == this)
+		{
+			// Attach까지 된 상태 => 그냥 픽업 완료 처리
+			InteractionComp->ConsumeInteractingItem();
+		}
+		else
+		{
+			// Attach안된 상태 => 콜리전 + bCanInteract 둘 다 복구
+			Item->SetActorEnableCollision(true);
+			if (IInteractionBase* Interactable = Cast<IInteractionBase>(Item))
+			{
+				Interactable->SetBCanInteract(true);
+			}
+		}
+	}
 	// 모든 몽타주 중단
 	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
 	{
@@ -1020,7 +1039,6 @@ void APrototypeCharacter::AbortAllActions()
 	{
 		GetCharacterMovement()->StopMovementImmediately();
 	}
-	// 모션 워핑 컴포넌트가 있다면 워핑 타겟 초기화
 	if (MotionWarpingComp)
 	{
 		MotionWarpingComp->RemoveAllWarpTargets();
