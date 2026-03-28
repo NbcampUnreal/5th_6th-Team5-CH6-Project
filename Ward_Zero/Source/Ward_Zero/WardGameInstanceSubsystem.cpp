@@ -33,11 +33,13 @@ void UWardGameInstanceSubsystem::Initialize(FSubsystemCollectionBase& Collection
 	// Blueprint CDO에서 가져오기
 	if (!DocumentDataTable)
 	{
-		UBlueprint* BP = LoadObject<UBlueprint>(nullptr,
-			TEXT("/Game/UI/read/MyWardDocumentDataTable.MyWardDocumentDataTable"));
-		if (BP && BP->GeneratedClass)
+		UClass* LoadedClass = LoadClass<UWardDocumentDataTable>(
+			nullptr,
+			TEXT("/Game/UI/read/MyWardDocumentDataTable.MyWardDocumentDataTable_C")
+		);
+		if (LoadedClass)
 		{
-			DocumentDataTable = Cast<UWardDocumentDataTable>(BP->GeneratedClass->GetDefaultObject());
+			DocumentDataTable = Cast<UWardDocumentDataTable>(LoadedClass->GetDefaultObject());
 		}
 	}
 
