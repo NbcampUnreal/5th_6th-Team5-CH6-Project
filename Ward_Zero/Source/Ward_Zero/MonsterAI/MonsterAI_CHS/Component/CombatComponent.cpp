@@ -321,7 +321,7 @@ void UCombatComponent::HandleAllDamage(float Damage, FDamageEvent const& DamageE
 				OnDeath(HitDir, WZDamageType->DamageImpulse);
 			}
 		}
-		
+		return;
 	}
 	
 	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
