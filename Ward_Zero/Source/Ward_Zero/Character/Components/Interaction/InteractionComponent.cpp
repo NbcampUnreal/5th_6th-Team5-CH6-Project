@@ -228,8 +228,11 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 			if (SingleDoor->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
 			{
 				TargetWarpLocation = IInteractionBase::Execute_GetInteractionTargetLocation(DoorActor);
-				FVector DirToDoor = (DoorActor->GetActorLocation() - TargetWarpLocation).GetSafeNormal2D();
-				TargetWarpRotation = DirToDoor.Rotation();
+
+				if (USceneComponent* PullComp = SingleDoor->FindComponentByClass<USceneComponent>())
+				{
+					TargetWarpRotation = PullComp->GetForwardVector().Rotation();
+				}
 				SelectedMontage = OwnerCharacter->AnimData->DoorPullOpenMontage;
 			}
 			else
@@ -268,7 +271,7 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)
 {
 	if (!OwnerCharacter || !ItemActor) return;
-	if (OwnerCharacter->GetMesh()->GetAnimInstance()->IsAnyMontagePlaying()) return;
+	if (CurrentInteractingItem || OwnerCharacter->GetMesh()->GetAnimInstance()->IsAnyMontagePlaying()) return;
 	if (CurrentInteractingItem)
 	{
 		ConsumeInteractingItem();
@@ -289,8 +292,12 @@ void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)
 	if (OwnerCharacter->GetCameraBoom()) {
 		OwnerCharacter->GetCameraBoom()->bDoCollisionTest = false;
 	}
-
+	bIsItemConsumed = false;
 	CurrentInteractingItem = ItemActor;
+	InitialItemTransform = ItemActor->GetActorTransform();
+
+	ItemActor->SetActorEnableCollision(false);
+
 	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(CurrentInteractingItem);
 
 	if (OwnerCharacter->MotionWarpingComp)
@@ -374,9 +381,10 @@ void UInteractionComponent::AttachInteractingItem()
 
 void UInteractionComponent::ConsumeInteractingItem()
 {
+	bIsItemConsumed = true;
 	if (CurrentInteractingItem && OwnerCharacter)
 	{
-		IInteractionBase::Execute_OnIneracted(CurrentInteractingItem, OwnerCharacter);
+		CurrentInteractingItem->Destroy();
 		CurrentInteractingItem = nullptr;
 	}
 }
@@ -420,9 +428,29 @@ void UInteractionComponent::TriggerInteraction()
 
 void UInteractionComponent::EndInteraction()
 {
-	bIsInteractingDoor = false;
-	if (OwnerCharacter) OwnerCharacter->bIsInteractingDoor = false;
+	if (CurrentInteractingItem && !bIsItemConsumed)
+	{
+		EInteractionType InteractionType = IInteractionBase::Execute_GetInteractionType(CurrentInteractingItem);
+		if (InteractionType == EInteractionType::Ammo ||
+			InteractionType == EInteractionType::Heal ||
+			InteractionType == EInteractionType::Key)
+		{
+			CurrentInteractingItem->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+			CurrentInteractingItem->SetActorTransform(InitialItemTransform);
+		}
+
+		CurrentInteractingItem->SetActorEnableCollision(true);
+		if (IInteractionBase* Interface = Cast<IInteractionBase>(CurrentInteractingItem))
+		{
+			Interface->SetBCanInteract(true);
+			IInteractionBase::Execute_HidePressEWidget(CurrentInteractingItem);
+		}
+	}
 	CurrentInteractingItem = nullptr;
+	bIsItemConsumed = false;
+	bIsInteractingDoor = false;
+
+	if (OwnerCharacter) OwnerCharacter->bIsInteractingDoor = false;
 
 	if (OwnerCharacter)
 	{
@@ -438,4 +466,5 @@ void UInteractionComponent::EndInteraction()
 			OwnerCharacter->GetCameraBoom()->bDoCollisionTest = true;
 		}
 	}
+	RefreshInteractionUI();
 }

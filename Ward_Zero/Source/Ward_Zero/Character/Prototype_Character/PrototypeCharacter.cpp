@@ -998,6 +998,10 @@ void APrototypeCharacter::AbortAllActions()
 	{
 		AnimInst->Montage_Stop(0.2f);
 	}
+	if (InteractionComp)
+	{
+		InteractionComp->EndInteraction();
+	}
 	DestroyHealItemVisual();
 	// 인터렉션 상태 강제 종료
 	if (InteractionComp)
