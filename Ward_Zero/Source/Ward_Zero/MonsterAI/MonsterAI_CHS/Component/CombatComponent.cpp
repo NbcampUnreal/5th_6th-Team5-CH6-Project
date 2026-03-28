@@ -309,8 +309,10 @@ void UCombatComponent::HandleAllDamage(float Damage, FDamageEvent const& DamageE
 	EHitPart HitPart = EHitPart::Body;
 	if (DamageEvent.IsOfType(FRadialDamageEvent::ClassID))
 	{
-		//const FRadialDamageEvent* RadialDamageEvent = static_cast<const FRadialDamageEvent*>(&DamageEvent);
-		
+		const FRadialDamageEvent* RadialDamageEvent = static_cast<const FRadialDamageEvent*>(&DamageEvent);
+		FVector ExplosionOrisin = RadialDamageEvent->Origin;
+		FVector CurrentLoc = GetOwner()->GetActorLocation();
+		HitDir = (CurrentLoc - ExplosionOrisin).GetSafeNormal();
 		if (WZDamageType)
 		{
 			EDamageSource DamageSource = WZDamageType->DamageSource;
