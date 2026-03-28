@@ -124,13 +124,13 @@ void UPlayerAnimInstance::UpdateInteractionIK(float DeltaSeconds) {
 	if (PickupIKAlpha > 0.1f) DrawDebugSphere(GetWorld(), PickupTargetLocation, 5.0f, 12, FColor::Blue, false, -1.f);
 }
 
-void UPlayerAnimInstance::UpdateFlashlightLogic(float DeltaSeconds) 
+void UPlayerAnimInstance::UpdateFlashlightLogic(float DeltaSeconds)
 {
 	// 비무장 상태이면서 레버 상호작용 중인지 
-	bool bIsUnarmed = !bIsPistolEquipped && !bIsSMGEquipped; 
+	bool bIsUnarmed = !bIsPistolEquipped && !bIsSMGEquipped;
 	bool bIsLeverInteraction = false;
 
-	if (CachedCharacter && CachedCharacter->InteractionComp && CachedCharacter->InteractionComp->CurrentInteractingItem) 
+	if (CachedCharacter && CachedCharacter->InteractionComp && CachedCharacter->InteractionComp->CurrentInteractingItem)
 	{
 		if (CachedCharacter->InteractionComp->CurrentInteractingItem->IsA(ALever::StaticClass())) {
 			bIsLeverInteraction = true;
@@ -214,31 +214,31 @@ void UPlayerAnimInstance::RequestLayerInertialBlend(float BlendTime) {
 	if (Requester) Requester->RequestInertialization(Request);
 }
 
-void UPlayerAnimInstance::AnimNotify_HealEffect() 
-{ 
-	if (IPlayerAnimInterface* AnimInterface = Cast<IPlayerAnimInterface>(TryGetPawnOwner())) AnimInterface->ExecuteHealPoint(); 
+void UPlayerAnimInstance::AnimNotify_HealEffect()
+{
+	if (IPlayerAnimInterface* AnimInterface = Cast<IPlayerAnimInterface>(TryGetPawnOwner())) AnimInterface->ExecuteHealPoint();
 }
-void UPlayerAnimInstance::AnimNotify_AttachItem() 
-{ 
-	if (CachedCharacter) CachedCharacter->AttachInteractingItem(); 
+void UPlayerAnimInstance::AnimNotify_AttachItem()
+{
+	if (CachedCharacter) CachedCharacter->AttachInteractingItem();
 }
-void UPlayerAnimInstance::AnimNotify_ConsumeItem() 
-{ 
-	if (CachedCharacter) CachedCharacter->ConsumeInteractingItem(); 
+void UPlayerAnimInstance::AnimNotify_ConsumeItem()
+{
+	if (CachedCharacter) CachedCharacter->ConsumeInteractingItem();
 }
-void UPlayerAnimInstance::AnimNotify_TriggerInteraction() 
-{ 
-	if (CachedCharacter && CachedCharacter->InteractionComp) CachedCharacter->InteractionComp->TriggerInteraction(); 
+void UPlayerAnimInstance::AnimNotify_TriggerInteraction()
+{
+	if (CachedCharacter && CachedCharacter->InteractionComp) CachedCharacter->InteractionComp->TriggerInteraction();
 }
-void UPlayerAnimInstance::AnimNotify_EndInteraction() 
-{ 
-	if (CachedCharacter && CachedCharacter->InteractionComp) { CachedCharacter->InteractionComp->EndInteraction(); Montage_Stop(0.2f); } 
+void UPlayerAnimInstance::AnimNotify_EndInteraction()
+{
+	if (CachedCharacter && CachedCharacter->InteractionComp) { CachedCharacter->InteractionComp->EndInteraction(); Montage_Stop(0.2f); }
 }
-void UPlayerAnimInstance::AnimNotify_FreeMovement() 
-{ 
-	RootMotionMode = ERootMotionMode::IgnoreRootMotion; 
+void UPlayerAnimInstance::AnimNotify_FreeMovement()
+{
+	RootMotionMode = ERootMotionMode::IgnoreRootMotion;
 }
-void UPlayerAnimInstance::AnimNotify_HideWeaponForLever() 
+void UPlayerAnimInstance::AnimNotify_HideWeaponForLever()
 {
 	if (CachedCharacter && CachedCharacter->CombatComp) {
 		bWasWeaponDrawnBeforeLever = CachedCharacter->CombatComp->IsWeaponDrawn();
@@ -249,11 +249,11 @@ void UPlayerAnimInstance::AnimNotify_RestoreWeaponAfterLever() {
 	if (CachedCharacter && CachedCharacter->CombatComp && bWasWeaponDrawnBeforeLever) CachedCharacter->CombatComp->HandleWeaponAttachment(true);
 }
 
-void UPlayerAnimInstance::CalculateYawDir() 
-{ 
-	if (Character) RootYawOffset = UKismetMathLibrary::NormalizedDeltaRotator(Character->GetControlRotation(), Character->GetActorRotation()).Yaw; 
+void UPlayerAnimInstance::CalculateYawDir()
+{
+	if (Character) RootYawOffset = UKismetMathLibrary::NormalizedDeltaRotator(Character->GetControlRotation(), Character->GetActorRotation()).Yaw;
 }
-void UPlayerAnimInstance::HandleTurnning() 
+void UPlayerAnimInstance::HandleTurnning()
 {
 	if (bIsTurn || TurnCooldownTimer > 0.0f || bIsInteracting || Montage_IsPlaying(nullptr)) return;
 	if (FMath::Abs(RootYawOffset) >= 100.0f && CachedCharacter) {
@@ -264,11 +264,11 @@ void UPlayerAnimInstance::HandleTurnning()
 		else bIsTurn = false;
 	}
 }
-void UPlayerAnimInstance::StopTurnIfMove() 
-{ 
-	if (!bIsTurn) return; bIsTurn = false; if (MovementComp && CachedCharacter && !CachedCharacter->GetIsAiming()) MovementComp->bOrientRotationToMovement = true; Montage_Stop(0.2f); 
+void UPlayerAnimInstance::StopTurnIfMove()
+{
+	if (!bIsTurn) return; bIsTurn = false; if (MovementComp && CachedCharacter && !CachedCharacter->GetIsAiming()) MovementComp->bOrientRotationToMovement = true; Montage_Stop(0.2f);
 }
-void UPlayerAnimInstance::AnimNotify_TurnFinished() 
+void UPlayerAnimInstance::AnimNotify_TurnFinished()
 {
 	if (CachedCharacter) {
 		FRotator FinalRot = CachedCharacter->GetActorRotation();

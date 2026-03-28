@@ -50,7 +50,7 @@ void UInteractionComponent::TryInteract()
 	InteractionSphere->GetOverlappingActors(OverlappingActors);
 
 	AActor* ClosestInteractable = nullptr;
-	AActor* ClosetLockedDoor = nullptr; 
+	AActor* ClosetLockedDoor = nullptr;
 
 	float MinInteractDistSq = MAX_FLT;
 	float MinLockedDistSq = MAX_FLT;
@@ -63,7 +63,7 @@ void UInteractionComponent::TryInteract()
 		if (!Actor->GetClass()->ImplementsInterface(UInteractionBase::StaticClass())) continue;
 
 		IInteractionBase* InteractInterface = Cast<IInteractionBase>(Actor);
-		if (!InteractInterface) continue; 
+		if (!InteractInterface) continue;
 
 		float DistSq = FVector::DistSquared(PlayerLocation, Actor->GetActorLocation());
 
@@ -77,7 +77,7 @@ void UInteractionComponent::TryInteract()
 			}
 		}
 		// 상호작용 불가능 & 타입 Door의 경우  
-		else 
+		else
 		{
 			EInteractionType Type = IInteractionBase::Execute_GetInteractionType(Actor);
 			if (Type == EInteractionType::Door || Type == EInteractionType::SingleDoor)
@@ -90,7 +90,7 @@ void UInteractionComponent::TryInteract()
 			}
 		}
 	}
-	
+
 	// 상호작용 실행 
 	if (ClosestInteractable)
 	{
@@ -184,7 +184,7 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 	{
 		OwnerCharacter->GetCameraBoom()->bDoCollisionTest = false;
 	}
-	
+
 	if (DoorActor->IsA(ASlidingDoor::StaticClass()) || DoorActor->IsA(ADoubleDoor::StaticClass()))
 	{
 		bIsInteractingDoor = true;
@@ -228,11 +228,8 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 			if (SingleDoor->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
 			{
 				TargetWarpLocation = IInteractionBase::Execute_GetInteractionTargetLocation(DoorActor);
-
-				if (USceneComponent* PullComp = SingleDoor->FindComponentByClass<USceneComponent>())
-				{
-					TargetWarpRotation = PullComp->GetForwardVector().Rotation();
-				}
+				FVector DirToDoor = (DoorActor->GetActorLocation() - TargetWarpLocation).GetSafeNormal2D();
+				TargetWarpRotation = DirToDoor.Rotation();
 				SelectedMontage = OwnerCharacter->AnimData->DoorPullOpenMontage;
 			}
 			else
@@ -271,7 +268,7 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)
 {
 	if (!OwnerCharacter || !ItemActor) return;
-	if (CurrentInteractingItem || OwnerCharacter->GetMesh()->GetAnimInstance()->IsAnyMontagePlaying()) return;
+	if (OwnerCharacter->GetMesh()->GetAnimInstance()->IsAnyMontagePlaying()) return;
 	if (CurrentInteractingItem)
 	{
 		ConsumeInteractingItem();
@@ -292,12 +289,8 @@ void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)
 	if (OwnerCharacter->GetCameraBoom()) {
 		OwnerCharacter->GetCameraBoom()->bDoCollisionTest = false;
 	}
-	bIsItemConsumed = false;
+
 	CurrentInteractingItem = ItemActor;
-	InitialItemTransform = ItemActor->GetActorTransform();
-
-	ItemActor->SetActorEnableCollision(false);
-
 	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(CurrentInteractingItem);
 
 	if (OwnerCharacter->MotionWarpingComp)
@@ -381,10 +374,9 @@ void UInteractionComponent::AttachInteractingItem()
 
 void UInteractionComponent::ConsumeInteractingItem()
 {
-	bIsItemConsumed = true;
 	if (CurrentInteractingItem && OwnerCharacter)
 	{
-		CurrentInteractingItem->Destroy();
+		IInteractionBase::Execute_OnIneracted(CurrentInteractingItem, OwnerCharacter);
 		CurrentInteractingItem = nullptr;
 	}
 }
@@ -417,7 +409,7 @@ void UInteractionComponent::OnInteractableEndedOverlap(UPrimitiveComponent* Over
 	}
 }
 
-	
+
 void UInteractionComponent::TriggerInteraction()
 {
 	if (CurrentInteractingItem && IsValid(CurrentInteractingItem))
@@ -428,29 +420,9 @@ void UInteractionComponent::TriggerInteraction()
 
 void UInteractionComponent::EndInteraction()
 {
-	if (CurrentInteractingItem && !bIsItemConsumed)
-	{
-		EInteractionType InteractionType = IInteractionBase::Execute_GetInteractionType(CurrentInteractingItem);
-		if (InteractionType == EInteractionType::Ammo ||
-			InteractionType == EInteractionType::Heal ||
-			InteractionType == EInteractionType::Key)
-		{
-			CurrentInteractingItem->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-			CurrentInteractingItem->SetActorTransform(InitialItemTransform);
-		}
-
-		CurrentInteractingItem->SetActorEnableCollision(true);
-		if (IInteractionBase* Interface = Cast<IInteractionBase>(CurrentInteractingItem))
-		{
-			Interface->SetBCanInteract(true);
-			IInteractionBase::Execute_HidePressEWidget(CurrentInteractingItem);
-		}
-	}
-	CurrentInteractingItem = nullptr;
-	bIsItemConsumed = false;
 	bIsInteractingDoor = false;
-
 	if (OwnerCharacter) OwnerCharacter->bIsInteractingDoor = false;
+	CurrentInteractingItem = nullptr;
 
 	if (OwnerCharacter)
 	{
@@ -466,5 +438,4 @@ void UInteractionComponent::EndInteraction()
 			OwnerCharacter->GetCameraBoom()->bDoCollisionTest = true;
 		}
 	}
-	RefreshInteractionUI();
 }

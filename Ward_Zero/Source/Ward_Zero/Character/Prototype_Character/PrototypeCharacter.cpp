@@ -171,7 +171,7 @@ void APrototypeCharacter::Tick(float DeltaTime)
 	UPlayerAnimInstance* AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
 	bool bIsTurningNow = (AnimInst && AnimInst->bIsTurn);
 
-	if (bIsTurningNow || GetIsQuickTurning() || GetIsInteracting()) 
+	if (bIsTurningNow || GetIsQuickTurning() || GetIsInteracting())
 	{
 		bUseControllerRotationYaw = false;
 		if (GetCharacterMovement())
@@ -558,13 +558,13 @@ void APrototypeCharacter::OnDeath()
 	if (QuickTurnComp) QuickTurnComp->StopQuickTurn();
 
 	AbortAllActions(); // 모든 진행 중인 행동 강제 종료
-	
+
 	// 물리 및 충돌 설정 (래그돌)
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetMesh()->SetSimulatePhysics(true);
-	
+
 	// 입력 컴포넌트 비활성화 및 UI 모드 전환
 	if (APlayerController* PC = Cast<APlayerController>(Controller))
 	{
@@ -672,7 +672,7 @@ void APrototypeCharacter::PlayDeathReaction(const FVector& ToAttackerDir)
 	}
 	EPlayerHitDirection HitDir = GetHitDirection(ToAttackerDir);
 	UAnimMontage* MontageToPlay = (AnimData) ? AnimData->DeathMontages.FindRef(HitDir) : nullptr;
-	
+
 	if (MontageToPlay)
 	{
 		float Duration = PlayAnimMontage(MontageToPlay);
@@ -777,7 +777,7 @@ void APrototypeCharacter::StartHeal()
 	if (!StatusComp || StatusComp->IsDead()) return;
 	if (StatusComp->HealingItemCount <= 0) return;
 	if (GetIsReloading() || GetIsAiming() || IsEquipping()) return;
-	if (StatusComp->CurrHealth >= StatusComp->MaxHealth) return; 
+	if (StatusComp->CurrHealth >= StatusComp->MaxHealth) return;
 
 	if (AnimData && AnimData->HealMontage)
 	{
@@ -998,10 +998,6 @@ void APrototypeCharacter::AbortAllActions()
 	{
 		AnimInst->Montage_Stop(0.2f);
 	}
-	if (InteractionComp)
-	{
-		InteractionComp->EndInteraction();
-	}
 	DestroyHealItemVisual();
 	// 인터렉션 상태 강제 종료
 	if (InteractionComp)
@@ -1059,7 +1055,7 @@ void APrototypeCharacter::UpdateVentState()
 
 void APrototypeCharacter::NotifyActorBeginOverlap(AActor* OtherActor)
 {
-	Super::NotifyActorBeginOverlap(OtherActor); 
+	Super::NotifyActorBeginOverlap(OtherActor);
 
 	if (OtherActor && OtherActor->ActorHasTag(TEXT("VentArea")))
 	{
