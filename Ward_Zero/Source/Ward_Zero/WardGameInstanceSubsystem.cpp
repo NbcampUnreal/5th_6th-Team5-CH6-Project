@@ -194,6 +194,23 @@ bool UWardGameInstanceSubsystem::GetDocumentEntry(int32 DocIndex, FWardDocumentE
 }
 
 // ════════════════════════════════════════════════════════
+//  보스 격파 관리
+// ════════════════════════════════════════════════════════
+
+void UWardGameInstanceSubsystem::SetBossDefeated(FName BossID)
+{
+	if (BossID.IsNone()) return;
+
+	DefeatedBosses.Add(BossID);
+	UE_LOG(LogWard_Zero, Log, TEXT("보스 격파 등록: %s (총 %d마리)"), *BossID.ToString(), DefeatedBosses.Num());
+}
+
+bool UWardGameInstanceSubsystem::IsBossDefeated(FName BossID) const
+{
+	return !BossID.IsNone() && DefeatedBosses.Contains(BossID);
+}
+
+// ════════════════════════════════════════════════════════
 //  새 게임 초기화
 // ════════════════════════════════════════════════════════
 
@@ -201,6 +218,7 @@ void UWardGameInstanceSubsystem::ResetForNewGame()
 {
 	RuntimeObjectStates.Empty();
 	ActiveDocumentIndices.Empty();
+	DefeatedBosses.Empty();
 	CurrentStage = 0;
 	PendingSaveData = nullptr;
 
