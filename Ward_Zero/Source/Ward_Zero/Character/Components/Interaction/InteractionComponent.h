@@ -39,6 +39,8 @@ public:
 	UPROPERTY()
 	AActor* CurrentInteractingItem;
 
+	bool bIsItemConsumed = false;
+	FTransform InitialItemTransform;
 private:
 	UFUNCTION()
 	void OnInteractableBeganOverlap(
