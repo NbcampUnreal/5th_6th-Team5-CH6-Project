@@ -437,10 +437,10 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 		case 0: case 1:
 			TargetZone = EEnvZone::B1F;
 			break;
-		case 2: case 3:
+		case 2: case 3: case 4: case 5:
 			TargetZone = EEnvZone::F2;
 			break;
-		case 4: case 5:
+		case 6: case 7:
 			TargetZone = EEnvZone::F1;
 			break;
 		default:
