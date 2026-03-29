@@ -28,11 +28,13 @@ public class Ward_Zero : ModuleRules
             "MotionWarping",
 
             //Level
-            "GeometryCollectionEngine", 
+            "GeometryCollectionEngine",
             "FieldSystemEngine",         
             "ChaosSolverEngine",
             "ChaosNiagara",       
-            "Chaos",          
+            "Chaos",
+            
+            "NiagaraFluids",
             
             //GAS
             "GameplayAbilities",  
