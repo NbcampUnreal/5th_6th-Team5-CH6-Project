@@ -6,6 +6,7 @@
 #include "Gimmic_CY/Object/Door/SafeActor.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI_KWJ/InteractionHint/InteractionHintSubsystem.h"
+#include "UI_KWJ/ItemNotify/ItemNotifySubsystem.h"
 #include "UI_KWJ/PickupNotify/PickupNotifySubsystem.h"
 #include "UI_KWJ/Reading/DocumentSubsystem.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
@@ -132,7 +133,13 @@ void AItemBase::HandleInteraction_Implementation(APrototypeCharacter* Character)
 			{
 				
 				PickUpNotifySubsys->ShowPickup(FText::FromString(PickUpText));
+				
 			}
+			if (UItemNotifySubsystem* NotifySys = PC->GetLocalPlayer()->GetSubsystem<UItemNotifySubsystem>())
+			{
+				NotifySys->ShowItemNotifyByIndex(DocIdx);
+			}
+			
 		}
 	}
 	

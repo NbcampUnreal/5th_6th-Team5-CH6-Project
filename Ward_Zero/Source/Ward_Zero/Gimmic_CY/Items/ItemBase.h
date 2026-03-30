@@ -69,7 +69,7 @@ public:
 	FString Subtitle = "";
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "Setting")
-	int32 DocIdx = 0;
+	int32 DocIdx = -1;
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "Setting")
 	bool bHasDoc = false;
