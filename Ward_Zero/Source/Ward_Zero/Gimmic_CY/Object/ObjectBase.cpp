@@ -4,6 +4,7 @@
 #include "WardGameInstanceSubsystem.h"
 #include "MonsterAI/MonsterAI_CHS/Object/BaseZombieActivateTrigger.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI_KWJ/InteractionHint/InteractionHintSubsystem.h"
 #include "UI_KWJ/Reading/DocumentSubsystem.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
 #if WITH_EDITOR
@@ -182,6 +183,18 @@ void AObjectBase::ShowDocument() const
 
 void AObjectBase::ShowSubtitle() const
 {
+	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	if (PC)
+	{
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			if (UInteractionHintSubsystem* InteractionHintSubsys = LP->GetSubsystem<UInteractionHintSubsystem>())
+			{
+				InteractionHintSubsys->ShowHintWithText(FText::FromString(Subtitle));
+			}
+		}
+	}
+	
 }
 
 void AObjectBase::ChangeColorLampRed_Implementation()

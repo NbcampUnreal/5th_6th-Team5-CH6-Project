@@ -51,4 +51,9 @@ protected:
 public:
 	UFUNCTION(BlueprintCallable)
 	virtual void ActivateTrigger();
+	
+	UFUNCTION(BlueprintCallable)
+	void SetbHasTriggered(bool b){bHasTriggered = b; return;}
+	UFUNCTION(BlueprintPure)
+	bool GetbHasTriggered() const {return bHasTriggered;}
 };

@@ -2,9 +2,38 @@
 
 #include "UI_KWJ/ItemNotify/ItemNotifySubsystem.h"
 #include "UI_KWJ/ItemNotify/ItemNotifyWidget.h"
+#include "WardGameInstanceSubsystem.h"
+#include "UI_KWJ/Reading/WardDocumentDataTable.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/LocalPlayer.h"
+#include "Engine/Texture2D.h"
 #include "Ward_Zero.h"
+
+void UItemNotifySubsystem::ShowItemNotifyByIndex(int32 DocIdx)
+{
+	UGameInstance* GI = GetLocalPlayer()->GetGameInstance();
+	if (!GI) return;
+
+	UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>();
+	if (!SaveGI) return;
+
+	// 이미 알림을 띄운 아이템이면 무시
+	if (SaveGI->IsItemNotified(DocIdx)) return;
+
+	// DataTable에서 정보 조회
+	FWardDocumentEntry Entry;
+	if (!SaveGI->GetDocumentEntry(DocIdx, Entry)) return;
+
+	// 위젯 표시
+	UTexture2D* Tex = Entry.ThumbnailImage.IsValid()
+		? Entry.ThumbnailImage.LoadSynchronous() : nullptr;
+	ShowItemNotify(Entry.Title, Tex, Entry.KeyHint);
+
+	// 최초 습득 기록 (세이브에 저장됨)
+	SaveGI->MarkItemNotified(DocIdx);
+
+	UE_LOG(LogWard_Zero, Log, TEXT("아이템 알림 표시: [%d] %s"), DocIdx, *Entry.Title.ToString());
+}
 
 void UItemNotifySubsystem::ShowItemNotify(const FText& ItemName, UTexture2D* ItemImage, const FText& KeyHint)
 {

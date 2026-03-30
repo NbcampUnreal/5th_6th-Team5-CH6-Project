@@ -3,6 +3,7 @@
 #include "Field/FieldSystemObjects.h" 
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"    
+#include "WardGameInstanceSubsystem.h"
 #include "Kismet/GameplayStatics.h" 
 #include "Components/AudioComponent.h"
 #include "Sound/SoundBase.h"
@@ -74,7 +75,9 @@ void ABreakableWall::ExecuteWallDestruction(FVector ImpactLocation)
         }
     }
 
-    if (BreakSound)
+    UWardGameInstanceSubsystem* WGInstanceSubsys = GetGameInstance()->GetSubsystem<UWardGameInstanceSubsystem>();
+    
+    if (BreakSound && !WGInstanceSubsys->IsBossDefeated(FName(TEXT("Huton"))))
     {
         UGameplayStatics::PlaySoundAtLocation(
             this,
@@ -90,4 +93,11 @@ void ABreakableWall::ExecuteWallDestruction(FVector ImpactLocation)
     {
         UE_LOG(LogTemp, Warning, TEXT("BreakableWall: BreakSound is missing!"));
     }
+}
+
+void ABreakableWall::BeginPlay()
+{
+    Super::BeginPlay();
+    
+   
 }

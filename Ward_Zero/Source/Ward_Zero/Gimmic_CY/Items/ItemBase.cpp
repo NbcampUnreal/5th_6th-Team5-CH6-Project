@@ -5,6 +5,8 @@
 #include "Components/WidgetComponent.h"
 #include "Gimmic_CY/Object/Door/SafeActor.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI_KWJ/InteractionHint/InteractionHintSubsystem.h"
+#include "UI_KWJ/ItemNotify/ItemNotifySubsystem.h"
 #include "UI_KWJ/PickupNotify/PickupNotifySubsystem.h"
 #include "UI_KWJ/Reading/DocumentSubsystem.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
@@ -131,7 +133,13 @@ void AItemBase::HandleInteraction_Implementation(APrototypeCharacter* Character)
 			{
 				
 				PickUpNotifySubsys->ShowPickup(FText::FromString(PickUpText));
+				
 			}
+			if (UItemNotifySubsystem* NotifySys = PC->GetLocalPlayer()->GetSubsystem<UItemNotifySubsystem>())
+			{
+				NotifySys->ShowItemNotifyByIndex(DocIdx);
+			}
+			
 		}
 	}
 	
@@ -187,6 +195,17 @@ void AItemBase::HiddenActor()
 
 void AItemBase::ShowSubtitle() const
 {
+	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	if (PC)
+	{
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			if (UInteractionHintSubsystem* InteractionHintSubsys = LP->GetSubsystem<UInteractionHintSubsystem>())
+			{
+				InteractionHintSubsys->ShowHintWithText(FText::FromString(Subtitle));
+			}
+		}
+	}
 }
 
 void AItemBase::ShowDocument() const

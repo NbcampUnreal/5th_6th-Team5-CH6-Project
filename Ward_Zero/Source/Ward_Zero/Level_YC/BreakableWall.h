@@ -18,6 +18,8 @@ public:
 	// 트리거와 충돌했을 때 벽이 파괴되는 함수 (AI 트리거 호출)
     UFUNCTION(BlueprintCallable, Category = "Chaos|Destruction")
     void ExecuteWallDestruction(FVector ImpactLocation);
+    
+    virtual void BeginPlay() override;
 
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
