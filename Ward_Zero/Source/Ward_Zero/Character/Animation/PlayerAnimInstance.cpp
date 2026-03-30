@@ -68,13 +68,22 @@ void UPlayerAnimInstance::UpdateEssentialData(float DeltaSeconds) {
 		WeaponMesh = AnimInterface->GetEquippedWeaponMesh();
 		EquippedWeapon = AnimInterface->GetEquippedWeapon();
 		bIsSMGEquipped = AnimInterface->GetIsSMGEquipped();
-
+		bIsUseHeal = AnimInterface->GetIsUseHeal();
 		AimPitch = bIsReloading ? FMath::FInterpTo(AimPitch, 0.0f, DeltaSeconds, 5.0f) : AnimInterface->GetAimPitch();
 	}
 }
 
 void UPlayerAnimInstance::UpdateCombatIK(float DeltaSeconds) {
-	bool bIsIKBusy = bIsEquipping || bIsReloading || bIsInteracting || bIsQuickTurning;
+	bool bIsPlayingNonCombatMontage = false;
+	if (CachedCharacter)
+	{
+		UAnimInstance* AI = CachedCharacter->GetMesh()->GetAnimInstance();
+		// 힐/픽업 등 전투 외 몽타주가 재생 중이면서 전투 몽타주가 아닐 때
+		if (AI && AI->IsAnyMontagePlaying() && !bIsReloading && !bIsEquipping)
+			bIsPlayingNonCombatMontage = true;
+	}
+
+	bool bIsIKBusy = bIsEquipping || bIsReloading || bIsInteracting || bIsQuickTurning || bIsPlayingNonCombatMontage;
 	float CurveValue = GetCurveValue(TEXT("HandIKLeftAlpha"));
 	SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, (bIsSMGEquipped && !bIsQuickTurning && !bIsIKBusy) ? CurveValue : 0.0f, DeltaSeconds, 15.0f);
 	PistolIKAlpha = FMath::FInterpTo(PistolIKAlpha, (bIsPistolEquipped && !bIsSMGEquipped && !bIsIKBusy) ? 1.0f : 0.0f, DeltaSeconds, 15.0f);
@@ -98,6 +107,13 @@ void UPlayerAnimInstance::UpdateInteractionIK(float DeltaSeconds) {
 		FVector NewJoint = FVector(-20.f, -40.f, (LocalTarget.Z < -50.0f) ? 20.f : -30.f);
 		DynamicPickupJointTarget = FMath::VInterpTo(DynamicPickupJointTarget, NewJoint, DeltaSeconds, 15.0f);
 	}
+	else
+	{
+		if (USkeletalMeshComponent* Mesh = CachedCharacter->GetMesh())
+		{
+			PickupTargetLocation = Mesh->GetBoneLocation(TEXT("hand_l"), EBoneSpaces::WorldSpace);
+		}
+	}
 
 	float LeverCurve = GetCurveValue(TEXT("LeverIK"));
 	LeverIKAlpha = FMath::FInterpTo(LeverIKAlpha, LeverCurve, DeltaSeconds, (LeverCurve > LeverIKAlpha) ? 15.0f : 8.0f);
@@ -110,13 +126,30 @@ void UPlayerAnimInstance::UpdateInteractionIK(float DeltaSeconds) {
 		DynamicLeverJointTarget = FMath::VInterpTo(DynamicLeverJointTarget, FVector(-15.f, -70.f, 0.f), DeltaSeconds, 5.0f);
 	}
 
-	if (bIsInteracting) {
+	if(bIsInteracting) {
 		if (ASingleDoor* Door = Cast<ASingleDoor>(CachedCharacter->InteractionComp->CurrentInteractingItem)) {
-			FVector HandleLoc = Door->Mesh->GetSocketLocation(TEXT("HandleSocket"));
-			PickupTargetLocation = HandleLoc; LeverTargetLocation = HandleLoc;
-			LeverTargetRotation = Door->Mesh->GetSocketRotation(TEXT("HandleSocket"));
-			PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, GetCurveValue(TEXT("PickupIK")), DeltaSeconds, 15.0f);
-			DynamicPickupJointTarget = (Door->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull) ? FVector(40.f, 80.f, 0.f) : FVector(25.f, 30.f, 0.f);
+
+			float DoorPickupCurve = GetCurveValue(TEXT("PickupIK"));
+
+			if (DoorPickupCurve > 0.01f) {
+				PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, DoorPickupCurve, DeltaSeconds, 15.0f);
+				FVector HandleLoc = Door->Mesh->GetSocketLocation(TEXT("HandleSocket"));
+				HandleLoc += FVector(0.f, 0.f, -30.f);
+				CachedCharacter->InteractionComp->CurrentPickupLocation = HandleLoc;
+				PickupTargetLocation = HandleLoc;
+				LeverTargetLocation = HandleLoc;
+				LeverTargetRotation = Door->Mesh->GetSocketRotation(TEXT("HandleSocket"));
+				FVector LocalHandle = CachedCharacter->GetActorTransform().InverseTransformPosition(HandleLoc);
+				DynamicPickupJointTarget = (Door->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
+					? FVector(60.f, -60.f, LocalHandle.Z - 40.f)
+					: FVector(25.f, 30.f, 0.f);
+			}
+			else {
+				PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, 0.0f, DeltaSeconds, 8.0f);
+				if (USkeletalMeshComponent* Mesh = CachedCharacter->GetMesh()) {
+					PickupTargetLocation = Mesh->GetBoneLocation(TEXT("hand_l"), EBoneSpaces::WorldSpace);
+				}
+			}
 		}
 	}
 
@@ -232,7 +265,7 @@ void UPlayerAnimInstance::AnimNotify_TriggerInteraction()
 }
 void UPlayerAnimInstance::AnimNotify_EndInteraction()
 {
-	if (CachedCharacter && CachedCharacter->InteractionComp) { CachedCharacter->InteractionComp->EndInteraction(); Montage_Stop(0.2f); }
+	if (CachedCharacter && CachedCharacter->InteractionComp) { CachedCharacter->InteractionComp->EndInteraction(); Montage_Stop(0.4f); }
 }
 void UPlayerAnimInstance::AnimNotify_FreeMovement()
 {

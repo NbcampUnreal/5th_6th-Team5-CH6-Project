@@ -115,6 +115,7 @@ public:
 	virtual void ExecuteHealPoint() override;
 	virtual bool GetIsInteracting() const override;
 	virtual bool GetIsInVent() const override;
+	virtual bool GetIsUseHeal() const override;
 #pragma endregion
 
 	void Move(const FInputActionValue& Value);
@@ -274,4 +275,15 @@ public:
 	// ABP Base에서 State(Idle/Walk/Run) 호출할 노티파이 이벤트
 	UFUNCTION(BlueprintCallable, Category = "Camera")
 	void ChangeLocomotionCameraShake(int32 StateIndex);
+
+	bool bIsUseHeal = false;
+
+private:
+	bool bWasWeaponDrawnBeforeHeal = false;
+
+	UFUNCTION()
+	void OnHealMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	UPROPERTY()
+	bool bWasInteractingOnHit = false;
 };

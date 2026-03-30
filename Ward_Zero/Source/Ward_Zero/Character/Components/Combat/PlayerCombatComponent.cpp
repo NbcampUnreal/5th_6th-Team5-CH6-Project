@@ -459,7 +459,8 @@ void UPlayerCombatComponent::StopAiming()
 { 
 	bIsAiming = false; 
 
-	HandleWeaponAttachment(true);
+	if (bIsWeaponDrawn)
+		HandleWeaponAttachment(true);
 
 	if (EquippedWeapon)
 	{
@@ -644,6 +645,8 @@ void UPlayerCombatComponent::CancelReload(UAnimInstance* AnimInst)
 		AnimInst->Montage_Stop(0.2f, SMG_ReloadSet.CrouchReload);
 		AnimInst->Montage_Stop(0.2f, SMG_ReloadSet.CrouchAimReload);
 		AnimInst->Montage_Stop(0.2f, Pistol_ReloadMontage);
+		AnimInst->Montage_Stop(0.2f, SMG_ReloadSet.StandingReload);
+		AnimInst->Montage_Stop(0.2f, SMG_ReloadSet.StandingAimReload);
 	}
 	if (EquippedWeapon)
 	{

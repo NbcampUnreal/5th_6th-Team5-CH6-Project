@@ -271,6 +271,7 @@ void APrototypeCharacter::StartRunning(const FInputActionValue& Value)
 {
 	if (CombatComp && CombatComp->IsAiming()) return;
 	if (StatusComp && !StatusComp->CanSprint()) return;
+	if (GetIsInteracting()) return;
 	if (bIsInVent) return;
 
 	FVector LastInput = GetLastMovementInputVector();
@@ -323,6 +324,7 @@ void APrototypeCharacter::ToggleEquip(const FInputActionValue& Value)
 {
 	if (!CombatComp || GetIsReloading()) return;
 	if (!CombatComp->GetEquippedWeapon()) return;
+	if (GetIsInteracting()) return;
 
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
 	if (!AnimInst) return;
@@ -382,7 +384,7 @@ void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 {
 	if (bIsInVent) return;
 	if (bIsCrouched && !GetIsSMGEquipped()) return;
-
+	if (!GetbIsWeaponDrawn()) return;
 	if (CombatComp && CombatComp->StartAiming())
 	{
 		// 캐릭터 회전 및 이동 속도 설정
@@ -588,6 +590,24 @@ float APrototypeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 {
 	if (!StatusComp || StatusComp->IsDead()) return 0.0f;
 
+	bool bWasInteracting = GetIsInteracting(); 
+	if (bWasInteracting) // 피격 시 상호작용 중단 
+	{
+		// 아직 손에 붙지 않은 아이템이면 월드에 복구
+		if (InteractionComp && InteractionComp->CurrentInteractingItem)
+		{
+			AActor* Item = InteractionComp->CurrentInteractingItem;
+			// Attach되지 않은 상태면(픽업 중간) 아이템 콜리전/상호작용 복구
+			if (Item->GetAttachParentActor() != this)
+			{
+				Item->SetActorEnableCollision(true);
+				if (IInteractionBase* Interactable = Cast<IInteractionBase>(Item))
+					Interactable->SetBCanInteract(true);
+			}
+		}
+		AbortAllActions(); // 몽타주 중단 + 입력 복구 + 인터렉션 상태 초기화
+	}
+
 	// 데미지 적용 (HP 감소 및 사망 판정)
 	float ActualDamage = StatusComp->ApplyDamage(DamageAmount);
 
@@ -776,16 +796,25 @@ void APrototypeCharacter::StartHeal()
 {
 	if (!StatusComp || StatusComp->IsDead()) return;
 	if (StatusComp->HealingItemCount <= 0) return;
-	if (GetIsReloading() || GetIsAiming() || IsEquipping()) return;
+	if (GetIsReloading() || GetIsAiming() || IsEquipping() || GetIsInteracting()) return;
 	if (StatusComp->CurrHealth >= StatusComp->MaxHealth) return;
 
+	bIsUseHeal = true;
 	if (AnimData && AnimData->HealMontage)
 	{
-		if (bIsRunning) EndRunning(FInputActionValue());
-		if (CameraBoom)
+		if (CombatComp && CombatComp->IsWeaponDrawn())
 		{
-			CameraBoom->bDoCollisionTest = false;
+			bWasWeaponDrawnBeforeHeal = true;
+			CombatComp->HandleWeaponAttachment(false);
 		}
+
+		if (CameraBoom)
+			CameraBoom->bDoCollisionTest = false;
+
+		// 몽타주 종료 시 무기 복구 바인딩
+		if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+			AnimInst->OnMontageEnded.AddDynamic(this, &APrototypeCharacter::OnHealMontageEnded);
+
 		PlayAnimMontage(AnimData->HealMontage);
 		StatusComp->AddHealingItem(-1);
 		if (CombatComp) CombatComp->StopFire();
@@ -799,7 +828,7 @@ void APrototypeCharacter::OnHealPoint()
 	}
 }
 void APrototypeCharacter::SpawnHealItemVisual() { if (StatusComp) StatusComp->SpawnHealItemVisual(GetMesh()); }
-void APrototypeCharacter::DestroyHealItemVisual() { if (StatusComp) StatusComp->DestroyHealItemVisual(); }
+void APrototypeCharacter::DestroyHealItemVisual() { if (StatusComp) StatusComp->DestroyHealItemVisual(); bIsUseHeal = false; }
 void APrototypeCharacter::PopHealItemCap() { if (StatusComp) StatusComp->PopHealItemCap(); }
 
 void APrototypeCharacter::PlayPickupAnimation(AActor* TargetItem)
@@ -825,8 +854,7 @@ void APrototypeCharacter::ConsumeInteractingItem()
 void APrototypeCharacter::SwitchWeaponByIndex(int32 WeaponIndex)
 {
 	if (GetIsReloading() || !CombatComp) return;
-
-	// 조준 중이었다면 강제 해제
+	if (GetIsInteracting()) return;
 	if (GetIsAiming()) StopAiming(FInputActionValue());
 
 	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
@@ -928,6 +956,8 @@ float APrototypeCharacter::GetAimYaw() const { return CombatComp ? CombatComp->G
 bool APrototypeCharacter::IsFiring() const { return CombatComp && CombatComp->IsFiring(); }
 float APrototypeCharacter::GetCurrSpread() const { return CombatComp ? CombatComp->CurrentSpread : 0.0f; }
 UPlayerCombatComponent* APrototypeCharacter::GetCombatComp() const { return CombatComp ? CombatComp : nullptr; }
+bool APrototypeCharacter::GetIsInVent() const { return bIsInVent; }
+bool APrototypeCharacter::GetIsUseHeal() const { return bIsUseHeal; }
 
 bool APrototypeCharacter::GetbIsWeaponDrawn() const
 {
@@ -947,11 +977,6 @@ void APrototypeCharacter::ExecuteHealPoint()
 bool APrototypeCharacter::GetIsInteracting() const
 {
 	return bIsInteractingDoor || (InteractionComp && InteractionComp->CurrentInteractingItem != nullptr);
-}
-
-bool APrototypeCharacter::GetIsInVent() const
-{
-	return bIsInVent;
 }
 
 bool APrototypeCharacter::IsEquipping() const
@@ -1045,7 +1070,8 @@ void APrototypeCharacter::AbortAllActions()
 	}
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
-		InteractionComp->EndInteraction();
+		EnableInput(PC);
+		PC->ResetIgnoreInputFlags();
 	}
 }
 
@@ -1125,4 +1151,19 @@ void APrototypeCharacter::ChangeLocomotionCameraShake(int32 StateIndex)
 	{
 		CurrentCameraShake = PC->PlayerCameraManager->StartCameraShake(ShakeToPlay, 1.0f);
 	}
+}
+
+void APrototypeCharacter::OnHealMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (!AnimData || Montage != AnimData->HealMontage) return;
+
+	// 델리게이트 해제
+	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+		AnimInst->OnMontageEnded.RemoveDynamic(this, &APrototypeCharacter::OnHealMontageEnded);
+
+	// 이전에 무기를 들고 있었다면 복구
+	if (bWasWeaponDrawnBeforeHeal && CombatComp)
+		CombatComp->HandleWeaponAttachment(true);
+
+	bWasWeaponDrawnBeforeHeal = false;
 }

@@ -44,4 +44,5 @@ public:
     virtual void ExecuteHealPoint() = 0;
     virtual bool GetIsInteracting() const = 0;
     virtual bool GetIsInVent() const = 0;
+    virtual bool GetIsUseHeal() const = 0;
 };
