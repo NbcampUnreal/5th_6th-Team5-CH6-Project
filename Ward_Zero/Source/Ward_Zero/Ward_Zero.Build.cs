@@ -34,8 +34,6 @@ public class Ward_Zero : ModuleRules
             "ChaosNiagara",       
             "Chaos",
             
-            "NiagaraFluids",
-            
             //GAS
             "GameplayAbilities",  
             "GameplayTags",  

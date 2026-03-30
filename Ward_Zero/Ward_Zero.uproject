@@ -55,6 +55,10 @@
 		{
 			"Name": "ChaosMover",
 			"Enabled": true
+		},
+		{
+			"Name": "NiagaraFluids",
+			"Enabled": true
 		}
 	]
 }
