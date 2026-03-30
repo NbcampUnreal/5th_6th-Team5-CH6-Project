@@ -25,6 +25,7 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category = "GAS")
 	TArray<TSubclassOf<class UGameplayAbility>> DefaultAbilities;
 
+	UFUNCTION(BlueprintCallable)
 	void Die();
 protected:
 	virtual void BeginPlay() override;
