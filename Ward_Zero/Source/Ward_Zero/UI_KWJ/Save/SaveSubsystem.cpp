@@ -301,6 +301,7 @@ UWardSaveGame* USaveSubsystem::CollectCurrentGameState()
 		SaveData->CurrentStamina = Status->CurrStamina;
 		SaveData->MaxStamina = Status->MaxStamina;
 		SaveData->bIsExhausted = Status->bIsExhausted;
+		SaveData->HealingItemCount = Status->HealingItemCount;
 	}
 
 	// 무기 & 탄약 (권총 + SMG 각각 저장)
@@ -394,6 +395,10 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 
 		// HP 비네팅 즉시 갱신
 		Status->OnHealthChanged.Broadcast(Status->CurrHealth, Status->MaxHealth);
+
+		// 힐템 수량 복원
+		Status->HealingItemCount = SaveData->HealingItemCount;
+		Status->OnHealingItemCountChanged.Broadcast(Status->HealingItemCount);
 	}
 
 	// 무기 탄약 복원 (권총 + SMG)

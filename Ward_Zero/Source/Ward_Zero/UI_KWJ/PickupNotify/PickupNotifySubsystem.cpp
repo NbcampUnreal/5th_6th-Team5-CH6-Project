@@ -3,6 +3,8 @@
 #include "UI_KWJ/PickupNotify/PickupNotifySubsystem.h"
 #include "UI_KWJ/PickupNotify/PickupNotifyWidget.h"
 #include "Character/Components/Status/PlayerStatusComponent.h"
+#include "Character/Components/Combat/PlayerCombatComponent.h"
+#include "Weapon/Weapon.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/LocalPlayer.h"
 #include "Ward_Zero.h"
@@ -29,9 +31,21 @@ void UPickupNotifySubsystem::BindToStatusComponent(UPlayerStatusComponent* Statu
 	BoundStatusComp = StatusComp;
 
 	// 초기 기준값 설정 (바인딩 직후 증가 오탐 방지)
-	PrevHealCount     = StatusComp->HealingItemCount;
-	PrevPistolReserve = 0; // Reserve는 StatusComp에서 직접 접근 불가 → 0으로 초기화
+	PrevHealCount = StatusComp->HealingItemCount;
+
+	// 현재 Reserve 값을 가져와서 초기화 — 0으로 두면 첫 발사 시 오탐
+	PrevPistolReserve = 0;
 	PrevSMGReserve    = 0;
+	if (AActor* Owner = StatusComp->GetOwner())
+	{
+		if (UPlayerCombatComponent* Combat = Owner->FindComponentByClass<UPlayerCombatComponent>())
+		{
+			if (Combat->PistolWeapon)
+				PrevPistolReserve = Combat->PistolWeapon->GetReserveAmmo();
+			if (Combat->SMGWeapon)
+				PrevSMGReserve = Combat->SMGWeapon->GetReserveAmmo();
+		}
+	}
 
 	StatusComp->OnHealingItemCountChanged.AddDynamic(
 		this, &UPickupNotifySubsystem::OnHealingItemCountChanged);
