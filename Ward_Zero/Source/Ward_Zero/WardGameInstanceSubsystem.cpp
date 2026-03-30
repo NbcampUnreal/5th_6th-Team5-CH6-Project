@@ -178,7 +178,9 @@ void UWardGameInstanceSubsystem::ActivateDocumentIndex(int32 DocIndex)
 
 bool UWardGameInstanceSubsystem::IsDocumentIndexActive(int32 DocIndex) const
 {
-	return ActiveDocumentIndices.Contains(DocIndex);
+	if (ActiveDocumentIndices.Contains(DocIndex)) return true;
+	if (PendingSaveData && PendingSaveData->CollectedDocumentIndices.Contains(DocIndex)) return true;
+	return false;
 }
 
 bool UWardGameInstanceSubsystem::GetDocumentEntry(int32 DocIndex, FWardDocumentEntry& OutEntry) const
@@ -209,7 +211,9 @@ void UWardGameInstanceSubsystem::MarkItemNotified(int32 ItemIndex)
 
 bool UWardGameInstanceSubsystem::IsItemNotified(int32 ItemIndex) const
 {
-	return NotifiedItemIndices.Contains(ItemIndex);
+	if (NotifiedItemIndices.Contains(ItemIndex)) return true;
+	if (PendingSaveData && PendingSaveData->NotifiedItemIndices.Contains(ItemIndex)) return true;
+	return false;
 }
 
 // ════════════════════════════════════════════════════════
@@ -226,7 +230,11 @@ void UWardGameInstanceSubsystem::SetBossDefeated(FName BossID)
 
 bool UWardGameInstanceSubsystem::IsBossDefeated(FName BossID) const
 {
-	return !BossID.IsNone() && DefeatedBosses.Contains(BossID);
+	if (BossID.IsNone()) return false;
+	if (DefeatedBosses.Contains(BossID)) return true;
+	// BeginPlay가 ApplyGameState보다 먼저 호출될 수 있으므로 PendingSaveData도 확인
+	if (PendingSaveData && PendingSaveData->DefeatedBosses.Contains(BossID)) return true;
+	return false;
 }
 
 // ════════════════════════════════════════════════════════
