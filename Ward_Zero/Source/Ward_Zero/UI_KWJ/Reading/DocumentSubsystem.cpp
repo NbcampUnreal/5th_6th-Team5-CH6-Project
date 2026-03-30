@@ -39,6 +39,8 @@ void UDocumentSubsystem::OpenDocument(UDocumentData* InDocument)
 		return;
 	}
 
+	if (bIsClosing) return; // 닫기 애니메이션 중 재열기 방지
+
 	UDocumentViewerWidget* Viewer = GetOrCreateViewer();
 	if (!Viewer)
 	{
@@ -64,18 +66,40 @@ void UDocumentSubsystem::OpenDocument(UDocumentData* InDocument)
 
 void UDocumentSubsystem::CloseDocument()
 {
+	if (bIsClosing) return; // 중복 닫기 방지
+	bIsClosing = true;
+
 	if (ViewerWidget)
 	{
 		ViewerWidget->CloseDocument();
 	}
 
-	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
-	if (PC)
+	// 닫기 애니메이션 완료 후 입력 모드 전환 (타이머 기반)
+	// ViewerWidget에 Anim_Close가 있으면 그 길이만큼 대기
+	float Delay = 0.f;
+	if (ViewerWidget && ViewerWidget->Anim_Close)
 	{
-		if (bOpenedFromCollection)
+		Delay = ViewerWidget->Anim_Close->GetEndTime();
+	}
+
+	bool bWasFromCollection = bOpenedFromCollection;
+	bOpenedFromCollection = false;
+
+	auto FinishClose = [this, bWasFromCollection]()
+	{
+		bIsClosing = false;
+
+		APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
+		if (!PC) return;
+
+		if (bWasFromCollection)
 		{
-			// 수집 UI에서 열었으면 커서 유지
+			// 수집 UI에서 열었으면 컬렉션 위젯에 포커스 복원
 			FInputModeUIOnly InputMode;
+			if (CollectionWidget)
+			{
+				InputMode.SetWidgetToFocus(CollectionWidget->TakeWidget());
+			}
 			PC->SetInputMode(InputMode);
 			PC->SetShowMouseCursor(true);
 		}
@@ -87,9 +111,17 @@ void UDocumentSubsystem::CloseDocument()
 			PC->SetInputMode(InputMode);
 			PC->SetShowMouseCursor(false);
 		}
-	}
+	};
 
-	bOpenedFromCollection = false;
+	if (Delay > 0.f)
+	{
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateLambda(FinishClose), Delay, false);
+	}
+	else
+	{
+		FinishClose();
+	}
 }
 
 void UDocumentSubsystem::OpenDocumentByIndex(int32 DocIndex)
@@ -134,7 +166,7 @@ void UDocumentSubsystem::OpenDocumentByIndex(int32 DocIndex)
 
 bool UDocumentSubsystem::IsDocumentOpen() const
 {
-	return ViewerWidget && ViewerWidget->IsVisible();
+	return bIsClosing || (ViewerWidget && ViewerWidget->IsVisible());
 }
 
 // ────────────────────────────────────────────
@@ -172,7 +204,13 @@ void UDocumentSubsystem::HideInteractionHint()
 
 UDocumentViewerWidget* UDocumentSubsystem::GetOrCreateViewer()
 {
-	if (ViewerWidget) return ViewerWidget;
+	if (IsValid(ViewerWidget) && ViewerWidget->IsInViewport())
+	{
+		return ViewerWidget;
+	}
+
+	// 이전 위젯이 무효화된 경우 (레벨 전환 등) 초기화
+	ViewerWidget = nullptr;
 
 	if (!ViewerWidgetClass)
 	{

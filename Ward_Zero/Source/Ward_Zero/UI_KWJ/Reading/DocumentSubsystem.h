@@ -85,6 +85,10 @@ public:
 	bool IsCollectionOpen() const;
 	/** 수집 UI에서 서류를 열었는지 여부 */
 	bool bOpenedFromCollection = false;
+
+	/** 닫기 애니메이션 재생 중 (ESC 중복 입력 방지) */
+	bool bIsClosing = false;
+
 protected:
 
 	UPROPERTY()

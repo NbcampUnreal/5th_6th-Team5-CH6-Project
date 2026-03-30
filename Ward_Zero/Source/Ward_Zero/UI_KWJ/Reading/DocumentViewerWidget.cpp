@@ -65,6 +65,7 @@ FReply UDocumentViewerWidget::NativeOnKeyDown(const FGeometry& InGeometry, const
 			UDocumentSubsystem* DocSubsystem = LP->GetSubsystem<UDocumentSubsystem>();
 			if (DocSubsystem)
 			{
+				if (DocSubsystem->bIsClosing) return FReply::Handled(); // 닫기 중 무시
 				DocSubsystem->CloseDocument();
 				return FReply::Handled();
 			}
