@@ -68,6 +68,10 @@ public:
 	
 	virtual void SaveActorState() const = 0;
 	
+	virtual void ShowSubtitle() const = 0;
+	
+	virtual void ShowDocument() const = 0;
+	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void ShowPressEWidget();
 	

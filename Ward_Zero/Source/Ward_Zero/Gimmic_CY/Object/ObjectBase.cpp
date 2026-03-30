@@ -2,6 +2,8 @@
 #include "Components/BoxComponent.h"
 #include "Components/WidgetComponent.h"
 #include "WardGameInstanceSubsystem.h"
+#include "Kismet/GameplayStatics.h"
+#include "UI_KWJ/Reading/DocumentSubsystem.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
 #if WITH_EDITOR
 #include "EngineUtils.h"
@@ -112,6 +114,15 @@ void AObjectBase::OnIneracted_Implementation(APrototypeCharacter* Character)
 
 void AObjectBase::HandleInteraction_Implementation(APrototypeCharacter* Character)
 {
+	if (bHasDoc)
+	{
+		ShowDocument();
+	}
+	
+	if (bHasSubtitle)
+	{
+		ShowSubtitle();
+	}
 }
 
 EInteractionType AObjectBase::GetInteractionType_Implementation() const
@@ -151,6 +162,25 @@ void AObjectBase::PostActorCreated()
 		ActorID = FGuid::NewGuid();
 		UE_LOG(LogTemp, Warning, TEXT("New Item ID Generated: %s"), *ActorID.ToString());
 	}
+}
+
+void AObjectBase::ShowDocument() const
+{
+	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	if (PC)
+	{
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			if (UDocumentSubsystem* DocSys = LP->GetSubsystem<UDocumentSubsystem>())
+			{
+				DocSys->OpenDocumentByIndex(DocIdx);
+			}
+		}
+	}
+}
+
+void AObjectBase::ShowSubtitle() const
+{
 }
 
 void AObjectBase::ChangeColorLampRed_Implementation()
@@ -205,12 +235,17 @@ void AObjectBase::SaveActorState() const
 void AObjectBase::Activate()
 {
 	bActivated = true;
+	ActivateOtherActor();
 	SetBCanInteract(false);
 }
 
 FVector AObjectBase::GetInteractionTargetLocation_Implementation() const
 {
 	return GetActorLocation();
+}
+
+void AObjectBase::ActivateOtherActor_Implementation()
+{
 }
 
 FVector AObjectBase::GetIKTargetLocation_Implementation() const

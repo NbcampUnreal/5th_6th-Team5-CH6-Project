@@ -42,6 +42,20 @@ public:
 	
 	virtual void PostActorCreated() override;
 	
+	virtual void ShowDocument() const override;
+	virtual void ShowSubtitle() const override;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	int32 DocIdx;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	bool bHasDoc = false;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "Setting")
+	FString Subtitle = "";
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
+	bool bHasSubtitle = false;
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	UStaticMeshComponent* Lamp;
@@ -78,6 +92,12 @@ public:
 	
 	UPROPERTY(EditAnywhere,Category = "Setting")
 	bool bDefaultInteractable = true;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Setting")
+	TArray<AActor*> ActivateWithActors;
+	
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void ActivateOtherActor();
 	
 	virtual FVector GetIKTargetLocation_Implementation() const override;
 	

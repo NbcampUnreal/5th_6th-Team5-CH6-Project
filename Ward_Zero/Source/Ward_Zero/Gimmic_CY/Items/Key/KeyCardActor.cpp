@@ -1,4 +1,6 @@
 #include "KeyCardActor.h"
+
+#include "WardGameInstanceSubsystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 
@@ -28,6 +30,8 @@ void AKeyCardActor::HandleInteraction_Implementation(APrototypeCharacter* Charac
 			InteractableActor->SetBCanInteract(true);
 		}
 	}
+	
+	
 	SetBCanInteract(false);
 }
 

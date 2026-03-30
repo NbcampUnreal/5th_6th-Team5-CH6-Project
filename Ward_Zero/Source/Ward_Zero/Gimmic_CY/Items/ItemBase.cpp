@@ -4,6 +4,9 @@
 #include "Components/BoxComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Gimmic_CY/Object/Door/SafeActor.h"
+#include "Kismet/GameplayStatics.h"
+#include "UI_KWJ/PickupNotify/PickupNotifySubsystem.h"
+#include "UI_KWJ/Reading/DocumentSubsystem.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
 #if WITH_EDITOR
 #include "EngineUtils.h"
@@ -111,6 +114,27 @@ void AItemBase::HandleInteraction_Implementation(APrototypeCharacter* Character)
 		return;
 
 	bCollected = true;
+	if (bHasDoc)
+	{
+		ShowDocument();
+	}
+	if (bHasSubtitle)
+	{
+		ShowSubtitle();
+	}
+	
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+	{
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			if (UPickupNotifySubsystem* PickUpNotifySubsys = LP->GetSubsystem<UPickupNotifySubsystem>())
+			{
+				
+				PickUpNotifySubsys->ShowPickup(FText::FromString(PickUpText));
+			}
+		}
+	}
+	
 
 	HiddenActor();
 	
@@ -161,11 +185,29 @@ void AItemBase::HiddenActor()
 	
 }
 
+void AItemBase::ShowSubtitle() const
+{
+}
+
+void AItemBase::ShowDocument() const
+{
+	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	if (PC)
+	{
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			if (UDocumentSubsystem* DocSys = LP->GetSubsystem<UDocumentSubsystem>())
+			{
+				DocSys->OpenDocumentByIndex(DocIdx);
+			}
+		}
+	}
+}
+
 void AItemBase::PostActorCreated()
 {
 	Super::PostActorCreated();
-
-	// ���Ͱ� �����Ϳ� ��ġ�ǰų� ������ �� ���� 1ȸ�� GUID ����
+	
 	if (!ActorID.IsValid())
 	{
 		ActorID = FGuid::NewGuid();

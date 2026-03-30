@@ -13,6 +13,7 @@
 ADocumentBase::ADocumentBase()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	bHasDoc = true;
 }
 
 // Called when the game starts or when spawned
@@ -32,19 +33,7 @@ void ADocumentBase::HandleInteraction_Implementation(APrototypeCharacter* Charac
 	{
 		SaveGI->ActivateDocumentIndex(DocIdx);
 	}
-
-	// 서류 뷰어 열기
-	APlayerController* PC = Cast<APlayerController>(Character->GetController());
-	if (PC)
-	{
-		if (ULocalPlayer* LP = PC->GetLocalPlayer())
-		{
-			if (UDocumentSubsystem* DocSys = LP->GetSubsystem<UDocumentSubsystem>())
-			{
-				DocSys->OpenDocumentByIndex(DocIdx);
-			}
-		}
-	}
+	
 }
 
 EInteractionType ADocumentBase::GetInteractionType_Implementation() const
