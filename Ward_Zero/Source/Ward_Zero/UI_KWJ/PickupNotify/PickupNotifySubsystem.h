@@ -1,6 +1,6 @@
 // PickupNotifySubsystem.h
 // 아이템 픽업 알림 서브시스템
-// — StatusComp 델리게이트 감지 → 증가 시 픽업 알림 표시
+// — 아이템 액터가 습득 시 ShowPickup() 직접 호출
 
 #pragma once
 
@@ -9,7 +9,6 @@
 #include "PickupNotifySubsystem.generated.h"
 
 class UPickupNotifyWidget;
-class UPlayerStatusComponent;
 
 UCLASS()
 class WARD_ZERO_API UPickupNotifySubsystem : public ULocalPlayerSubsystem
@@ -18,31 +17,14 @@ class WARD_ZERO_API UPickupNotifySubsystem : public ULocalPlayerSubsystem
 
 public:
 
-	/** StatusComp 델리게이트에 바인딩 (UIManager에서 호출) */
-	void BindToStatusComponent(UPlayerStatusComponent* StatusComp);
+	/**
+	 * 픽업 알림 표시 (아이템 액터에서 직접 호출)
+	 * @param PickupText 표시 텍스트 (예: "치료제 +1", "권총 탄 +15", "카드키")
+	 */
+	UFUNCTION(BlueprintCallable, Category = "PickupNotify")
+	void ShowPickup(const FText& PickupText);
 
 private:
-
-	// ── 델리게이트 콜백 ──
-
-	UFUNCTION()
-	void OnHealingItemCountChanged(int32 NewCount);
-
-	UFUNCTION()
-	void OnPistolAmmoChanged(int32 Current, int32 Max, int32 Reserve);
-
-	UFUNCTION()
-	void OnSMGAmmoChanged(int32 Current, int32 Max, int32 Reserve);
-
-	// ── 이전 값 추적 (증가 감지용) ──
-
-	int32 PrevHealCount    = 0;
-	int32 PrevPistolReserve = 0;
-	int32 PrevSMGReserve   = 0;
-
-	// ── 위젯 ──
-
-	void ShowPickup(const FText& PickupText);
 
 	UPickupNotifyWidget* GetOrCreateWidget();
 
@@ -51,9 +33,4 @@ private:
 
 	UPROPERTY()
 	TSubclassOf<UPickupNotifyWidget> NotifyWidgetClass;
-
-	// ── 재바인딩 방지 ──
-
-	UPROPERTY()
-	UPlayerStatusComponent* BoundStatusComp = nullptr;
 };
