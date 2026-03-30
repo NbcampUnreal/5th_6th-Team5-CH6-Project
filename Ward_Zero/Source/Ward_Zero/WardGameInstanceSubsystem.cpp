@@ -196,6 +196,23 @@ bool UWardGameInstanceSubsystem::GetDocumentEntry(int32 DocIndex, FWardDocumentE
 }
 
 // ════════════════════════════════════════════════════════
+//  아이템 최초 습득 기록
+// ════════════════════════════════════════════════════════
+
+void UWardGameInstanceSubsystem::MarkItemNotified(int32 ItemIndex)
+{
+	if (ItemIndex < 0) return;
+
+	NotifiedItemIndices.Add(ItemIndex);
+	UE_LOG(LogWard_Zero, Log, TEXT("아이템 알림 기록: %d (총 %d개)"), ItemIndex, NotifiedItemIndices.Num());
+}
+
+bool UWardGameInstanceSubsystem::IsItemNotified(int32 ItemIndex) const
+{
+	return NotifiedItemIndices.Contains(ItemIndex);
+}
+
+// ════════════════════════════════════════════════════════
 //  보스 격파 관리
 // ════════════════════════════════════════════════════════
 
@@ -220,6 +237,7 @@ void UWardGameInstanceSubsystem::ResetForNewGame()
 {
 	RuntimeObjectStates.Empty();
 	ActiveDocumentIndices.Empty();
+	NotifiedItemIndices.Empty();
 	DefeatedBosses.Empty();
 	CurrentStage = 0;
 	PendingSaveData = nullptr;

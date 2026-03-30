@@ -7,7 +7,7 @@
 #include "Blueprint/UserWidget.h"
 #include "PickupNotifyWidget.generated.h"
 
-class UScrollBox;
+class UVerticalBox;
 class UPickupEntryWidget;
 
 UCLASS(BlueprintType, Blueprintable)
@@ -23,7 +23,7 @@ public:
 
 	/** 엔트리가 쌓이는 스크롤 박스 */
 	UPROPERTY(meta = (BindWidget))
-	UScrollBox* ScrollBox_Entries;
+	UVerticalBox* ScrollBox_Entries;
 
 	// ══════════════════════════════════════════
 	//  기능

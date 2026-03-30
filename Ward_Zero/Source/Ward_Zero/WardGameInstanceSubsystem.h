@@ -92,9 +92,28 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Document")
 	const TSet<int32>& GetActiveDocumentIndices() const { return ActiveDocumentIndices; }
 
+	/** 세이브에서 복원된 인덱스 세트 적용 */
+	void SetActiveDocumentIndices(const TSet<int32>& Indices) { ActiveDocumentIndices = Indices; }
+
 	/** 인덱스로 데이터 조회 */
 	UFUNCTION(BlueprintPure, Category = "Document")
 	bool GetDocumentEntry(int32 DocIndex, FWardDocumentEntry& OutEntry) const;
+
+	// ══════════════════════════════════════════
+	//  아이템 최초 습득 기록 (알림 위젯 중복 방지)
+	//  서류 수집(ActiveDocumentIndices)과 별도 관리
+	// ══════════════════════════════════════════
+
+	/** 아이템 최초 습득 등록 — 알림 띄운 후 호출 */
+	UFUNCTION(BlueprintCallable, Category = "Item")
+	void MarkItemNotified(int32 ItemIndex);
+
+	/** 이미 알림을 띄운 아이템인지 확인 */
+	UFUNCTION(BlueprintPure, Category = "Item")
+	bool IsItemNotified(int32 ItemIndex) const;
+
+	const TSet<int32>& GetNotifiedItemIndices() const { return NotifiedItemIndices; }
+	void SetNotifiedItemIndices(const TSet<int32>& Indices) { NotifiedItemIndices = Indices; }
 
 	// ══════════════════════════════════════════
 	//  스테이지 관리
@@ -137,8 +156,11 @@ private:
 
 	TMap<FGuid, FObjectSaveData> RuntimeObjectStates;
 
-	/** 활성화된 문서/아이템 인덱스 세트 */
+	/** 활성화된 서류 인덱스 세트 */
 	TSet<int32> ActiveDocumentIndices;
+
+	/** 알림을 이미 띄운 아이템 인덱스 세트 */
+	TSet<int32> NotifiedItemIndices;
 
 	/** 현재 스테이지 (역행 방지 — Max로만 갱신) */
 	int32 CurrentStage = 0;

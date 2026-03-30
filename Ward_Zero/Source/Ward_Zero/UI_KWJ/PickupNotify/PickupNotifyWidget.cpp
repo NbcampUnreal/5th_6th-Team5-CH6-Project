@@ -2,7 +2,7 @@
 
 #include "UI_KWJ/PickupNotify/PickupNotifyWidget.h"
 #include "UI_KWJ/PickupNotify/PickupEntryWidget.h"
-#include "Components/ScrollBox.h"
+#include "Components/VerticalBox.h"
 #include "Ward_Zero.h"
 
 void UPickupNotifyWidget::AddEntry(const FText& PickupText, float Duration)
@@ -14,7 +14,7 @@ void UPickupNotifyWidget::AddEntry(const FText& PickupText, float Duration)
 	{
 		EntryClass = LoadClass<UPickupEntryWidget>(
 			nullptr,
-			TEXT("/Game/UI/PickupNotify/WBP_PickupEntry.WBP_PickupEntry_C")
+			TEXT("/Game/UI/pickup/WBP_PickupEntry.WBP_PickupEntry_C")
 		);
 	}
 
@@ -30,12 +30,9 @@ void UPickupNotifyWidget::AddEntry(const FText& PickupText, float Duration)
 	UPickupEntryWidget* Entry = CreateWidget<UPickupEntryWidget>(PC, EntryClass);
 	if (!Entry) return;
 
-	// 스크롤 박스 하단에 추가 (이전 항목은 위에 남고 새 항목이 아래에 붙음)
+	// VerticalBox 하단에 추가
 	ScrollBox_Entries->AddChild(Entry);
 
 	// 항목 초기화 및 타이머 시작
 	Entry->InitEntry(PickupText, Duration);
-
-	// 새 항목이 보이도록 맨 아래로 스크롤
-	ScrollBox_Entries->ScrollToEnd();
 }

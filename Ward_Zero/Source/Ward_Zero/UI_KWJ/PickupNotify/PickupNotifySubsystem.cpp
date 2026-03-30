@@ -116,7 +116,7 @@ UPickupNotifyWidget* UPickupNotifySubsystem::GetOrCreateWidget()
 	{
 		NotifyWidgetClass = LoadClass<UPickupNotifyWidget>(
 			nullptr,
-			TEXT("/Game/UI/PickupNotify/WBP_PickupNotify.WBP_PickupNotify_C")
+			TEXT("/Game/UI/pickup/WBP_PickupNotify.WBP_PickupNotify_C")
 		);
 	}
 

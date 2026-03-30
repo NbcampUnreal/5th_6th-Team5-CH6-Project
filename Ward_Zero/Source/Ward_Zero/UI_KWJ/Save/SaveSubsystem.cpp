@@ -303,17 +303,26 @@ UWardSaveGame* USaveSubsystem::CollectCurrentGameState()
 		SaveData->bIsExhausted = Status->bIsExhausted;
 	}
 
-	// 무기 & 탄약
+	// 무기 & 탄약 (권총 + SMG 각각 저장)
 	UPlayerCombatComponent* Combat = Character->FindComponentByClass<UPlayerCombatComponent>();
 	if (Combat)
 	{
-		AWeapon* Weapon = Combat->GetEquippedWeapon();
-		SaveData->bIsWeaponEquipped = (Weapon != nullptr);
-		if (Weapon)
+		SaveData->bIsWeaponEquipped = (Combat->GetEquippedWeapon() != nullptr);
+
+		// 권총
+		if (Combat->PistolWeapon)
 		{
-			SaveData->CurrentAmmo = Weapon->GetCurrentAmmo();
-			SaveData->MaxAmmoCapacity = Weapon->GetMaxCapacity();
-			SaveData->ReserveAmmo = Weapon->GetReserveAmmo();
+			SaveData->CurrentAmmo = Combat->PistolWeapon->GetCurrentAmmo();
+			SaveData->MaxAmmoCapacity = Combat->PistolWeapon->GetMaxCapacity();
+			SaveData->ReserveAmmo = Combat->PistolWeapon->GetReserveAmmo();
+		}
+
+		// SMG
+		if (Combat->SMGWeapon)
+		{
+			SaveData->SMGCurrentAmmo = Combat->SMGWeapon->GetCurrentAmmo();
+			SaveData->SMGMaxAmmoCapacity = Combat->SMGWeapon->GetMaxCapacity();
+			SaveData->SMGReserveAmmo = Combat->SMGWeapon->GetReserveAmmo();
 		}
 	}
 
@@ -334,6 +343,8 @@ UWardSaveGame* USaveSubsystem::CollectCurrentGameState()
 			SaveData->ObjectStates = SaveGI->GetRuntimeObjectStates();
 			SaveData->StageIndex = SaveGI->GetCurrentStage();
 			SaveData->DefeatedBosses = SaveGI->GetDefeatedBosses();
+			SaveData->CollectedDocumentIndices = SaveGI->GetActiveDocumentIndices();
+			SaveData->NotifiedItemIndices = SaveGI->GetNotifiedItemIndices();
 		}
 	}
 
@@ -385,20 +396,27 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 		Status->OnHealthChanged.Broadcast(Status->CurrHealth, Status->MaxHealth);
 	}
 
-	// 무기 탄약 복원
-	if (SaveData->bIsWeaponEquipped)
+	// 무기 탄약 복원 (권총 + SMG)
 	{
 		UPlayerCombatComponent* Combat = Character->FindComponentByClass<UPlayerCombatComponent>();
 		if (Combat)
 		{
-			AWeapon* Weapon = Combat->GetEquippedWeapon();
-			if (Weapon)
+			// 권총
+			if (Combat->PistolWeapon)
 			{
-				Weapon->SetCurrentAmmo(SaveData->CurrentAmmo);
-				Weapon->SetReserveAmmo(SaveData->ReserveAmmo);
-
-				UE_LOG(LogWard_Zero, Log, TEXT("무기 탄약 복원: %d / %d"),
+				Combat->PistolWeapon->SetCurrentAmmo(SaveData->CurrentAmmo);
+				Combat->PistolWeapon->SetReserveAmmo(SaveData->ReserveAmmo);
+				UE_LOG(LogWard_Zero, Log, TEXT("권총 탄약 복원: %d / %d"),
 					SaveData->CurrentAmmo, SaveData->ReserveAmmo);
+			}
+
+			// SMG
+			if (Combat->SMGWeapon)
+			{
+				Combat->SMGWeapon->SetCurrentAmmo(SaveData->SMGCurrentAmmo);
+				Combat->SMGWeapon->SetReserveAmmo(SaveData->SMGReserveAmmo);
+				UE_LOG(LogWard_Zero, Log, TEXT("SMG 탄약 복원: %d / %d"),
+					SaveData->SMGCurrentAmmo, SaveData->SMGReserveAmmo);
 			}
 		}
 	}
@@ -423,6 +441,8 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 			SaveGI->SetRuntimeObjectStates(SaveData->ObjectStates);
 			SaveGI->SetCurrentStage(SaveData->StageIndex);
 			SaveGI->SetDefeatedBosses(SaveData->DefeatedBosses);
+			SaveGI->SetActiveDocumentIndices(SaveData->CollectedDocumentIndices);
+			SaveGI->SetNotifiedItemIndices(SaveData->NotifiedItemIndices);
 		}
 	}
 
