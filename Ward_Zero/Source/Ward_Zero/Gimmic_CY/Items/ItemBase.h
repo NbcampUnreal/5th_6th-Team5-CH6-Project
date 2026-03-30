@@ -62,6 +62,25 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
 	class UWidgetComponent* InteractWidget;
 	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "Default")
+	FString PickUpText = "";
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "Setting")
+	FString Subtitle = "";
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "Setting")
+	int32 DocIdx = 0;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "Setting")
+	bool bHasDoc = false;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "Setting")
+	bool bHasSubtitle = false;
+	
+	
+	
+	virtual void ShowSubtitle() const override;
+	virtual void ShowDocument() const override;
 protected:
 	UPROPERTY(EditInstanceOnly)
 	FGuid ActorID;

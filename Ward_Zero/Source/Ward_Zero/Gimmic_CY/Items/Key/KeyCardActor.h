@@ -22,4 +22,6 @@ public:
 	UPROPERTY(EditAnywhere)
 	TArray<AActor*> TargetActors;
 	
+	
+	
 };

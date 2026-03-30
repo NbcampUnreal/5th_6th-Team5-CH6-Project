@@ -5,7 +5,6 @@
 #include "UI_KWJ/GameOver/GameOverSubsystem.h"
 #include "UI_KWJ/WeaponUI/WeaponUISubsystem.h"
 #include "UI_KWJ/HealItem/HealItemSubsystem.h"
-#include "UI_KWJ/PickupNotify/PickupNotifySubsystem.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
 #include "Character/Components/Status/PlayerStatusComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -137,12 +136,6 @@ void UUIManagerSubsystem::BindToCharacter()
 	if (UHealItemSubsystem* HealUI = GetLocalPlayer()->GetSubsystem<UHealItemSubsystem>())
 	{
 		HealUI->BindToStatusComponent(StatusComp);
-	}
-
-	// ── 픽업 알림 델리게이트 바인딩 ──
-	if (UPickupNotifySubsystem* PickupNotify = GetLocalPlayer()->GetSubsystem<UPickupNotifySubsystem>())
-	{
-		PickupNotify->BindToStatusComponent(StatusComp);
 	}
 
 	bBound = true;
