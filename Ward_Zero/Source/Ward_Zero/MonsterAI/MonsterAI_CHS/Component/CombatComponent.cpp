@@ -3,6 +3,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Engine/DamageEvents.h"
 #include "GameplayTagContainer.h"
+#include "HairStrandsInterface.h"
 #include "MonsterAI/MonsterAI_CHS/Data/Type/GameTypes.h"
 #include "MonsterAI/MonsterAI_CHS/AI/BaseZombie_AIController.h"
 #include "MonsterAI/MonsterAI_CHS/AI/WZAIKeys.h"
@@ -338,7 +339,19 @@ void UCombatComponent::HandleAllDamage(float Damage, FDamageEvent const& DamageE
 			EDamageSource DamageSource = WZDamageType->DamageSource;
 			if (DamageSource == EDamageSource::BossRush||DamageSource == EDamageSource::Explosion)
 			{
-				OnDeath(HitDir, WZDamageType->DamageImpulse);
+				if (ABaseZombie* Owner = Cast<ABaseZombie>(GetOwner()))
+				{
+					if (StatusComp->ApplyDamage(Damage,true) <= 0.0f)
+					{
+						OnDeath(HitDir, WZDamageType->DamageImpulse);
+					}else
+					{
+						Owner->StartRagdollKnockdown(HitDir,"None",WZDamageType->DamageImpulse);
+					}
+					
+				}
+				
+				
 				return;
 			}
 			if (UTagPhysicalMaterial* PM = Cast<UTagPhysicalMaterial>(PointDamageEvent->HitInfo.PhysMaterial.Get()))

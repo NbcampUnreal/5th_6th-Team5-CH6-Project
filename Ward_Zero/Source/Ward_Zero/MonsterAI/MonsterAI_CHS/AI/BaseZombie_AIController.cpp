@@ -187,7 +187,7 @@ void ABaseZombie_AIController::UpdatePerceptionConfig()
 		HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
 		HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
 		HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
-		HearingConfig->HearingRange = 2000;
+		HearingConfig->HearingRange = 4000;
 		
 		AIPerceptionComp->RequestStimuliListenerUpdate();
 	}
@@ -226,7 +226,7 @@ void ABaseZombie_AIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimu
 		{
 			float Loudness = Stimulus.Strength;
 			float dist = FVector::Dist(GetPawn()->GetActorLocation(),Actor->GetActorLocation());
-			if (dist > 2000)
+			if (dist > 4000)
 			{
 				return;
 			}

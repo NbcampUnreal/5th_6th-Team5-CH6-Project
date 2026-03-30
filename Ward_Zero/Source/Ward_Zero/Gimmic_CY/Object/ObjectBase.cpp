@@ -206,6 +206,7 @@ void AObjectBase::SaveActorState() const
 void AObjectBase::Activate()
 {
 	bActivated = true;
+	ActivateTriggers();
 	SetBCanInteract(false);
 }
 

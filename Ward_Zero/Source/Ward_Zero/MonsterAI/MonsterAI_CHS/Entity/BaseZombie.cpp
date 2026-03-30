@@ -122,18 +122,22 @@ float ABaseZombie::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 {
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	if (CombatComponent && bIsActivated)
+	if (CombatComponent && bIsActivated && !StatusComponent->GetIsDead())
 	{
 		
 		CombatComponent->HandleAllDamage(ActualDamage, DamageEvent, EventInstigator, DamageCauser);
 	}else
 	{
 		CombatComponent->SpawnHitEffect(DamageEvent);
-		if (StatusComponent->ApplyDamage(ActualDamage,true) <= 0.f)
+		if (!StatusComponent->GetIsDead())
 		{
-			FVector HitDir = GetActorLocation() - DamageCauser->GetActorLocation();
-			OnDeath(HitDir,500);
+			if (StatusComponent->ApplyDamage(ActualDamage,true) <= 0.f)
+			{
+				FVector HitDir = GetActorLocation() - DamageCauser->GetActorLocation();
+				OnDeath(HitDir,500);
+			}
 		}
+		
 	}
 
 	return ActualDamage;
