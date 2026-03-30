@@ -21,6 +21,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	USceneComponent* Pivot;
+	
+	UPROPERTY(VisibleAnywhere)
+	UBoxComponent* InteractionCollisionBox;
 
 	FRotator InitialRotation;
 

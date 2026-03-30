@@ -5,6 +5,7 @@
 #include "Gimmic_CY/Interface/InteractionBase.h"
 #include "ObjectBase.generated.h"
 
+class ABaseZombieActivateTrigger;
 class UStaticMeshComponent;
 class UBoxComponent;
 
@@ -73,6 +74,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
 	class UWidgetComponent* InteractWidget;
 	
+	
 	UPROPERTY(EditInstanceOnly)
 	FGuid ActorID;
 	
@@ -87,6 +89,10 @@ public:
 	UPROPERTY(VisibleAnywhere,BlueprintReadWrite)
 	USceneComponent* PullPoint;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category= "Setting")
+	TArray<AActor*> ActivatingTriggers;
+	
+	void ActivateTriggers();
 #if WITH_EDITOR
 	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 	virtual void PostEditImport() override;

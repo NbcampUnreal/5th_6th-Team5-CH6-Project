@@ -48,6 +48,9 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* LeverHandle;
 	
+	UPROPERTY(VisibleAnywhere)
+	UBoxComponent* InteractionCollisionBox;
+	
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "Doors For Open"), Category="Setting")
 	TArray<ADoorBase*> DoorsForOpen;

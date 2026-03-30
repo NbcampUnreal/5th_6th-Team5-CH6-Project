@@ -6,15 +6,27 @@
 
 ALever::ALever()
 {
+	CollisionBox->SetCanEverAffectNavigation(false);
+	CollisionBox->SetGenerateOverlapEvents(false);
+	
+	Mesh->SetGenerateOverlapEvents(false);
+	
+	Lamp->SetGenerateOverlapEvents(false);
+	
 	LeverHandle = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LeverHandle"));
 	LeverHandle->SetupAttachment(RootComponent);
+	LeverHandle->SetGenerateOverlapEvents(false);
 	
 	LeverTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("DoorTimeline"));
 	
 	PickUpPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickUpPoint"));
 	PickUpPoint->SetupAttachment(LeverHandle);
 	PickUpPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
-	CollisionBox->SetCanEverAffectNavigation(false);
+	
+	
+	InteractionCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionCollisionBox"));
+	InteractionCollisionBox->SetupAttachment(RootComponent);
+	InteractionCollisionBox->SetGenerateOverlapEvents(true);
 }
 
 void ALever::BeginPlay()

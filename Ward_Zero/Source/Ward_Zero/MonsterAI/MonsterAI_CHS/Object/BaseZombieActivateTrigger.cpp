@@ -66,18 +66,23 @@ void ABaseZombieActivateTrigger::OnTriggerOverlap(UPrimitiveComponent* Overlappe
 	
 	if (OtherActor && OtherActor != this && OtherActor->ActorHasTag(TEXT("Player")))
 	{
-		bHasTriggered = true;
-		WakeUpZombies();
-		GetWorldTimerManager().SetTimer(
-			WaveTimerHandle, 
-			this, 
-			&ABaseZombieActivateTrigger::WakeUpZombies, 
-			WaveInterval, 
-		true 
+		ActivateTrigger();
+	}
+}
+
+void ABaseZombieActivateTrigger::ActivateTrigger()
+{
+	bHasTriggered = true;
+	WakeUpZombies();
+	GetWorldTimerManager().SetTimer(
+		WaveTimerHandle, 
+		this, 
+		&ABaseZombieActivateTrigger::WakeUpZombies, 
+		WaveInterval, 
+	true 
 	);
 		
-		TriggerVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	}
+	TriggerVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 

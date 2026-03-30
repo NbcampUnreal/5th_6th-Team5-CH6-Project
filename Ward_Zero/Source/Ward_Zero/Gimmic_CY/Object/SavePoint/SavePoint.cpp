@@ -5,6 +5,7 @@
 
 #include "WardGameInstanceSubsystem.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
+#include "Components/BoxComponent.h"
 #include "UI_KWJ/Save/SaveSubsystem.h"
 
 
@@ -13,6 +14,14 @@ ASavePoint::ASavePoint()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	
+	CollisionBox->SetGenerateOverlapEvents(false);
+	Mesh->SetGenerateOverlapEvents(false);
+	Lamp->SetGenerateOverlapEvents(false);
+	
+	InteractionCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionCollisionBox"));
+	InteractionCollisionBox->SetupAttachment(RootComponent);
+	InteractionCollisionBox->SetGenerateOverlapEvents(true);
 }
 
 EInteractionType ASavePoint::GetInteractionType_Implementation() const

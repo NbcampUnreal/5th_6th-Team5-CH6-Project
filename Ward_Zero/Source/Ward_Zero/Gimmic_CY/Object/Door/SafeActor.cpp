@@ -2,6 +2,7 @@
 
 #include "NavModifierComponent.h"
 #include "Character/Prototype_Character/PrototypeCharacter.h"
+#include "Components/BoxComponent.h"
 #include "Gimmic_CY/Items/ItemBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "NavAreas/NavArea_Null.h"
@@ -16,14 +17,22 @@ ASafeActor::ASafeActor()
 {
     PrimaryActorTick.bCanEverTick = false;
 
+    CollisionBox->SetGenerateOverlapEvents(false);
+    Mesh->SetGenerateOverlapEvents(false);
+    
     Pivot = CreateDefaultSubobject<USceneComponent>(TEXT("Pivot"));
     Pivot->SetupAttachment(Mesh);
-
+    
     Door = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Door"));
     Door->SetupAttachment(Pivot);
+    Door->SetGenerateOverlapEvents(false);
     
     PullPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PullPoint"));
     PullPoint->SetupAttachment(Door);
+    
+    InteractionCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionCollisionBox"));
+    InteractionCollisionBox->SetupAttachment(RootComponent);
+    InteractionCollisionBox->SetGenerateOverlapEvents(true);
     
     
 }

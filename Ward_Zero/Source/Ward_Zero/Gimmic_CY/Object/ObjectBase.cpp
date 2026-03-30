@@ -2,6 +2,7 @@
 #include "Components/BoxComponent.h"
 #include "Components/WidgetComponent.h"
 #include "WardGameInstanceSubsystem.h"
+#include "MonsterAI/MonsterAI_CHS/Object/BaseZombieActivateTrigger.h"
 #include "UI_KWJ/Save/WardSaveGame.h"
 #if WITH_EDITOR
 #include "EngineUtils.h"
@@ -218,7 +219,22 @@ FVector AObjectBase::GetIKTargetLocation_Implementation() const
 	return GetInteractionTargetLocation_Implementation();
 }
 
+void AObjectBase::ActivateTriggers()
+{
+	for (AActor* Trigger:ActivatingTriggers)
+	{
+		if (ABaseZombieActivateTrigger* ZomTrigger = Cast<ABaseZombieActivateTrigger>(Trigger))
+		{
+			ZomTrigger->ActivateTrigger();
+		}
+	}
+}
+
+
+
 #if WITH_EDITOR
+
+
 void AObjectBase::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 {
 	Super::PostDuplicate(DuplicateMode);
