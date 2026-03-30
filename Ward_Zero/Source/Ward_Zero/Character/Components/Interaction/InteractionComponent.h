@@ -29,6 +29,7 @@ public:
 	void HandleDoorInteraction(AActor* DoorActor);
 	void HandleItemInteraction(AActor* ItemActor);
 	void HandleLeverInteraction(AActor* LeverActor);
+	void HandleButtonInteraction(AActor* ButtonActor);
 
 	void AttachInteractingItem();
 	void ConsumeInteractingItem();
@@ -71,6 +72,8 @@ private:
 
 	float LastDoorInteractTime = 0.0f;
 
+	void PlayLockedDoorMontage(AActor* DoorActor);
+
 public:
 	void TriggerInteraction(); 
 	void EndInteraction();
@@ -82,4 +85,12 @@ private:
 	void AlignCharacterToPullPoint(AActor* Interactable);
 
 	bool bWasWeaponDrawnBeforeItem = false;
+
+private:
+	FTimerHandle CameraAlignTimer;
+	float CameraAlignElapsed = 0.f;
+	AActor* PendingAlignTarget = nullptr;
+
+	void StartCameraAlign(AActor* Target, TFunction<void()> OnComplete);
+	void TickCameraAlign(TFunction<void()> OnComplete);
 };
