@@ -66,17 +66,44 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "SaveData|Weapon")
 	bool bIsWeaponEquipped;
 
-	/** 현재 탄약 (탄창 안) */
+	/** 권총 — 현재 탄약 (탄창 안) */
 	UPROPERTY(VisibleAnywhere, Category = "SaveData|Weapon")
 	int32 CurrentAmmo;
 
-	/** 탄창 최대 용량 */
+	/** 권총 — 탄창 최대 용량 */
 	UPROPERTY(VisibleAnywhere, Category = "SaveData|Weapon")
 	int32 MaxAmmoCapacity;
 
-	/** 예비 탄약 (탄창 밖) */
+	/** 권총 — 예비 탄약 (탄창 밖) */
 	UPROPERTY(VisibleAnywhere, Category = "SaveData|Weapon")
 	int32 ReserveAmmo;
+
+	/** SMG — 현재 탄약 (탄창 안) */
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Weapon")
+	int32 SMGCurrentAmmo;
+
+	/** SMG — 탄창 최대 용량 */
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Weapon")
+	int32 SMGMaxAmmoCapacity;
+
+	/** SMG — 예비 탄약 (탄창 밖) */
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Weapon")
+	int32 SMGReserveAmmo;
+
+	// ══════════════════════════════════════════
+	//  수집한 서류 (인덱스 20+)
+	// ══════════════════════════════════════════
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Documents")
+	TSet<int32> CollectedDocumentIndices;
+
+	// ══════════════════════════════════════════
+	//  아이템 최초 습득 기록 (인덱스 0~19)
+	//  알림 위젯 중복 방지용
+	// ══════════════════════════════════════════
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveData|Items")
+	TSet<int32> NotifiedItemIndices;
 
 	// ══════════════════════════════════════════
 	//  손전등

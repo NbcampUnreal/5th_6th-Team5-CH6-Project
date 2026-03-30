@@ -72,7 +72,7 @@ UHealItemWidget* UHealItemSubsystem::GetOrCreateWidget()
 	{
 		WidgetClass = LoadClass<UHealItemWidget>(
 			nullptr,
-			TEXT("/Game/UI/HealItem/WBP_HealItem.WBP_HealItem_C")
+			TEXT("/Game/UI/heal/WBP_HealItem.WBP_HealItem_C")
 		);
 	}
 
