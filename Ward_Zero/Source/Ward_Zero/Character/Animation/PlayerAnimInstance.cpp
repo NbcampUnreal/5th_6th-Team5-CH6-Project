@@ -99,12 +99,48 @@ void UPlayerAnimInstance::UpdateCombatIK(float DeltaSeconds) {
 void UPlayerAnimInstance::UpdateInteractionIK(float DeltaSeconds) {
 	if (!CachedCharacter || !CachedCharacter->InteractionComp) return;
 
+	// 잠긴 문 몽타주 재생 중인지 먼저 확인 
+	bool bIsLockedDoorMontage = false;
+	if (CachedCharacter->AnimData && CachedCharacter->AnimData->LockedDoorMontage)
+	{
+		UAnimInstance* AI = CachedCharacter->GetMesh()->GetAnimInstance();
+		if (AI && AI->Montage_IsPlaying(CachedCharacter->AnimData->LockedDoorMontage))
+			bIsLockedDoorMontage = true;
+	}
+
+	if (bIsLockedDoorMontage)
+	{
+		if (ASingleDoor* Door = Cast<ASingleDoor>(CachedCharacter->InteractionComp->CurrentInteractingItem))
+		{
+			if (UStaticMeshComponent* DoorMesh = Door->FindComponentByClass<UStaticMeshComponent>())
+			{
+				if (DoorMesh->DoesSocketExist(TEXT("HandleSocket")))
+				{
+					FVector HandleLoc = DoorMesh->GetSocketLocation(TEXT("HandleSocket"));
+					HandleLoc += FVector(-2.27f, -0.79f, 0.f);
+
+					CachedCharacter->InteractionComp->CurrentPickupLocation = HandleLoc;
+				}
+			}
+		}
+	}
+
 	float PickupCurve = GetCurveValue(TEXT("PickupIK"));
 	PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, PickupCurve, DeltaSeconds, 10.0f);
 	if (PickupIKAlpha > 0.1f) {
 		PickupTargetLocation = CachedCharacter->InteractionComp->CurrentPickupLocation;
 		FVector LocalTarget = CachedCharacter->GetActorTransform().InverseTransformPosition(PickupTargetLocation);
-		FVector NewJoint = FVector(-20.f, -40.f, (LocalTarget.Z < -50.0f) ? 20.f : -30.f);
+
+		FVector NewJoint;
+		if (bIsLockedDoorMontage)
+		{
+			NewJoint = FVector(-50.f, -30.f, LocalTarget.Z - 15.f);
+		}
+		else
+		{
+			NewJoint = FVector(-20.f, -40.f, (LocalTarget.Z < -50.0f) ? 20.f : -30.f);
+		}
+
 		DynamicPickupJointTarget = FMath::VInterpTo(DynamicPickupJointTarget, NewJoint, DeltaSeconds, 15.0f);
 	}
 	else
@@ -126,28 +162,29 @@ void UPlayerAnimInstance::UpdateInteractionIK(float DeltaSeconds) {
 		DynamicLeverJointTarget = FMath::VInterpTo(DynamicLeverJointTarget, FVector(-15.f, -70.f, 0.f), DeltaSeconds, 5.0f);
 	}
 
-	if(bIsInteracting) {
-		if (ASingleDoor* Door = Cast<ASingleDoor>(CachedCharacter->InteractionComp->CurrentInteractingItem)) {
-
-			float DoorPickupCurve = GetCurveValue(TEXT("PickupIK"));
-
-			if (DoorPickupCurve > 0.01f) {
-				PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, DoorPickupCurve, DeltaSeconds, 15.0f);
-				FVector HandleLoc = Door->Mesh->GetSocketLocation(TEXT("HandleSocket"));
-				HandleLoc += FVector(0.f, 0.f, -30.f);
-				CachedCharacter->InteractionComp->CurrentPickupLocation = HandleLoc;
-				PickupTargetLocation = HandleLoc;
-				LeverTargetLocation = HandleLoc;
-				LeverTargetRotation = Door->Mesh->GetSocketRotation(TEXT("HandleSocket"));
-				FVector LocalHandle = CachedCharacter->GetActorTransform().InverseTransformPosition(HandleLoc);
-				DynamicPickupJointTarget = (Door->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
-					? FVector(60.f, -60.f, LocalHandle.Z - 40.f)
-					: FVector(25.f, 30.f, 0.f);
-			}
-			else {
-				PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, 0.0f, DeltaSeconds, 8.0f);
-				if (USkeletalMeshComponent* Mesh = CachedCharacter->GetMesh()) {
-					PickupTargetLocation = Mesh->GetBoneLocation(TEXT("hand_l"), EBoneSpaces::WorldSpace);
+	if (!bIsLockedDoorMontage)
+	{
+		if (bIsInteracting) {
+			if (ASingleDoor* Door = Cast<ASingleDoor>(CachedCharacter->InteractionComp->CurrentInteractingItem)) {
+				float DoorPickupCurve = GetCurveValue(TEXT("PickupIK"));
+				if (DoorPickupCurve > 0.01f) {
+					PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, DoorPickupCurve, DeltaSeconds, 15.0f);
+					FVector HandleLoc = Door->Mesh->GetSocketLocation(TEXT("HandleSocket"));
+					HandleLoc += FVector(0.f, 0.f, -30.f);
+					CachedCharacter->InteractionComp->CurrentPickupLocation = HandleLoc;
+					PickupTargetLocation = HandleLoc;
+					LeverTargetLocation = HandleLoc;
+					LeverTargetRotation = Door->Mesh->GetSocketRotation(TEXT("HandleSocket"));
+					FVector LocalHandle = CachedCharacter->GetActorTransform().InverseTransformPosition(HandleLoc);
+					DynamicPickupJointTarget = (Door->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
+						? FVector(60.f, -60.f, LocalHandle.Z - 40.f)
+						: FVector(25.f, 30.f, 0.f);
+				}
+				else {
+					PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, 0.0f, DeltaSeconds, 8.0f);
+					if (USkeletalMeshComponent* Mesh = CachedCharacter->GetMesh()) {
+						PickupTargetLocation = Mesh->GetBoneLocation(TEXT("hand_l"), EBoneSpaces::WorldSpace);
+					}
 				}
 			}
 		}
@@ -155,6 +192,28 @@ void UPlayerAnimInstance::UpdateInteractionIK(float DeltaSeconds) {
 
 	if (LeverIKAlpha > 0.1f) DrawDebugSphere(GetWorld(), LeverTargetLocation, 5.0f, 12, FColor::Green, false, -1.f);
 	if (PickupIKAlpha > 0.1f) DrawDebugSphere(GetWorld(), PickupTargetLocation, 5.0f, 12, FColor::Blue, false, -1.f);
+
+	bool bIsButtonMontage = false;
+	if (CachedCharacter->AnimData && CachedCharacter->AnimData->ButtonPressMontage)
+	{
+		UAnimInstance* AI = CachedCharacter->GetMesh()->GetAnimInstance();
+		if (AI && AI->Montage_IsPlaying(CachedCharacter->AnimData->ButtonPressMontage))
+			bIsButtonMontage = true;
+	}
+
+	if (bIsButtonMontage)
+	{
+		float ButtonCurve = GetCurveValue(TEXT("ButtonIK"));
+		ButtonIKAlpha = FMath::FInterpTo(ButtonIKAlpha, ButtonCurve, DeltaSeconds, 10.0f);
+		if (ButtonIKAlpha > 0.01f)
+		{
+			ButtonIKTargetLocation = CachedCharacter->InteractionComp->CurrentPickupLocation;
+		}
+	}
+	else
+	{
+		ButtonIKAlpha = FMath::FInterpTo(ButtonIKAlpha, 0.0f, DeltaSeconds, 10.0f);
+	}
 }
 
 void UPlayerAnimInstance::UpdateFlashlightLogic(float DeltaSeconds)

@@ -11,7 +11,6 @@
 #include "Gimmic_CY/Items/ItemBase.h"
 #include "Gimmic_CY/Object/Door/SingleDoor.h"
 #include "Gimmic_CY/Object/Door/SafeActor.h"
-#include "Gimmic_CY/Interface/InteractionBase.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "UI_KWJ/InteractionHint/InteractionHintSubsystem.h"
 #include "Kismet/GameplayStatics.h"
@@ -51,9 +50,11 @@ void UInteractionComponent::TryInteract()
 
 	AActor* ClosestInteractable = nullptr;
 	AActor* ClosetLockedDoor = nullptr;
+	AActor* ClosestLockedOther = nullptr; // SigleDoor 외에 Lever, SafeBox, Button 등 잠긴 오브젝트 저장 
 
 	float MinInteractDistSq = MAX_FLT;
 	float MinLockedDistSq = MAX_FLT;
+	float MinLockedOtherDistSq = MAX_FLT;
 
 	FVector PlayerLocation = OwnerCharacter->GetActorLocation();
 
@@ -80,12 +81,24 @@ void UInteractionComponent::TryInteract()
 		else
 		{
 			EInteractionType Type = IInteractionBase::Execute_GetInteractionType(Actor);
+			// Door / SingleDoor: 잠긴 문 전용 변수에 저장 (몽타주 재생)
 			if (Type == EInteractionType::Door || Type == EInteractionType::SingleDoor)
 			{
 				if (DistSq < MinLockedDistSq)
 				{
 					MinLockedDistSq = DistSq;
 					ClosetLockedDoor = Actor;
+				}
+			}
+			// Lever, SafeBox, Button 등 잠긴 오브젝트 전용 변수에 저장 
+			else if (Type == EInteractionType::Lever
+				|| Type == EInteractionType::SafeBox
+				|| Type == EInteractionType::Button)
+			{
+				if (DistSq < MinLockedOtherDistSq)
+				{
+					MinLockedOtherDistSq = DistSq;
+					ClosestLockedOther = Actor;
 				}
 			}
 		}
@@ -102,6 +115,8 @@ void UInteractionComponent::TryInteract()
 			HandleItemInteraction(ClosestInteractable);
 		else if (Type == EInteractionType::Lever)
 			HandleLeverInteraction(ClosestInteractable);
+		else if (Type == EInteractionType::Button)      
+			HandleButtonInteraction(ClosestInteractable);
 		else
 		{
 			/*IInteractionBase::Execute_HidePressEWidget(ClosestInteractable);*/
@@ -113,6 +128,17 @@ void UInteractionComponent::TryInteract()
 	if (ClosetLockedDoor)
 	{
 		ShowInteractionHint(TEXT("문이 굳게 잠겨 있다. 열쇠가 필요할 것 같다."), 3.0f);
+		PlayLockedDoorMontage(ClosetLockedDoor);
+	}
+	else if (ClosestLockedOther)
+	{
+		EInteractionType LockedType = IInteractionBase::Execute_GetInteractionType(ClosestLockedOther);
+		if (LockedType == EInteractionType::Lever)
+			ShowInteractionHint(TEXT("레버가 움직이지 않는다."), 3.0f);
+		else if (LockedType == EInteractionType::SafeBox)
+			ShowInteractionHint(TEXT("금고가 잠겨 있다."), 3.0f);
+		else if (LockedType == EInteractionType::Button)
+			ShowInteractionHint(TEXT("버튼이 반응하지 않는다."), 3.0f);
 	}
 }
 
@@ -399,7 +425,6 @@ void UInteractionComponent::HandleLeverInteraction(AActor* LeverActor)
 
 		OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("LeverWarp"), TargetWarpLocation, TargetWarpRotation);
 	}
-
 	if (OwnerCharacter->AnimData && OwnerCharacter->AnimData->LeverMontage)
 	{
 		if (UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance())
@@ -408,6 +433,68 @@ void UInteractionComponent::HandleLeverInteraction(AActor* LeverActor)
 		}
 		OwnerCharacter->PlayAnimMontage(OwnerCharacter->AnimData->LeverMontage);
 	}
+}
+
+void UInteractionComponent::HandleButtonInteraction(AActor* ButtonActor)
+{
+	if (!OwnerCharacter || !ButtonActor) return;
+	if (!OwnerCharacter->AnimData || !OwnerCharacter->AnimData->ButtonPressMontage) return;
+
+	if (UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance())
+	{
+		if (AnimInst->IsAnyMontagePlaying()) return;
+	}
+
+	IInteractionBase::Execute_HidePressEWidget(ButtonActor);
+
+	// FingerSocket 위치를 IK 타겟으로 사용
+	FVector HandleLocation = ButtonActor->GetActorLocation();
+
+	if (UStaticMeshComponent* ButtonMesh = ButtonActor->FindComponentByClass<UStaticMeshComponent>())
+	{
+		if (ButtonMesh->DoesSocketExist(TEXT("FingerSocket")))
+		{
+			HandleLocation = ButtonMesh->GetSocketLocation(TEXT("FingerSocket"));
+		}
+	}
+	CurrentPickupLocation = HandleLocation;
+	CurrentInteractingItem = ButtonActor;
+
+	if (OwnerCharacter->MotionWarpingComp)
+	{
+		// -Y가 플레이어가 서야 할 정면 방향입니다.
+		FVector ButtonFacing = -ButtonActor->GetActorRightVector();
+		ButtonFacing.Z = 0.f;
+		ButtonFacing.Normalize();
+
+		// 정면 방향(ButtonFacing)의 반대인 +Y를 바라보게 설정 
+		FRotator TargetRot = (-ButtonFacing).Rotation();
+		TargetRot.Pitch = 0.f;
+		TargetRot.Roll = 0.f;
+
+		// 소켓(HandleLocation) 위치에서 버튼의 정면(-Y) 방향으로 70.0f만큼 떨어진 지점
+		FVector TargetWarpLocation = HandleLocation + (ButtonFacing * 70.0f);
+		TargetWarpLocation.Z = OwnerCharacter->GetActorLocation().Z;
+
+		DrawDebugSphere(GetWorld(), TargetWarpLocation, 10.f, 12, FColor::Red, false, 2.0f);
+
+		OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(
+			TEXT("ButtonWarp"),
+			TargetWarpLocation,
+			TargetRot
+		);
+	}
+
+	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
+	{
+		PC->SetIgnoreMoveInput(true);
+		PC->SetIgnoreLookInput(true);
+	}
+
+	if (UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance())
+		AnimInst->RootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
+
+	OwnerCharacter->PlayAnimMontage(OwnerCharacter->AnimData->ButtonPressMontage);
 }
 
 void UInteractionComponent::AttachInteractingItem()
@@ -457,6 +544,87 @@ void UInteractionComponent::OnInteractableEndedOverlap(UPrimitiveComponent* Over
 	}
 }
 
+
+void UInteractionComponent::PlayLockedDoorMontage(AActor* DoorActor)
+{
+	if (!OwnerCharacter || !OwnerCharacter->AnimData) return;
+	if (!OwnerCharacter->AnimData->LockedDoorMontage) return;
+
+	// SingleDoor일 때만 유효
+	ASingleDoor* SingleDoor = Cast<ASingleDoor>(DoorActor);
+	if (!SingleDoor) return;
+
+	if (UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance())
+	{
+		if (AnimInst->IsAnyMontagePlaying()) return;
+	}
+
+	if (!OwnerCharacter->MotionWarpingComp) return;
+
+	// HandleSocket 위치 (IK 타겟)
+	FVector HandleLocation = DoorActor->GetActorLocation(); // 폴백
+	if (UStaticMeshComponent* DoorMesh = DoorActor->FindComponentByClass<UStaticMeshComponent>())
+	{
+		if (DoorMesh->DoesSocketExist(TEXT("HandleSocket")))
+		{
+			HandleLocation = DoorMesh->GetSocketLocation(TEXT("HandleSocket"));
+		}
+	}
+
+	// IK 타겟으로 등록 
+	CurrentPickupLocation = HandleLocation;
+	CurrentInteractingItem = DoorActor;
+	CurrentPickupLocation += FVector(-2.27f, -0.79f, -30.f);
+
+	// PullPoint 위치 (캐릭터 이동 워프 타겟)
+	FVector WarpLocation = OwnerCharacter->GetActorLocation(); // 폴백
+	USceneComponent* PullPoint = nullptr;
+	TInlineComponentArray<USceneComponent*> SceneComps;
+	DoorActor->GetComponents<USceneComponent>(SceneComps);
+	for (USceneComponent* Comp : SceneComps)
+	{
+		if (Comp->GetFName() == FName(TEXT("PullPoint")))
+		{
+			PullPoint = Comp;
+			break;
+		}
+	}
+	if (PullPoint)
+	{
+		WarpLocation = PullPoint->GetComponentLocation();
+		WarpLocation.Z = OwnerCharacter->GetActorLocation().Z;
+	}
+
+	// 회전 워핑 PullPoint -> HandleSocket 방향
+	FVector DirToHandle = (HandleLocation - WarpLocation).GetSafeNormal2D();
+	if (DirToHandle.IsNearlyZero())
+		DirToHandle = (DoorActor->GetActorLocation() - WarpLocation).GetSafeNormal2D();
+	FRotator TargetRot = DirToHandle.Rotation();
+	TargetRot.Pitch = 0.f;
+	TargetRot.Roll = 0.f;
+
+	// 입력 잠금
+	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
+	{
+		PC->SetIgnoreMoveInput(true);
+		PC->SetIgnoreLookInput(true);
+	}
+	bIsInteractingDoor = true;                         
+	OwnerCharacter->bIsInteractingDoor = true;
+
+	StartCameraAlign(DoorActor, [this, WarpLocation, TargetRot]()
+		{
+			if (!OwnerCharacter || !OwnerCharacter->MotionWarpingComp) return;
+
+			OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(
+				TEXT("LockedDoorWarp"), WarpLocation, TargetRot);
+
+			if (UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance())
+				AnimInst->RootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
+
+			OwnerCharacter->PlayAnimMontage(OwnerCharacter->AnimData->LockedDoorMontage);
+		});
+}
 
 void UInteractionComponent::TriggerInteraction()
 {
@@ -532,4 +700,51 @@ void UInteractionComponent::AlignCharacterToPullPoint(AActor* Interactable)
 	}
 
 	Character->SetActorRotation(FRotator(0.f, TargetYaw, 0.f));
+}
+
+void UInteractionComponent::StartCameraAlign(AActor* Target, TFunction<void()> OnComplete)
+{
+	PendingAlignTarget = Target;
+	CameraAlignElapsed = 0.f;
+
+	// 즉시 LookInput 차단
+	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
+		PC->SetIgnoreLookInput(true);
+
+	GetWorld()->GetTimerManager().SetTimer(CameraAlignTimer,
+		FTimerDelegate::CreateLambda([this, OnComplete]()
+			{
+				TickCameraAlign(OnComplete);
+			}), 0.016f, true);
+}
+
+void UInteractionComponent::TickCameraAlign(TFunction<void()> OnComplete)
+{
+	CameraAlignElapsed += 0.016f;
+
+	APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController());
+	if (!PC || !PendingAlignTarget)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(CameraAlignTimer);
+		OnComplete();
+		return;
+	}
+
+	FVector Dir = (PendingAlignTarget->GetActorLocation() - OwnerCharacter->GetActorLocation()).GetSafeNormal2D();
+	FRotator TargetRot = Dir.Rotation();
+	TargetRot.Pitch = PC->GetControlRotation().Pitch; // Pitch는 유지
+
+	FRotator Current = PC->GetControlRotation();
+	FRotator NewRot = FMath::RInterpTo(Current, TargetRot, 0.016f, 10.0f);
+	PC->SetControlRotation(NewRot);
+
+	float YawDelta = FMath::Abs(FRotator::NormalizeAxis(TargetRot.Yaw - NewRot.Yaw));
+
+	// 정렬 완료 OR 타임아웃(0.4초)
+	if (YawDelta < 3.0f || CameraAlignElapsed >= 0.4f)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(CameraAlignTimer);
+		PendingAlignTarget = nullptr;
+		OnComplete(); // 워핑 + 몽타주 실행
+	}
 }

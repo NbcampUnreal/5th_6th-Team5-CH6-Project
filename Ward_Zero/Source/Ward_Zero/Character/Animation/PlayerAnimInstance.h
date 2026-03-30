@@ -82,6 +82,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Animation|IK")
 	float JointInterpSpeed = 10.0f;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
+	float ButtonIKAlpha = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK")
+	FVector ButtonIKTargetLocation;
+
 	UFUNCTION() void AnimNotify_HideWeaponForLever();
 	UFUNCTION() void AnimNotify_RestoreWeaponAfterLever();
 	UFUNCTION() void AnimNotify_TriggerInteraction();

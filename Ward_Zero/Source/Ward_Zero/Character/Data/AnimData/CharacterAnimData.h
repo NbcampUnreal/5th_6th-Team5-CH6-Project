@@ -74,4 +74,10 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Interaction|Sound")
     TObjectPtr<USoundBase> DoubleDoorSound;
+
+    UPROPERTY(EditAnywhere, Category = "Montage|Interaction")
+    TObjectPtr<UAnimMontage> LockedDoorMontage;  
+
+    UPROPERTY(EditAnywhere, Category = "Montage|Interaction")
+    TObjectPtr<UAnimMontage> ButtonPressMontage;
 };
