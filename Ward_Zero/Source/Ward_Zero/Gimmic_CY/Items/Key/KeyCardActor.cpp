@@ -7,6 +7,7 @@
 AKeyCardActor::AKeyCardActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	AmmoAmount = 1;
 }
 
 void AKeyCardActor::BeginPlay()

@@ -131,8 +131,9 @@ void AItemBase::HandleInteraction_Implementation(APrototypeCharacter* Character)
 		{
 			if (UPickupNotifySubsystem* PickUpNotifySubsys = LP->GetSubsystem<UPickupNotifySubsystem>())
 			{
+				FString msg = PickUpText + " +" + FString::FromInt(AmmoAmount);
 				
-				PickUpNotifySubsys->ShowPickup(FText::FromString(PickUpText));
+				PickUpNotifySubsys->ShowPickup(FText::FromString(msg));
 				
 			}
 			if (UItemNotifySubsystem* NotifySys = PC->GetLocalPlayer()->GetSubsystem<UItemNotifySubsystem>())

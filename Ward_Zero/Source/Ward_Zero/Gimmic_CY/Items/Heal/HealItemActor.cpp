@@ -12,6 +12,7 @@ AHealItemActor::AHealItemActor()
 	// 약병 뚜껑 메쉬 
 	CapMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CapMesh"));
 	CapMesh->SetupAttachment(Mesh); 
+	AmmoAmount = 1;
 }
 
 void AHealItemActor::BeginPlay()

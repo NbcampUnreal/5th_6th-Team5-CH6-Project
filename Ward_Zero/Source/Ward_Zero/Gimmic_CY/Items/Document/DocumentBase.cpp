@@ -14,6 +14,7 @@ ADocumentBase::ADocumentBase()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bHasDoc = true;
+	AmmoAmount = 1;
 }
 
 // Called when the game starts or when spawned

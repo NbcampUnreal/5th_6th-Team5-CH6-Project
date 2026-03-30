@@ -20,8 +20,7 @@ protected:
 
 public:
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ammo Loot")
-	int32 AmmoAmount = 15;
+	
 
 	// � ������ �Ѿ�����? (1: ����, 2: SMG)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ammo Loot")

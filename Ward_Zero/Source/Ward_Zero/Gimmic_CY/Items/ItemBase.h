@@ -77,7 +77,8 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "Setting")
 	bool bHasSubtitle = false;
 	
-	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ammo Loot")
+	int32 AmmoAmount = 15;
 	
 	virtual void ShowSubtitle() const override;
 	virtual void ShowDocument() const override;
