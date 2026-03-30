@@ -338,15 +338,7 @@ void UCombatComponent::HandleAllDamage(float Damage, FDamageEvent const& DamageE
 			EDamageSource DamageSource = WZDamageType->DamageSource;
 			if (DamageSource == EDamageSource::BossRush||DamageSource == EDamageSource::Explosion)
 			{
-				ABaseZombie* Owner = Cast<ABaseZombie>(GetOwner());
-				if (StatusComp->ApplyDamage(Damage,true) <= 0.0f)
-				{
-					UE_LOG(LogTemp,Warning,TEXT("Death"));
-					OnDeath(HitDir, WZDamageType->DamageImpulse);
-				}else
-				{
-					Owner->StartRagdollKnockdown(HitDir,HitInfo.BoneName,WZDamageType->DamageImpulse);
-				}
+				OnDeath(HitDir, WZDamageType->DamageImpulse);
 				return;
 			}
 			if (UTagPhysicalMaterial* PM = Cast<UTagPhysicalMaterial>(PointDamageEvent->HitInfo.PhysMaterial.Get()))
