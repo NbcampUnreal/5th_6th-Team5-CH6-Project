@@ -34,7 +34,7 @@ void UInteractionComponent::Initialize(APrototypeCharacter* InCharacter)
 	InteractionSphere->AttachToComponent(OwnerCharacter->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	InteractionSphere->RegisterComponent();
 
-	InteractionSphere->SetSphereRadius(100.0f);
+	InteractionSphere->SetSphereRadius(120.0f);
 	InteractionSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 
 	// 델리게이트 연결
@@ -221,15 +221,57 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 	UAnimMontage* SelectedMontage = nullptr;
 
 	// Push/Pull 에 따른 워핑 로직 분리
+	ASingleDoor* SingleDoor = Cast<ASingleDoor>(DoorActor);
 	if (OwnerCharacter->MotionWarpingComp)
 	{
-		if (ASingleDoor* SingleDoor = Cast<ASingleDoor>(DoorActor))
+		if (SingleDoor)
 		{
 			if (SingleDoor->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
 			{
-				TargetWarpLocation = IInteractionBase::Execute_GetInteractionTargetLocation(DoorActor);
-				FVector DirToDoor = (DoorActor->GetActorLocation() - TargetWarpLocation).GetSafeNormal2D();
-				TargetWarpRotation = DirToDoor.Rotation();
+				USceneComponent* PullPoint = nullptr;
+				TInlineComponentArray<USceneComponent*> SceneComps;
+				DoorActor->GetComponents<USceneComponent>(SceneComps);
+				for (USceneComponent* Comp : SceneComps)
+				{
+					if (Comp->GetFName() == FName(TEXT("PullPoint")))
+					{
+						PullPoint = Comp;
+						break;
+					}
+				}
+
+				// HandleSocket 위치 가져오기
+				FVector HandleLocation = CurrentPickupLocation; // 폴백
+				if (UStaticMeshComponent* DoorMesh = DoorActor->FindComponentByClass<UStaticMeshComponent>())
+				{
+					if (DoorMesh->DoesSocketExist(TEXT("HandleSocket")))
+					{
+						HandleLocation = DoorMesh->GetSocketLocation(TEXT("HandleSocket"));
+					}
+				}
+
+				// HandleSocket 위치를 IK 타겟으로도 업데이트
+				CurrentPickupLocation = HandleLocation;
+
+				if (PullPoint)
+				{
+					TargetWarpLocation = PullPoint->GetComponentLocation();
+
+					// PullPoint → HandleSocket 방향으로 캐릭터 회전 계산
+					FVector DirToHandle = (HandleLocation - TargetWarpLocation).GetSafeNormal2D();
+					if (DirToHandle.IsNearlyZero())
+					{
+						DirToHandle = (DoorActor->GetActorLocation() - TargetWarpLocation).GetSafeNormal2D();
+					}
+					TargetWarpRotation = DirToHandle.Rotation();
+				}
+				else
+				{
+					TargetWarpLocation = HandleLocation;
+					FVector DirToDoor = (DoorActor->GetActorLocation() - OwnerCharacter->GetActorLocation()).GetSafeNormal2D();
+					TargetWarpRotation = DirToDoor.Rotation();
+				}
+
 				SelectedMontage = OwnerCharacter->AnimData->DoorPullOpenMontage;
 			}
 			else
@@ -262,13 +304,19 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 			OwnerCharacter->PlayAnimMontage(SelectedMontage);
 		}
 	}
-	IInteractionBase::Execute_OnIneracted(DoorActor, OwnerCharacter);
+	if (!SingleDoor || SingleDoor->GetSingleDoorAnimationType() != ESingleDoorAnimationType::SingleDoor_Pull)
+	{
+		IInteractionBase::Execute_OnIneracted(DoorActor, OwnerCharacter);
+	}
 }
 
 void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)
 {
 	if (!OwnerCharacter || !ItemActor) return;
-	if (OwnerCharacter->GetMesh()->GetAnimInstance()->IsAnyMontagePlaying()) return;
+
+	UAnimInstance* AI = OwnerCharacter->GetMesh()->GetAnimInstance();
+	if (AI && AI->IsAnyMontagePlaying()) return;
+
 	if (CurrentInteractingItem)
 	{
 		ConsumeInteractingItem();
@@ -438,4 +486,50 @@ void UInteractionComponent::EndInteraction()
 			OwnerCharacter->GetCameraBoom()->bDoCollisionTest = true;
 		}
 	}
+}
+
+void UInteractionComponent::AlignCharacterToPullPoint(AActor* Interactable)
+{
+	if (!Interactable) return;
+
+	APrototypeCharacter* Character = Cast<APrototypeCharacter>(GetOwner());
+	if (!Character) return;
+
+	// PullPoint 컴포넌트 탐색
+	USceneComponent* PullPoint = nullptr;
+	TInlineComponentArray<USceneComponent*> SceneComps;
+	Interactable->GetComponents<USceneComponent>(SceneComps);
+
+	for (USceneComponent* Comp : SceneComps)
+	{
+		if (Comp->GetFName() == FName(TEXT("PullPoint")))
+		{
+			PullPoint = Comp;
+			break;
+		}
+	}
+
+	// PullPoint 없으면 스킵 (Push 타입 등)
+	if (!PullPoint) return;
+
+	// 위치 정렬
+	const FVector PullLoc = PullPoint->GetComponentLocation();
+	const FVector TargetLoc = FVector(PullLoc.X, PullLoc.Y, Character->GetActorLocation().Z);
+
+	if (FVector::Dist2D(Character->GetActorLocation(), TargetLoc) > 30.f)
+	{
+		Character->SetActorLocation(TargetLoc, false, nullptr, ETeleportType::TeleportPhysics);
+	}
+
+	// 회전 정렬 (컨트롤러 먼저, 액터 나중)
+	const float TargetYaw = PullPoint->GetComponentRotation().Yaw;
+
+	if (APlayerController* PC = Cast<APlayerController>(Character->GetController()))
+	{
+		FRotator CtrlRot = PC->GetControlRotation();
+		CtrlRot.Yaw = TargetYaw;
+		PC->SetControlRotation(CtrlRot);
+	}
+
+	Character->SetActorRotation(FRotator(0.f, TargetYaw, 0.f));
 }

@@ -124,6 +124,8 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Animation") bool bIsInteracting;
 	UPROPERTY(BlueprintReadOnly, Category = "Movement") bool bIsInjured;
 	UPROPERTY(BlueprintReadOnly, Category = "Movement") bool bIsWeaponDrawn;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Movement") bool bIsUseHeal;;
 	UPROPERTY(BlueprintReadOnly, Category = "Combat") float AimPitch;
 	UPROPERTY(BlueprintReadOnly, Category = "Combat") float AimYaw;
 	UPROPERTY(BlueprintReadOnly, Category = "Animation|IK") float PistolIKAlpha = 0.0f;

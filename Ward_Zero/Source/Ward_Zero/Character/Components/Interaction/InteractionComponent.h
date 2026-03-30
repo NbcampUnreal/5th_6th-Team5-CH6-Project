@@ -77,4 +77,9 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Interaction")
 	bool bIsInteractingDoor = false;
+
+private:
+	void AlignCharacterToPullPoint(AActor* Interactable);
+
+	bool bWasWeaponDrawnBeforeItem = false;
 };
