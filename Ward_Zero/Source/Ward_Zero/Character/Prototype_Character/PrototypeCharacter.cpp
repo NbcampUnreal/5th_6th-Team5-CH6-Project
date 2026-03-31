@@ -454,12 +454,6 @@ void APrototypeCharacter::CheckRunState()
 			EndRunning(FInputActionValue());
 			return;
 		}
-
-		float ForwardDot = FVector::DotProduct(GetActorForwardVector(), AccelNormal);
-		if (ForwardDot < -0.3f)
-		{
-			EndRunning(FInputActionValue());
-		} //107도 
 	}
 }
 
