@@ -409,8 +409,8 @@ void APrototypeCharacter::StartAiming(const FInputActionValue& Value)
 
 void APrototypeCharacter::StopAiming(const FInputActionValue& Value)
 {
-	if (CombatComp) CombatComp->StopAiming();
 	if (!GetIsAiming()) return;
+	if (CombatComp) CombatComp->StopAiming();
 	// 캐릭터 회전 및 이동 속도 
 	bUseControllerRotationYaw = false;
 	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())

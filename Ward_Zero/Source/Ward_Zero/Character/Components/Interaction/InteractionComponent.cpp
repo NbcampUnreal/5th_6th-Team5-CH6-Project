@@ -113,34 +113,34 @@ void UInteractionComponent::TryInteract()
 			HandleDoorInteraction(ClosestInteractable);
 		else if (Type == EInteractionType::Ammo || Type == EInteractionType::Heal || Type == EInteractionType::Key)
 			HandleItemInteraction(ClosestInteractable);
-		else if (Type == EInteractionType::Lever)
-			HandleLeverInteraction(ClosestInteractable);
-		else if (Type == EInteractionType::Button)      
-			HandleButtonInteraction(ClosestInteractable);
-		else
-		{
-			/*IInteractionBase::Execute_HidePressEWidget(ClosestInteractable);*/
-			IInteractionBase::Execute_OnIneracted(ClosestInteractable, OwnerCharacter);
+			else if (Type == EInteractionType::Lever)
+				HandleLeverInteraction(ClosestInteractable);
+			else if (Type == EInteractionType::Button)      
+				HandleButtonInteraction(ClosestInteractable);
+			else
+			{
+				/*IInteractionBase::Execute_HidePressEWidget(ClosestInteractable);*/
+				IInteractionBase::Execute_OnIneracted(ClosestInteractable, OwnerCharacter);
+			}
+			return;
 		}
-		return;
+		// 상호작용은 못하지만, 잠긴 문이 오버랩 영역에 있는 경우 힌트 출력 
+		if (ClosetLockedDoor)
+		{
+			ShowInteractionHint(TEXT("문이 굳게 잠겨 있다. 열쇠가 필요할 것 같다."), 3.0f);
+			PlayLockedDoorMontage(ClosetLockedDoor);
+		}
+		else if (ClosestLockedOther)
+		{
+			EInteractionType LockedType = IInteractionBase::Execute_GetInteractionType(ClosestLockedOther);
+			if (LockedType == EInteractionType::Lever)
+				ShowInteractionHint(TEXT("레버가 움직이지 않는다."), 3.0f);
+			else if (LockedType == EInteractionType::SafeBox)
+				ShowInteractionHint(TEXT("금고가 잠겨 있다."), 3.0f);
+			else if (LockedType == EInteractionType::Button)
+				ShowInteractionHint(TEXT("버튼이 반응하지 않는다."), 3.0f);
+		}
 	}
-	// 상호작용은 못하지만, 잠긴 문이 오버랩 영역에 있는 경우 힌트 출력 
-	if (ClosetLockedDoor)
-	{
-		ShowInteractionHint(TEXT("문이 굳게 잠겨 있다. 열쇠가 필요할 것 같다."), 3.0f);
-		PlayLockedDoorMontage(ClosetLockedDoor);
-	}
-	else if (ClosestLockedOther)
-	{
-		EInteractionType LockedType = IInteractionBase::Execute_GetInteractionType(ClosestLockedOther);
-		if (LockedType == EInteractionType::Lever)
-			ShowInteractionHint(TEXT("레버가 움직이지 않는다."), 3.0f);
-		else if (LockedType == EInteractionType::SafeBox)
-			ShowInteractionHint(TEXT("금고가 잠겨 있다."), 3.0f);
-		else if (LockedType == EInteractionType::Button)
-			ShowInteractionHint(TEXT("버튼이 반응하지 않는다."), 3.0f);
-	}
-}
 
 void UInteractionComponent::RefreshInteractionUI()
 {
@@ -208,8 +208,10 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 	if (OwnerCharacter->GetCameraBoom())
 		OwnerCharacter->GetCameraBoom()->bDoCollisionTest = false;
 
-	// SlidingDoor / DoubleDoor: 워프 없이 즉시 실행
-	if (DoorActor->IsA(ASlidingDoor::StaticClass()) || DoorActor->IsA(ADoubleDoor::StaticClass()))
+	// SlidingDoor / DoubleDoor / SafeBox  워프 없이 즉시 실행
+	EInteractionType Type = IInteractionBase::Execute_GetInteractionType(DoorActor);
+	if (DoorActor->IsA(ASlidingDoor::StaticClass()) || DoorActor->IsA(ADoubleDoor::StaticClass())
+		|| Type == EInteractionType::SafeBox)
 	{
 		bIsInteractingDoor = true;
 
@@ -233,9 +235,8 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 	CurrentInteractingItem = DoorActor;
 	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(PendingDoorActor);
 
-	EInteractionType Type = IInteractionBase::Execute_GetInteractionType(DoorActor);
-	FVector          TargetWarpLocation = FVector::ZeroVector;
-	FRotator         TargetWarpRotation = FRotator::ZeroRotator;
+	FVector TargetWarpLocation = FVector::ZeroVector;
+	FRotator TargetWarpRotation = FRotator::ZeroRotator;
 	UAnimMontage* SelectedMontage = nullptr;
 
 	ASingleDoor* SingleDoor = Cast<ASingleDoor>(DoorActor);
@@ -285,17 +286,10 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 			{
 				// Push Door
 				FVector DirToHandle = (CurrentPickupLocation - OwnerCharacter->GetActorLocation()).GetSafeNormal2D();
-				TargetWarpLocation = CurrentPickupLocation - (DirToHandle * 85.0f);
+				TargetWarpLocation = CurrentPickupLocation - (DirToHandle * 60.0f);
 				TargetWarpRotation = DirToHandle.Rotation();
 				SelectedMontage = OwnerCharacter->AnimData->DoorPushOpenMontage;
 			}
-		}
-		else if (Type == EInteractionType::SafeBox)
-		{
-			TargetWarpLocation = CurrentPickupLocation;
-			FVector DirToDoor = (DoorActor->GetActorLocation() - OwnerCharacter->GetActorLocation()).GetSafeNormal2D();
-			TargetWarpRotation = DirToDoor.Rotation();
-			SelectedMontage = OwnerCharacter->AnimData->DoorPullOpenMontage;
 		}
 
 		TargetWarpRotation.Pitch = 0.f;
@@ -312,9 +306,6 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 			OwnerCharacter->PlayAnimMontage(SelectedMontage);
 		}
 	}
-
-	if (!SingleDoor || SingleDoor->GetSingleDoorAnimationType() != ESingleDoorAnimationType::SingleDoor_Pull)
-		IInteractionBase::Execute_OnIneracted(DoorActor, OwnerCharacter);
 }
 
 void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)

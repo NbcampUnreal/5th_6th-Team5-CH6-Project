@@ -102,8 +102,11 @@ void UPlayerAnimInstance::UpdateInteractionIK(float DeltaSeconds)
 
 	ASingleDoor* ActiveDoor = nullptr;
 	if (bIsInteracting)
-		ActiveDoor = Cast<ASingleDoor>(CachedCharacter->InteractionComp->CurrentInteractingItem);
-
+	{
+		ASingleDoor* Door = Cast<ASingleDoor>(CachedCharacter->InteractionComp->CurrentInteractingItem);
+		if (Door && Door->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
+			ActiveDoor = Door;
+	}
 	float PickupCurve = GetCurveValue(TEXT("PickupIK"));
 
 	// 일반 픽업 
