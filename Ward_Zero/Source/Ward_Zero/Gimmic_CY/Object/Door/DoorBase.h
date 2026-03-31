@@ -26,6 +26,7 @@ public:
 	
 	virtual void Activate() override;
 	
+	bool GetbIsOpen() const{return bIsOpen;}
 
 
 protected:
