@@ -44,6 +44,11 @@ struct FWardDocumentEntry
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Document")
 	TSoftObjectPtr<UTexture2D> BackgroundImage;
 
+	/** 아이템 알림 표시명 (노티파이에 뜨는 이름, 예: "서류", "치료제")
+	 *  비어있으면 Title을 사용 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Document")
+	FText NotifyDisplayName;
+
 	/** 사용 키 안내 (아이템 전용, 예: "Q키를 눌러 사용") */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Document")
 	FText KeyHint;

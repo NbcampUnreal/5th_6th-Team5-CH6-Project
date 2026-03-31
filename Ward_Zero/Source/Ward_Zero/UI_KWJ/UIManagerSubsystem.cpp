@@ -136,6 +136,11 @@ void UUIManagerSubsystem::BindToCharacter()
 	if (UHealItemSubsystem* HealUI = GetLocalPlayer()->GetSubsystem<UHealItemSubsystem>())
 	{
 		HealUI->BindToStatusComponent(StatusComp);
+		UE_LOG(LogWard_Zero, Log, TEXT("UIManager: HealItemSubsystem 바인딩 호출 완료"));
+	}
+	else
+	{
+		UE_LOG(LogWard_Zero, Warning, TEXT("UIManager: HealItemSubsystem을 찾을 수 없음!"));
 	}
 
 	bBound = true;

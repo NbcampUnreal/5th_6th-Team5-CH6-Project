@@ -18,6 +18,8 @@ class WARD_ZERO_API UItemNotifyWidget : public UUserWidget
 
 public:
 
+	UItemNotifyWidget(const FObjectInitializer& ObjectInitializer);
+
 	// ══════════════════════════════════════════
 	//  BindWidget
 	// ══════════════════════════════════════════
@@ -63,4 +65,8 @@ private:
 	/** 자동 닫기 시간 (초) */
 	UPROPERTY(EditDefaultsOnly, Category = "Notify")
 	float AutoCloseDuration = 5.0f;
+
+public:
+	/** 숨김 시 호출되는 콜백 (Subsystem이 바인딩) */
+	FSimpleDelegate OnHiddenDelegate;
 };

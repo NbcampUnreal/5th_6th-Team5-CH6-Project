@@ -119,5 +119,14 @@ protected:
 
 	UDocumentCollectionWidget* GetOrCreateCollection();
 
+	// ── 노티파이 대기 후 서류 열기 ──
 
+	/** 노티파이 닫힘 후 열어야 할 서류 인덱스 (-1이면 없음) */
+	int32 PendingDocIndex = -1;
+
+	/** 한 틱 지연 후 서류 열기 (노티파이와 동시 호출 대응) */
+	void OpenDocumentByIndexDeferred();
+
+	/** 노티파이 닫힌 후 대기 중이던 서류 열기 */
+	void OnNotifyHiddenOpenPending();
 };

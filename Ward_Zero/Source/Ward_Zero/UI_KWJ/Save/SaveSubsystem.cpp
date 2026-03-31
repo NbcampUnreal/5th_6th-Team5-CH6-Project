@@ -70,6 +70,16 @@ void USaveSubsystem::Deinitialize()
 	// 콜백 해제 — 서브시스템 파괴 후 콜백이 호출되면 크래시 발생
 	FCoreUObjectDelegates::PostLoadMapWithWorld.Remove(OnLevelLoadedHandle);
 
+	// 스크린샷 콜백 해제
+	if (ScreenshotDelegateHandle.IsValid())
+	{
+		if (UGameViewportClient* ViewportClient = GetWorld() ? GetWorld()->GetGameViewport() : nullptr)
+		{
+			ViewportClient->OnScreenshotCaptured().Remove(ScreenshotDelegateHandle);
+		}
+		ScreenshotDelegateHandle.Reset();
+	}
+
 	Super::Deinitialize();
 }
 
@@ -96,7 +106,7 @@ void USaveSubsystem::SaveGame(const FString& SlotName)
 
 	SaveData->DisplayName = FinalSlotName;
 
-	// 캐시된 스크린샷 사용 (UI 열기 전에 미리 캡처)
+	// 캐시된 스크린샷 사용 (ShowSaveUI에서 비동기 캡처)
 	if (CachedScreenshotData.Num() > 0)
 	{
 		SaveData->ScreenshotData = CachedScreenshotData;
@@ -105,7 +115,7 @@ void USaveSubsystem::SaveGame(const FString& SlotName)
 	}
 	else
 	{
-		CaptureScreenshot(SaveData->ScreenshotData, SaveData->ScreenshotWidth, SaveData->ScreenshotHeight);
+		UE_LOG(LogWard_Zero, Warning, TEXT("스크린샷 캐시가 비어있음 — 썸네일 없이 저장"));
 	}
 
 	if (UGameplayStatics::SaveGameToSlot(SaveData, SavePrefix + FinalSlotName, 0))
@@ -461,10 +471,10 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 		EEnvZone TargetZone = EEnvZone::B1F;
 		switch (SaveData->StageIndex)
 		{
-		case 0: case 1:
+		case 0: case 1: case 2:
 			TargetZone = EEnvZone::B1F;
 			break;
-		case 2: case 3: case 4: case 5:
+		case 3: case 4: case 5:
 			TargetZone = EEnvZone::F2;
 			break;
 		case 6: case 7: case 8:
@@ -483,47 +493,47 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 //  스크린샷
 // ════════════════════════════════════════════════════════
 
-void USaveSubsystem::CaptureScreenshot(TArray<uint8>& OutPNGData, int32& OutWidth, int32& OutHeight)
+void USaveSubsystem::RequestScreenshotCapture()
 {
-	OutPNGData.Empty();
-	OutWidth = 0;
-	OutHeight = 0;
-
-	UGameViewportClient* ViewportClient = GetWorld()->GetGameViewport();
+	UGameViewportClient* ViewportClient = GetWorld() ? GetWorld()->GetGameViewport() : nullptr;
 	if (!ViewportClient)
 	{
 		UE_LOG(LogWard_Zero, Warning, TEXT("스크린샷: ViewportClient 없음"));
 		return;
 	}
 
-	FViewport* Viewport = ViewportClient->Viewport;
-	if (!Viewport)
+	// 이전 바인딩 해제
+	if (ScreenshotDelegateHandle.IsValid())
 	{
-		UE_LOG(LogWard_Zero, Warning, TEXT("스크린샷: Viewport 없음"));
+		ViewportClient->OnScreenshotCaptured().Remove(ScreenshotDelegateHandle);
+		ScreenshotDelegateHandle.Reset();
+	}
+
+	// 콜백 바인딩
+	ScreenshotDelegateHandle = ViewportClient->OnScreenshotCaptured().AddUObject(
+		this, &USaveSubsystem::HandleScreenshotCaptured);
+
+	// 비동기 스크린샷 요청 (UI 없이)
+	FScreenshotRequest::RequestScreenshot(false);
+	UE_LOG(LogWard_Zero, Log, TEXT("스크린샷 비동기 요청 완료"));
+}
+
+void USaveSubsystem::HandleScreenshotCaptured(int32 Width, int32 Height, const TArray<FColor>& Bitmap)
+{
+	// 콜백 해제 (1회성)
+	if (UGameViewportClient* ViewportClient = GetWorld() ? GetWorld()->GetGameViewport() : nullptr)
+	{
+		ViewportClient->OnScreenshotCaptured().Remove(ScreenshotDelegateHandle);
+		ScreenshotDelegateHandle.Reset();
+	}
+
+	if (Width == 0 || Height == 0 || Bitmap.Num() == 0)
+	{
+		UE_LOG(LogWard_Zero, Warning, TEXT("스크린샷 콜백: 데이터 없음 (%d x %d, %d pixels)"), Width, Height, Bitmap.Num());
 		return;
 	}
 
-	TArray<FColor> Bitmap;
-	FIntPoint Size = Viewport->GetSizeXY();
-
-	if (Size.X == 0 || Size.Y == 0)
-	{
-		UE_LOG(LogWard_Zero, Warning, TEXT("스크린샷: 뷰포트 크기 0 (%d x %d)"), Size.X, Size.Y);
-		return;
-	}
-
-	// 패키징 빌드에서 백버퍼가 비어있을 수 있으므로 강제 Draw 후 ReadPixels
-	Viewport->Draw();
-	FlushRenderingCommands();
-
-	bool bSuccess = Viewport->ReadPixels(Bitmap);
-	if (!bSuccess || Bitmap.Num() == 0)
-	{
-		UE_LOG(LogWard_Zero, Warning, TEXT("스크린샷: ReadPixels 실패 (bSuccess=%d, Num=%d)"), bSuccess, Bitmap.Num());
-		return;
-	}
-
-	// 픽셀 데이터 검증 - 전부 검정인지 확인
+	// 픽셀 데이터 검증
 	int32 NonBlackCount = 0;
 	for (int32 i = 0; i < FMath::Min(Bitmap.Num(), 1000); i++)
 	{
@@ -532,41 +542,42 @@ void USaveSubsystem::CaptureScreenshot(TArray<uint8>& OutPNGData, int32& OutWidt
 			NonBlackCount++;
 		}
 	}
-	UE_LOG(LogWard_Zero, Log, TEXT("스크린샷: ReadPixels 성공 (%d x %d, %d pixels, 비검정=%d/1000)"), 
-		Size.X, Size.Y, Bitmap.Num(), NonBlackCount);
+	UE_LOG(LogWard_Zero, Log, TEXT("스크린샷 콜백: %d x %d, 비검정=%d/1000"), Width, Height, NonBlackCount);
 
+	// 썸네일 리사이즈
 	int32 ThumbWidth = 320;
 	int32 ThumbHeight = 180;
 	TArray<FColor> ResizedBitmap;
 	ResizedBitmap.SetNum(ThumbWidth * ThumbHeight);
 
-	float XRatio = static_cast<float>(Size.X) / ThumbWidth;
-	float YRatio = static_cast<float>(Size.Y) / ThumbHeight;
+	float XRatio = static_cast<float>(Width) / ThumbWidth;
+	float YRatio = static_cast<float>(Height) / ThumbHeight;
 
 	for (int32 Y = 0; Y < ThumbHeight; Y++)
 	{
 		for (int32 X = 0; X < ThumbWidth; X++)
 		{
-			int32 SrcX = FMath::Clamp(static_cast<int32>(X * XRatio), 0, Size.X - 1);
-			int32 SrcY = FMath::Clamp(static_cast<int32>(Y * YRatio), 0, Size.Y - 1);
-			FColor Pixel = Bitmap[SrcY * Size.X + SrcX];
-			Pixel.A = 255; // 알파 강제 불투명
+			int32 SrcX = FMath::Clamp(static_cast<int32>(X * XRatio), 0, Width - 1);
+			int32 SrcY = FMath::Clamp(static_cast<int32>(Y * YRatio), 0, Height - 1);
+			FColor Pixel = Bitmap[SrcY * Width + SrcX];
+			Pixel.A = 255;
 			ResizedBitmap[Y * ThumbWidth + X] = Pixel;
 		}
 	}
 
+	// PNG 압축 → 캐시에 저장
 	TArray64<uint8> PNGData64;
 	FImageUtils::PNGCompressImageArray(ThumbWidth, ThumbHeight, ResizedBitmap, PNGData64);
-	OutPNGData.SetNum(PNGData64.Num());
-	FMemory::Memcpy(OutPNGData.GetData(), PNGData64.GetData(), PNGData64.Num());
-	OutWidth = ThumbWidth;
-	OutHeight = ThumbHeight;
+	CachedScreenshotData.SetNum(PNGData64.Num());
+	FMemory::Memcpy(CachedScreenshotData.GetData(), PNGData64.GetData(), PNGData64.Num());
+	CachedScreenshotWidth = ThumbWidth;
+	CachedScreenshotHeight = ThumbHeight;
 
-	UE_LOG(LogWard_Zero, Log, TEXT("스크린샷 캡처 완료: %d bytes PNG"), OutPNGData.Num());
+	UE_LOG(LogWard_Zero, Log, TEXT("스크린샷 캐시 완료: %d bytes PNG"), CachedScreenshotData.Num());
 
 	// 디버그: PNG를 파일로 저장해서 확인
 	FString DebugPath = FPaths::ProjectSavedDir() / TEXT("DebugScreenshot.png");
-	FFileHelper::SaveArrayToFile(OutPNGData, *DebugPath);
+	FFileHelper::SaveArrayToFile(CachedScreenshotData, *DebugPath);
 	UE_LOG(LogWard_Zero, Log, TEXT("디버그 PNG 저장: %s"), *DebugPath);
 }
 
@@ -600,8 +611,8 @@ FString USaveSubsystem::GenerateSlotName() const
 
 void USaveSubsystem::ShowSaveUI()
 {
-	// UI가 뜨기 전에 스크린샷 캐시
-	CaptureScreenshot(CachedScreenshotData, CachedScreenshotWidth, CachedScreenshotHeight);
+	// UI가 뜨기 전에 비동기 스크린샷 요청
+	RequestScreenshotCapture();
 
 	USaveWidget* Widget = GetOrCreateSaveUI();
 	if (Widget)

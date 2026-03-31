@@ -50,6 +50,7 @@ void UHealItemSubsystem::BindToStatusComponent(UPlayerStatusComponent* StatusCom
 
 void UHealItemSubsystem::OnHealingItemCountChanged(int32 NewCount)
 {
+	UE_LOG(LogWard_Zero, Log, TEXT("HealItemSubsystem: 힐템 수량 변경 → %d / %d"), NewCount, CachedMaxCount);
 	UpdateHealCount(NewCount, CachedMaxCount);
 }
 
@@ -74,12 +75,15 @@ UHealItemWidget* UHealItemSubsystem::GetOrCreateWidget()
 			nullptr,
 			TEXT("/Game/UI/heal/WBP_HealItem.WBP_HealItem_C")
 		);
-	}
 
-	if (!WidgetClass)
-	{
-		UE_LOG(LogWard_Zero, Error, TEXT("WBP_HealItem를 찾을 수 없습니다!"));
-		return nullptr;
+		if (!WidgetClass)
+		{
+			// 부모 클래스가 UHealItemWidget이 아닌 경우 LoadClass 실패
+			// 에디터에서 WBP_HealItem의 부모 클래스를 HealItemWidget으로 변경 필요
+			UE_LOG(LogWard_Zero, Error,
+				TEXT("WBP_HealItem 로드 실패! 에디터에서 WBP_HealItem의 부모 클래스가 HealItemWidget인지 확인하세요."));
+			return nullptr;
+		}
 	}
 
 	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
@@ -89,8 +93,14 @@ UHealItemWidget* UHealItemSubsystem::GetOrCreateWidget()
 	if (HealWidget)
 	{
 		HealWidget->AddToViewport(60);
-		HealWidget->SetAnchorsInViewport(FAnchors(1.0f, 1.0f));
+		HealWidget->SetAnchorsInViewport(FAnchors(0.0f, 1.0f));
+		HealWidget->SetAlignmentInViewport(FVector2D(0.0f, 1.0f));
 		HealWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+		UE_LOG(LogWard_Zero, Log, TEXT("HealItemWidget 생성 완료"));
+	}
+	else
+	{
+		UE_LOG(LogWard_Zero, Error, TEXT("HealItemWidget CreateWidget 실패"));
 	}
 
 	return HealWidget;

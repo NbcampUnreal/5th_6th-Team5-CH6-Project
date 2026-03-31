@@ -8,6 +8,12 @@
 #include "TimerManager.h"
 #include "Ward_Zero.h"
 
+UItemNotifyWidget::UItemNotifyWidget(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	SetIsFocusable(true);
+}
+
 void UItemNotifyWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
@@ -15,6 +21,16 @@ void UItemNotifyWidget::NativeOnInitialized()
 	if (BTN_Close)
 	{
 		BTN_Close->OnClicked.AddDynamic(this, &UItemNotifyWidget::OnCloseClicked);
+	}
+
+	// 텍스트 자동 줄바꿈
+	if (TXT_ItemName)
+	{
+		TXT_ItemName->SetAutoWrapText(true);
+	}
+	if (TXT_KeyHint)
+	{
+		TXT_KeyHint->SetAutoWrapText(true);
 	}
 }
 
@@ -66,6 +82,9 @@ void UItemNotifyWidget::HideNotify()
 	{
 		World->GetTimerManager().ClearTimer(AutoCloseTimerHandle);
 	}
+
+	OnHiddenDelegate.ExecuteIfBound();
+	OnHiddenDelegate.Unbind();
 }
 
 void UItemNotifyWidget::OnCloseClicked()

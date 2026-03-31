@@ -103,12 +103,25 @@ void UDocumentViewerWidget::OpenDocument(UDocumentData* InDocument)
 	CurrentDocument = InDocument;
 	CurrentPageIndex = 0;
 
-	if (IMG_DocumentBG && CurrentDocument->BackgroundTexture.IsValid())
+	if (IMG_DocumentBG)
 	{
-		UTexture2D* Tex = CurrentDocument->BackgroundTexture.LoadSynchronous();
-		if (Tex)
+		if (CurrentDocument->BackgroundTexture.IsValid())
 		{
-			IMG_DocumentBG->SetBrushFromTexture(Tex);
+			UTexture2D* Tex = CurrentDocument->BackgroundTexture.LoadSynchronous();
+			if (Tex)
+			{
+				IMG_DocumentBG->SetBrushFromTexture(Tex);
+				IMG_DocumentBG->SetVisibility(ESlateVisibility::HitTestInvisible);
+			}
+			else
+			{
+				IMG_DocumentBG->SetVisibility(ESlateVisibility::Collapsed);
+			}
+		}
+		else
+		{
+			// 배경 텍스처가 없으면 이미지 숨김 (기본 하얀색 방지)
+			IMG_DocumentBG->SetVisibility(ESlateVisibility::Collapsed);
 		}
 	}
 

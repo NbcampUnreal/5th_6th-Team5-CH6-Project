@@ -41,7 +41,18 @@ bool UGameClearSubsystem::IsGameClearShowing() const
 
 UGameClearWidget* UGameClearSubsystem::GetOrCreateWidget()
 {
-	if (GameClearWidget) return GameClearWidget;
+	if (IsValid(GameClearWidget))
+	{
+		if (!GameClearWidget->IsInViewport())
+		{
+			GameClearWidget->AddToViewport(300);
+			GameClearWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		return GameClearWidget;
+	}
+
+	// 이전 위젯이 무효화된 경우 (레벨 전환/로드 등) 초기화
+	GameClearWidget = nullptr;
 
 	if (!GameClearWidgetClass)
 		GameClearWidgetClass = LoadClass<UGameClearWidget>(nullptr,

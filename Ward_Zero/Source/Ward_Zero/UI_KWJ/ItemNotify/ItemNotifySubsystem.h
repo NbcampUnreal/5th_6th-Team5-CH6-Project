@@ -32,7 +32,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ItemNotify")
 	void HideItemNotify();
 
+	/** 현재 알림이 표시 중인지 */
+	UFUNCTION(BlueprintPure, Category = "ItemNotify")
+	bool IsNotifyActive() const { return bNotifyActive; }
+
+	/** 알림이 닫힐 때 호출되는 델리게이트 (다른 서브시스템이 대기용으로 사용) */
+	FSimpleMulticastDelegate OnNotifyHidden;
+
 private:
+
+	bool bNotifyActive = false;
+
+	void HandleNotifyHidden();
 
 	UPROPERTY()
 	TSubclassOf<UItemNotifyWidget> WidgetClass;
