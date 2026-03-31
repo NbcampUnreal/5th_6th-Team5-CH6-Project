@@ -148,7 +148,7 @@ void UUIManagerSubsystem::BindToCharacter()
 
 void UUIManagerSubsystem::OnPlayerDied()
 {
-	UE_LOG(LogWard_Zero, Log, TEXT("UIManager: 플레이어 사망 감지 → 2초 후 게임오버"));
+	UE_LOG(LogWard_Zero, Log, TEXT("UIManager: 플레이어 사망 감지 → 1초 후 게임오버"));
 
 	if (UWorld* World = GetWorld())
 	{
@@ -165,7 +165,7 @@ void UUIManagerSubsystem::OnPlayerDied()
 					GameOverSys->ShowGameOver();
 				}
 			}
-		}, 2.0f, false);
+		}, 1.0f, false);
 	}
 }
 

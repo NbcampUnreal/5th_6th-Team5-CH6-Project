@@ -16,6 +16,8 @@ void UWardGameInstanceSubsystem::Initialize(FSubsystemCollectionBase& Collection
 {
 	Super::Initialize(Collection);
 
+	LevelStartTime = FPlatformTime::Seconds();
+
 	// DataTable 자동 로드
 	DocumentDataTable = LoadObject<UWardDocumentDataTable>(
 		nullptr,
@@ -238,6 +240,21 @@ bool UWardGameInstanceSubsystem::IsBossDefeated(FName BossID) const
 }
 
 // ════════════════════════════════════════════════════════
+//  누적 플레이타임
+// ════════════════════════════════════════════════════════
+
+float UWardGameInstanceSubsystem::GetTotalPlayTime() const
+{
+	float ElapsedSinceLevel = static_cast<float>(FPlatformTime::Seconds() - LevelStartTime);
+	return AccumulatedPlayTime + ElapsedSinceLevel;
+}
+
+void UWardGameInstanceSubsystem::ResetLevelStartTime()
+{
+	LevelStartTime = FPlatformTime::Seconds();
+}
+
+// ════════════════════════════════════════════════════════
 //  새 게임 초기화
 // ════════════════════════════════════════════════════════
 
@@ -249,6 +266,8 @@ void UWardGameInstanceSubsystem::ResetForNewGame()
 	DefeatedBosses.Empty();
 	CurrentStage = 0;
 	PendingSaveData = nullptr;
+	AccumulatedPlayTime = 0.f;
+	LevelStartTime = FPlatformTime::Seconds();
 
 	UE_LOG(LogWard_Zero, Log, TEXT("새 게임 — 인스턴스 데이터 초기화 완료"));
 }
