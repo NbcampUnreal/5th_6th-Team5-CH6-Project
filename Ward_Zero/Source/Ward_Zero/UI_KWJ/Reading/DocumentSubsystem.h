@@ -30,7 +30,7 @@ public:
 
 	/** 서류 열기 (인덱스로 DataTable에서 조회 → 뷰어 표시) */
 	UFUNCTION(BlueprintCallable, Category = "Document")
-	void OpenDocumentByIndex(int32 DocIndex);
+	void OpenDocumentByIndex(int32 DocIndex, bool bImmediate = false);
 
 	UFUNCTION(BlueprintCallable, Category = "Document")
 	void CloseDocument();

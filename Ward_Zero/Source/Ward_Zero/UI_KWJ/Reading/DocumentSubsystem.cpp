@@ -125,8 +125,16 @@ void UDocumentSubsystem::CloseDocument()
 	}
 }
 
-void UDocumentSubsystem::OpenDocumentByIndex(int32 DocIndex)
+void UDocumentSubsystem::OpenDocumentByIndex(int32 DocIndex, bool bImmediate)
 {
+	if (bImmediate)
+	{
+		// 수집 UI 등 일시정지 상태에서 호출 — 지연 없이 바로 열기
+		PendingDocIndex = DocIndex;
+		OpenDocumentByIndexDeferred();
+		return;
+	}
+
 	// 같은 프레임에 노티파이와 서류 열기가 동시 호출될 수 있으므로
 	// 한 틱 지연 후 노티파이 활성 여부를 재확인
 	PendingDocIndex = DocIndex;

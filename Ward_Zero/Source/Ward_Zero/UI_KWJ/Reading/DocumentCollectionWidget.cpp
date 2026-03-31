@@ -163,7 +163,7 @@ void UDocumentCollectionWidget::OnDocumentIndexClicked(int32 DocIndex)
 	UDocumentSubsystem* DocSys = LP->GetSubsystem<UDocumentSubsystem>();
 	if (DocSys)
 	{
-		DocSys->OpenDocumentByIndex(DocIndex);
 		DocSys->bOpenedFromCollection = true;
+		DocSys->OpenDocumentByIndex(DocIndex, true);
 	}
 }
