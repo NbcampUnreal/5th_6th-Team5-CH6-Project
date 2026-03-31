@@ -66,7 +66,7 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnMonsterSubStateChanged OnSubStateChanged;
 	
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Setting")
 	EMonsterMainState StartState = EMonsterMainState::Idle;
 	
 	float ApplyDamage(float Amount, bool bIsCritical);
