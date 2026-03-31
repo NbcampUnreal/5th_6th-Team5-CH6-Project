@@ -92,6 +92,8 @@ void UPlayerCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	/*CheckWallCollision();*/
+
 	CalculateAimOffset();
 
 	if (bIsAiming)
@@ -110,6 +112,7 @@ void UPlayerCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 void UPlayerCombatComponent::StartFire(UAnimMontage* InFireMontage, UAnimInstance* InAnimInst, TSubclassOf<UCameraShakeBase> InCamShake)
 {
 	if (!bIsWeaponDrawn || !EquippedWeapon || EquippedWeapon->IsReloading() || !bIsAiming) return;
+	if (WallAvoidanceAlpha > 0.8f) return;
 
 	float CurrentTime = GetWorld()->GetTimeSeconds();
 	if (CurrentTime - LastFireTime < EquippedWeapon->GetFireRate())
@@ -424,6 +427,30 @@ void UPlayerCombatComponent::SpawnTracer(const FVector& Start, const FVector& En
 			Tracer->SetVariableVec3(TEXT("TracerEnd"), End);
 		}
 	}
+}
+
+void UPlayerCombatComponent::CheckWallCollision()
+{
+	if (!CachedOwnerCharacter || !PlayerCamera) return;
+
+	FHitResult HitResult;
+	FVector Start = PlayerCamera->GetComponentLocation();
+	FVector End = Start + (PlayerCamera->GetForwardVector() * 100.f); 
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(GetOwner());
+	Params.AddIgnoredActor(EquippedWeapon);
+
+	// 벽감지
+	bool bHit = GetWorld()->SweepSingleByChannel(
+		HitResult, Start, End, FQuat::Identity,
+		ECC_Visibility, FCollisionShape::MakeSphere(20.f), Params // 반경도 20으로 상향
+	);
+	 DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Red : FColor::Green, false, 0.1f);
+
+	float TargetAlpha = bHit ? (1.0f - (HitResult.Time)) : 0.0f;
+
+	WallAvoidanceAlpha = FMath::FInterpTo(WallAvoidanceAlpha, TargetAlpha, GetWorld()->GetDeltaSeconds(), 15.f);
 }
 
 void UPlayerCombatComponent::StopFire()

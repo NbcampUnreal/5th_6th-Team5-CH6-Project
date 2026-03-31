@@ -53,7 +53,9 @@ APrototypeCharacter::APrototypeCharacter()
 	CameraBoom->TargetArmLength = 180.0f;
 	CameraBoom->bUsePawnControlRotation = true;
 	CameraBoom->SocketOffset = FVector(0.0f, 35.0f, 10.0f);
-
+	CameraBoom->bDoCollisionTest = true;
+	CameraBoom->ProbeSize = 15.0f;
+	
 	MainCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("MainCamera"));
 	MainCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	MainCamera->bUsePawnControlRotation = false;
@@ -454,6 +456,12 @@ void APrototypeCharacter::CheckRunState()
 			EndRunning(FInputActionValue());
 			return;
 		}
+
+		float ForwardDot = FVector::DotProduct(GetActorForwardVector(), AccelNormal);
+		if (ForwardDot < -0.3f)
+		{
+			EndRunning(FInputActionValue());
+		} //107도 
 	}
 }
 

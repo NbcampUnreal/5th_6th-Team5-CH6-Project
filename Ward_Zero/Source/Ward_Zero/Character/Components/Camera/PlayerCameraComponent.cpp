@@ -54,7 +54,7 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
         CameraBoom->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
         CameraBoom->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("head"));
 
-        CameraBoom->bDoCollisionTest = false;
+        CameraBoom->bDoCollisionTest = true;
         CameraBoom->TargetArmLength = 0.0f;
         CameraBoom->SocketOffset = FVector::ZeroVector;
         CameraBoom->TargetOffset = FVector::ZeroVector;
@@ -94,9 +94,6 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
         {
             Mesh->SetOwnerNoSee(false);
         }
-
-      
-
         if (PC && PC->PlayerCameraManager)
         {
             PC->PlayerCameraManager->ViewPitchMin = -89.0f;
@@ -209,4 +206,24 @@ void UPlayerCameraComponent::UpdateCamera(float DeltaTime)
     CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, TargetArmLength, DeltaTime, Interp);
     MainCamera->FieldOfView = FMath::FInterpTo(MainCamera->FieldOfView, TargetFOV, DeltaTime, Interp);
     CameraBoom->SocketOffset = FMath::VInterpTo(CameraBoom->SocketOffset, TargetSocketOffset, DeltaTime, Interp);
+
+    if (MainCamera && OwnerCharacter)
+    {
+        float DistanceToCamera = FVector::Dist(MainCamera->GetComponentLocation(), OwnerCharacter->GetActorLocation());
+
+        bool bTooClose = DistanceToCamera < 75.0f;
+
+        if (OwnerCharacter->GetMesh())
+        {
+            OwnerCharacter->GetMesh()->SetOwnerNoSee(bTooClose);
+        }
+        if (Combat)
+        {
+            AWeapon* CurrentWeapon = Combat->GetEquippedWeapon();
+            if (CurrentWeapon && CurrentWeapon->WeaponMesh)
+            {
+                CurrentWeapon->WeaponMesh->SetOwnerNoSee(bTooClose);
+            }
+        }
+    }
 }

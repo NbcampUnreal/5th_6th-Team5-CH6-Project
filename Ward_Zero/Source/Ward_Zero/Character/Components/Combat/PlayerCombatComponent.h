@@ -198,4 +198,7 @@ private:
 private:
 	UPROPERTY()
 	class ACharacter* CachedOwnerCharacter;
+
+	float WallAvoidanceAlpha = 0.0f;
+	void CheckWallCollision();
 };
