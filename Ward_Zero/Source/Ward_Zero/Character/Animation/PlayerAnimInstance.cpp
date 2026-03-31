@@ -108,11 +108,11 @@ void UPlayerAnimInstance::UpdateInteractionIK(float DeltaSeconds)
 			ActiveDoor = Door;
 	}
 	float PickupCurve = GetCurveValue(TEXT("PickupIK"));
-
+	float PickupInterpSpeed = (PickupCurve > PickupIKAlpha) ? 15.0f : 5.0f;
 	// 일반 픽업 
 	if (!ActiveDoor)
 	{
-		PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, PickupCurve, DeltaSeconds, 10.0f);
+		PickupIKAlpha = FMath::FInterpTo(PickupIKAlpha, PickupCurve, DeltaSeconds, PickupInterpSpeed);
 		if (PickupIKAlpha > 0.1f)
 		{
 			PickupTargetLocation = CachedCharacter->InteractionComp->CurrentPickupLocation;
@@ -137,8 +137,9 @@ void UPlayerAnimInstance::UpdateInteractionIK(float DeltaSeconds)
 		if (AActor* Item = CachedCharacter->InteractionComp->CurrentInteractingItem)
 			if (AObjectBase* Obj = Cast<AObjectBase>(Item))
 				if (Obj->PickUpPoint) LeverTargetLocation = Obj->PickUpPoint->GetComponentLocation();
+		FVector OutwardJoint = FVector(-40.f, -100.f, 10.f);
 		DynamicLeverJointTarget = FMath::VInterpTo(
-			DynamicLeverJointTarget, FVector(-15.f, -70.f, 0.f), DeltaSeconds, 5.0f);
+			DynamicLeverJointTarget, OutwardJoint, DeltaSeconds, 5.0f);
 	}
 
 	// Pull Door / LockedDoor IK 
