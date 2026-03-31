@@ -399,7 +399,7 @@ void UPlayerCombatComponent::ProcessHit(const FHitResult& Hit, const FVector& Sh
 	if (Sound) UGameplayStatics::PlaySoundAtLocation(this, Sound, Hit.ImpactPoint);
 
 	// Damage
-	UGameplayStatics::ApplyPointDamage(Hit.GetActor(), ProjData->Damage, ShotDir, Hit, Cast<APawn>(GetOwner())->GetController(), GetOwner(), ProjData->DamageTypeClass);
+	UGameplayStatics::ApplyPointDamage(Hit.GetActor(), EquippedWeapon->WeaponData->Damage, ShotDir, Hit, Cast<APawn>(GetOwner())->GetController(), GetOwner(), ProjData->DamageTypeClass);
 
 	// 피격 지점 노이즈 
 	UPlayerNoise::ReportNoise(GetWorld(), Cast<APawn>(GetOwner()), Hit.ImpactPoint, ProjData->ImpactNoiseLoudness, ProjData->ImpactNoiseRange, ProjData->ImpactNoiseTag);
