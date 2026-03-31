@@ -133,10 +133,11 @@ void UUIManagerSubsystem::BindToCharacter()
 	}
 
 	// ── HealItem 수량 델리게이트 바인딩 ──
+	UE_LOG(LogWard_Zero, Warning, TEXT("UIManager: HealItemSubsystem 바인딩 시도 시작"));
 	if (UHealItemSubsystem* HealUI = GetLocalPlayer()->GetSubsystem<UHealItemSubsystem>())
 	{
 		HealUI->BindToStatusComponent(StatusComp);
-		UE_LOG(LogWard_Zero, Log, TEXT("UIManager: HealItemSubsystem 바인딩 호출 완료"));
+		UE_LOG(LogWard_Zero, Warning, TEXT("UIManager: HealItemSubsystem 바인딩 호출 완료"));
 	}
 	else
 	{

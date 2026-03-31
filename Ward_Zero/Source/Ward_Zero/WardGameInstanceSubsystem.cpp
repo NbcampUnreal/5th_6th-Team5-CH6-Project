@@ -63,11 +63,21 @@ void UWardGameInstanceSubsystem::SetPendingSaveData(UWardSaveGame* SaveData)
 {
 	PendingSaveData = SaveData;
 
+	// 런타임 데이터를 모두 비워야 BeginPlay에서 PendingSaveData만 참조
+	// (이전 세션의 데이터가 남아있으면 로드 전 상태가 유지되는 버그 발생)
+	RuntimeObjectStates.Empty();
+	DefeatedBosses.Empty();
+	ActiveDocumentIndices.Empty();
+	NotifiedItemIndices.Empty();
+
 	if (SaveData)
 	{
-		SetCurrentStage(SaveData->StageIndex);
+		CurrentStage = SaveData->StageIndex;
 	}
-	RuntimeObjectStates.Empty();
+	else
+	{
+		CurrentStage = 0;
+	}
 }
 
 void UWardGameInstanceSubsystem::ClearPendingSaveData()

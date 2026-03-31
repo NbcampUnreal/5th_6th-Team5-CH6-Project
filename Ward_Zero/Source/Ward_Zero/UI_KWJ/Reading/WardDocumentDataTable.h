@@ -70,15 +70,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Document")
 	TArray<FWardDocumentEntry> Entries;
 
-	/** 인덱스로 항목 찾기 (Pages가 비어있으면 txt에서 자동 로드) */
+	/** 인덱스로 항목 찾기 (서류(20+)이면서 Pages가 비어있으면 txt에서 자동 로드) */
 	const FWardDocumentEntry* FindByIndex(int32 DocIndex)
 	{
 		for (FWardDocumentEntry& Entry : Entries)
 		{
 			if (Entry.DocIndex == DocIndex)
 			{
-				// Pages가 비어있으면 Content/Documents/Doc_{인덱스}.txt에서 자동 로드
-				if (Entry.Pages.Num() == 0)
+				// 서류(20+)만 txt 파일 자동 로드 — 아이템(0~19)은 Pages 불필요
+				if (Entry.DocIndex >= 20 && Entry.Pages.Num() == 0)
 				{
 					LoadPagesFromFile(Entry);
 				}

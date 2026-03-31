@@ -197,7 +197,6 @@ void UDocumentSubsystem::OpenDocumentByIndexDeferred()
 		TempDoc->BackgroundTexture = Entry.BackgroundImage;
 	}
 
-	bOpenedFromCollection = false;
 	OpenDocument(TempDoc);
 
 	UE_LOG(LogWard_Zero, Log, TEXT("서류 열기 (인덱스 %d): %s"), DocIndex, *Entry.Title.ToString());
