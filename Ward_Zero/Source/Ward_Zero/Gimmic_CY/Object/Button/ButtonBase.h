@@ -14,6 +14,8 @@ class WARD_ZERO_API AButtonBase : public AObjectBase
 public:
 	AButtonBase();
 	
+	UPROPERTY(VisibleAnywhere)
+	UBoxComponent* InteractionCollisionBox;
 	
 
 protected:

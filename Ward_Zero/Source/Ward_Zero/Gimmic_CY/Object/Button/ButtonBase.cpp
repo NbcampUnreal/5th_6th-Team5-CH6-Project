@@ -2,10 +2,18 @@
 
 #include "ButtonBase.h"
 
+#include "Components/BoxComponent.h"
+
 
 AButtonBase::AButtonBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	CollisionBox->SetGenerateOverlapEvents(false);
+	Mesh->SetGenerateOverlapEvents(false);
+	
+	InteractionCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionCollisionBox"));
+	InteractionCollisionBox->SetupAttachment(RootComponent);
+	InteractionCollisionBox->SetGenerateOverlapEvents(true);
 }
 
 void AButtonBase::BeginPlay()
