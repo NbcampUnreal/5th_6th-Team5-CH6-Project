@@ -95,7 +95,6 @@ void AObjectBase::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 }
-www
 
 void AObjectBase::OnIneracted_Implementation(APrototypeCharacter* Character)
 {
