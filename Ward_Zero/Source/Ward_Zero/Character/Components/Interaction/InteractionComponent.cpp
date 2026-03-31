@@ -84,6 +84,10 @@ void UInteractionComponent::TryInteract()
 			// Door / SingleDoor: 잠긴 문 전용 변수에 저장 (몽타주 재생)
 			if (Type == EInteractionType::Door || Type == EInteractionType::SingleDoor)
 			{
+				if (ASingleDoor* Door = Cast<ASingleDoor>(Actor))
+				{
+					if (Door->GetbIsOpen()) continue; // 열린 문이면 아래 로직 실행하지 않음. 
+				}
 				if (DistSq < MinLockedDistSq)
 				{
 					MinLockedDistSq = DistSq;
@@ -112,35 +116,36 @@ void UInteractionComponent::TryInteract()
 		if (Type == EInteractionType::Door || Type == EInteractionType::SingleDoor || Type == EInteractionType::SafeBox)
 			HandleDoorInteraction(ClosestInteractable);
 		else if (Type == EInteractionType::Ammo || Type == EInteractionType::Heal || Type == EInteractionType::Key)
-			HandleItemInteraction(ClosestInteractable);
-			else if (Type == EInteractionType::Lever)
-				HandleLeverInteraction(ClosestInteractable);
-			else if (Type == EInteractionType::Button)      
-				HandleButtonInteraction(ClosestInteractable);
-			else
-			{
-				/*IInteractionBase::Execute_HidePressEWidget(ClosestInteractable);*/
-				IInteractionBase::Execute_OnIneracted(ClosestInteractable, OwnerCharacter);
-			}
-			return;
-		}
-		// 상호작용은 못하지만, 잠긴 문이 오버랩 영역에 있는 경우 힌트 출력 
-		if (ClosetLockedDoor)
+		HandleItemInteraction(ClosestInteractable);
+		else if (Type == EInteractionType::Lever)
+			HandleLeverInteraction(ClosestInteractable);
+		else if (Type == EInteractionType::Button)      
+			HandleButtonInteraction(ClosestInteractable);
+		else
 		{
-			ShowInteractionHint(TEXT("문이 굳게 잠겨 있다. 열쇠가 필요할 것 같다."), 3.0f);
-			PlayLockedDoorMontage(ClosetLockedDoor);
+			/*IInteractionBase::Execute_HidePressEWidget(ClosestInteractable);*/
+			IInteractionBase::Execute_OnIneracted(ClosestInteractable, OwnerCharacter);
 		}
-		else if (ClosestLockedOther)
-		{
-			EInteractionType LockedType = IInteractionBase::Execute_GetInteractionType(ClosestLockedOther);
-			if (LockedType == EInteractionType::Lever)
-				ShowInteractionHint(TEXT("레버가 움직이지 않는다."), 3.0f);
-			else if (LockedType == EInteractionType::SafeBox)
-				ShowInteractionHint(TEXT("금고가 잠겨 있다."), 3.0f);
-			else if (LockedType == EInteractionType::Button)
-				ShowInteractionHint(TEXT("버튼이 반응하지 않는다."), 3.0f);
-		}
+		return;
 	}
+	// 상호작용은 못하지만, 잠긴 문이 오버랩 영역에 있는 경우 힌트 출력 
+	if (ClosetLockedDoor)
+	{
+		ShowInteractionHint(TEXT("문이 굳게 잠겨 있다. 열쇠가 필요할 것 같다."), 3.0f);
+		PlayLockedDoorMontage(ClosetLockedDoor);
+	}
+	else if (ClosestLockedOther)
+	{
+		EInteractionType LockedType = IInteractionBase::Execute_GetInteractionType(ClosestLockedOther);
+		if (LockedType == EInteractionType::Lever)
+			ShowInteractionHint(TEXT("레버가 움직이지 않는다."), 3.0f);
+		else if (LockedType == EInteractionType::SafeBox)
+			ShowInteractionHint(TEXT("금고가 잠겨 있다."), 3.0f);
+		else if (LockedType == EInteractionType::Button)
+			ShowInteractionHint(TEXT("버튼이 반응하지 않는다."), 3.0f);
+	}
+}
+
 
 void UInteractionComponent::RefreshInteractionUI()
 {
@@ -157,6 +162,11 @@ void UInteractionComponent::RefreshInteractionUI()
 			IInteractionBase* Interface = Cast<IInteractionBase>(Actor);
 			if (Interface && Interface->GetBCanInteract())
 			{
+				if (ASingleDoor* Door = Cast<ASingleDoor>(Actor))
+				{
+					if (Door->GetbIsOpen()) continue; 
+				}
+
 				float DistSq = FVector::DistSquared(OwnerCharacter->GetActorLocation(), Actor->GetActorLocation());
 				if (DistSq < MinDistSq)
 				{
@@ -511,6 +521,10 @@ void UInteractionComponent::OnInteractableBeganOverlap(UPrimitiveComponent* Over
 
 		if (InteractInterface && InteractInterface->GetBCanInteract())
 		{
+			if (ASingleDoor* Door = Cast<ASingleDoor>(OtherActor))
+			{
+				if (Door->GetbIsOpen()) return;
+			}
 			IInteractionBase::Execute_ShowPressEWidget(OtherActor);
 		}
 	}
