@@ -798,6 +798,7 @@ void APrototypeCharacter::StartHeal()
 	if (StatusComp->HealingItemCount <= 0) return;
 	if (GetIsReloading() || GetIsAiming() || IsEquipping() || GetIsInteracting()) return;
 	if (StatusComp->CurrHealth >= StatusComp->MaxHealth) return;
+	if (bIsUseHeal) return;
 
 	bIsUseHeal = true;
 	if (AnimData && AnimData->HealMontage)
@@ -873,10 +874,8 @@ void APrototypeCharacter::SwitchWeaponByIndex(int32 WeaponIndex)
 	if (FlashLightComp) FlashLightComp->SetFlashlightOff();
 
 	// 레이어 연결 및 손전등 상태 갱신
-	// 레이어 연결 및 손전등 상태 갱신
 	TSubclassOf<UAnimInstance> TargetLayer = (WeaponIndex == 1) ? PistolLayer : SMGLayer;
 
-	// ⭐ [추가] 무기를 바꿀 때도 현재 레이어 타입을 업데이트!
 	CurrentLayerType = (WeaponIndex == 1) ? EWeaponLayerType::Pistol : EWeaponLayerType::SMG;
 
 	if (TargetLayer) AnimInst->LinkAnimClassLayers(TargetLayer);
@@ -1160,6 +1159,8 @@ void APrototypeCharacter::OnHealMontageEnded(UAnimMontage* Montage, bool bInterr
 	// 델리게이트 해제
 	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
 		AnimInst->OnMontageEnded.RemoveDynamic(this, &APrototypeCharacter::OnHealMontageEnded);
+
+	DestroyHealItemVisual();
 
 	// 이전에 무기를 들고 있었다면 복구
 	if (bWasWeaponDrawnBeforeHeal && CombatComp)

@@ -150,7 +150,8 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement") float OrientationWarpingAlpha;
 	UPROPERTY(BlueprintReadOnly, Category = "Movement") FVector LocalVelocity2D;
 	UPROPERTY(BlueprintReadOnly, Category = "Combat|Spread") float CurrSpread;
-
+	UPROPERTY()
+	bool bWasDoorIKActive = false;
 private:
 	void UpdateMovementCalculations(float DeltaSeconds);
 	void UpdateOrientationWarping(float DeltaSeconds);

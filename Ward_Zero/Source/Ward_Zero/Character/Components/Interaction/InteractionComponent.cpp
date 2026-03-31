@@ -33,7 +33,7 @@ void UInteractionComponent::Initialize(APrototypeCharacter* InCharacter)
 	InteractionSphere->AttachToComponent(OwnerCharacter->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	InteractionSphere->RegisterComponent();
 
-	InteractionSphere->SetSphereRadius(120.0f);
+	InteractionSphere->SetSphereRadius(80.0f);
 	InteractionSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 
 	// 델리게이트 연결
@@ -203,23 +203,15 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 
 	OwnerCharacter->AbortAllActions();
 	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
-	{
 		OwnerCharacter->DisableInput(PC);
-	}
-	if (OwnerCharacter->GetCameraBoom())
-	{
-		OwnerCharacter->GetCameraBoom()->bDoCollisionTest = false;
-	}
 
+	if (OwnerCharacter->GetCameraBoom())
+		OwnerCharacter->GetCameraBoom()->bDoCollisionTest = false;
+
+	// SlidingDoor / DoubleDoor: 워프 없이 즉시 실행
 	if (DoorActor->IsA(ASlidingDoor::StaticClass()) || DoorActor->IsA(ADoubleDoor::StaticClass()))
 	{
 		bIsInteractingDoor = true;
-		USoundBase* SoundToPlay = nullptr;
-
-		if (SoundToPlay)
-		{
-			UGameplayStatics::PlaySoundAtLocation(this, SoundToPlay, DoorActor->GetActorLocation());
-		}
 
 		IInteractionBase::Execute_OnIneracted(DoorActor, OwnerCharacter);
 
@@ -242,11 +234,10 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 	CurrentPickupLocation = IInteractionBase::Execute_GetInteractionTargetLocation(PendingDoorActor);
 
 	EInteractionType Type = IInteractionBase::Execute_GetInteractionType(DoorActor);
-	FVector TargetWarpLocation = FVector::ZeroVector;
-	FRotator TargetWarpRotation = FRotator::ZeroRotator;
+	FVector          TargetWarpLocation = FVector::ZeroVector;
+	FRotator         TargetWarpRotation = FRotator::ZeroRotator;
 	UAnimMontage* SelectedMontage = nullptr;
 
-	// Push/Pull 에 따른 워핑 로직 분리
 	ASingleDoor* SingleDoor = Cast<ASingleDoor>(DoorActor);
 	if (OwnerCharacter->MotionWarpingComp)
 	{
@@ -254,41 +245,31 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 		{
 			if (SingleDoor->GetSingleDoorAnimationType() == ESingleDoorAnimationType::SingleDoor_Pull)
 			{
+				// Pull Door 
 				USceneComponent* PullPoint = nullptr;
 				TInlineComponentArray<USceneComponent*> SceneComps;
 				DoorActor->GetComponents<USceneComponent>(SceneComps);
 				for (USceneComponent* Comp : SceneComps)
 				{
-					if (Comp->GetFName() == FName(TEXT("PullPoint")))
-					{
-						PullPoint = Comp;
-						break;
-					}
+					if (Comp->GetFName() == FName(TEXT("PullPoint"))) { PullPoint = Comp; break; }
 				}
 
-				// HandleSocket 위치 가져오기
+				// HandleSocket 위치
 				FVector HandleLocation = CurrentPickupLocation; // 폴백
-				if (UStaticMeshComponent* DoorMesh = DoorActor->FindComponentByClass<UStaticMeshComponent>())
+				if (SingleDoor->Mesh && SingleDoor->Mesh->DoesSocketExist(TEXT("HandleSocket")))
 				{
-					if (DoorMesh->DoesSocketExist(TEXT("HandleSocket")))
-					{
-						HandleLocation = DoorMesh->GetSocketLocation(TEXT("HandleSocket"));
-					}
+					HandleLocation = SingleDoor->Mesh->GetSocketLocation(TEXT("HandleSocket"));
 				}
-
-				// HandleSocket 위치를 IK 타겟으로도 업데이트
-				CurrentPickupLocation = HandleLocation;
+				CurrentPickupLocation = HandleLocation; // AnimInstance가 매 프레임 덮어쓰지만 초기값 세팅
 
 				if (PullPoint)
 				{
 					TargetWarpLocation = PullPoint->GetComponentLocation();
 
-					// PullPoint → HandleSocket 방향으로 캐릭터 회전 계산
 					FVector DirToHandle = (HandleLocation - TargetWarpLocation).GetSafeNormal2D();
 					if (DirToHandle.IsNearlyZero())
-					{
 						DirToHandle = (DoorActor->GetActorLocation() - TargetWarpLocation).GetSafeNormal2D();
-					}
+
 					TargetWarpRotation = DirToHandle.Rotation();
 				}
 				else
@@ -302,6 +283,7 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 			}
 			else
 			{
+				// Push Door
 				FVector DirToHandle = (CurrentPickupLocation - OwnerCharacter->GetActorLocation()).GetSafeNormal2D();
 				TargetWarpLocation = CurrentPickupLocation - (DirToHandle * 85.0f);
 				TargetWarpRotation = DirToHandle.Rotation();
@@ -319,26 +301,26 @@ void UInteractionComponent::HandleDoorInteraction(AActor* DoorActor)
 		TargetWarpRotation.Pitch = 0.f;
 		TargetWarpRotation.Roll = 0.f;
 
-		OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(TEXT("DoorWarp"), TargetWarpLocation, TargetWarpRotation);
+		OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(
+			TEXT("DoorWarp"), TargetWarpLocation, TargetWarpRotation);
 
 		if (SelectedMontage)
 		{
 			if (UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance())
-			{
 				AnimInst->RootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
-			}
+
 			OwnerCharacter->PlayAnimMontage(SelectedMontage);
 		}
 	}
+
 	if (!SingleDoor || SingleDoor->GetSingleDoorAnimationType() != ESingleDoorAnimationType::SingleDoor_Pull)
-	{
 		IInteractionBase::Execute_OnIneracted(DoorActor, OwnerCharacter);
-	}
 }
 
 void UInteractionComponent::HandleItemInteraction(AActor* ItemActor)
 {
 	if (!OwnerCharacter || !ItemActor) return;
+	if (OwnerCharacter->bIsUseHeal) return;
 
 	UAnimInstance* AI = OwnerCharacter->GetMesh()->GetAnimInstance();
 	if (AI && AI->IsAnyMontagePlaying()) return;
@@ -441,48 +423,59 @@ void UInteractionComponent::HandleButtonInteraction(AActor* ButtonActor)
 	if (!OwnerCharacter->AnimData || !OwnerCharacter->AnimData->ButtonPressMontage) return;
 
 	if (UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance())
-	{
 		if (AnimInst->IsAnyMontagePlaying()) return;
-	}
 
 	IInteractionBase::Execute_HidePressEWidget(ButtonActor);
 
-	// FingerSocket 위치를 IK 타겟으로 사용
 	FVector HandleLocation = ButtonActor->GetActorLocation();
+	FVector ButtonOutward = FVector::ZeroVector;
 
-	if (UStaticMeshComponent* ButtonMesh = ButtonActor->FindComponentByClass<UStaticMeshComponent>())
+	TInlineComponentArray<UStaticMeshComponent*> MeshComps;
+	ButtonActor->GetComponents<UStaticMeshComponent>(MeshComps);
+	for (UStaticMeshComponent* Comp : MeshComps)
 	{
-		if (ButtonMesh->DoesSocketExist(TEXT("FingerSocket")))
+		if (Comp->DoesSocketExist(TEXT("FingerSocket")))
 		{
-			HandleLocation = ButtonMesh->GetSocketLocation(TEXT("FingerSocket"));
+			HandleLocation = Comp->GetSocketLocation(TEXT("FingerSocket"));
+			ButtonOutward = Comp->GetSocketRotation(TEXT("FingerSocket")).Vector();
+			ButtonOutward.Z = 0.f;
+			if (!ButtonOutward.IsNearlyZero()) ButtonOutward.Normalize();
+			break;
 		}
 	}
+
+	// 소켓 방향이 플레이어 쪽인지 검증 → 반대면 자동으로 뒤집기
+	FVector ToPlayer = (OwnerCharacter->GetActorLocation() - ButtonActor->GetActorLocation());
+	ToPlayer.Z = 0.f;
+	ToPlayer.Normalize();
+
+	if (ButtonOutward.IsNearlyZero())
+	{
+		// 소켓 없으면 플레이어 방향 그대로 사용
+		ButtonOutward = ToPlayer;
+	}
+	else if (FVector::DotProduct(ButtonOutward, ToPlayer) < 0.f)
+	{
+		// 소켓 X축이 벽 안쪽을 가리키면 뒤집기
+		ButtonOutward = -ButtonOutward;
+	}
+
 	CurrentPickupLocation = HandleLocation;
 	CurrentInteractingItem = ButtonActor;
 
 	if (OwnerCharacter->MotionWarpingComp)
 	{
-		// -Y가 플레이어가 서야 할 정면 방향입니다.
-		FVector ButtonFacing = -ButtonActor->GetActorRightVector();
-		ButtonFacing.Z = 0.f;
-		ButtonFacing.Normalize();
+		// 워프 위치 = FingerSocket에서 플레이어 방향으로 70
+		FVector TargetWarpLocation = HandleLocation + ButtonOutward * 70.f;
+		TargetWarpLocation.Z = OwnerCharacter->GetActorLocation().Z;
 
-		// 정면 방향(ButtonFacing)의 반대인 +Y를 바라보게 설정 
-		FRotator TargetRot = (-ButtonFacing).Rotation();
+		// 캐릭터는 버튼을 정면으로 바라봄
+		FRotator TargetRot = (-ButtonOutward).Rotation();
 		TargetRot.Pitch = 0.f;
 		TargetRot.Roll = 0.f;
 
-		// 소켓(HandleLocation) 위치에서 버튼의 정면(-Y) 방향으로 70.0f만큼 떨어진 지점
-		FVector TargetWarpLocation = HandleLocation + (ButtonFacing * 70.0f);
-		TargetWarpLocation.Z = OwnerCharacter->GetActorLocation().Z;
-
-		DrawDebugSphere(GetWorld(), TargetWarpLocation, 10.f, 12, FColor::Red, false, 2.0f);
-
 		OwnerCharacter->MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(
-			TEXT("ButtonWarp"),
-			TargetWarpLocation,
-			TargetRot
-		);
+			TEXT("ButtonWarp"), TargetWarpLocation, TargetRot);
 	}
 
 	if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
@@ -495,6 +488,7 @@ void UInteractionComponent::HandleButtonInteraction(AActor* ButtonActor)
 		AnimInst->RootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
 
 	OwnerCharacter->PlayAnimMontage(OwnerCharacter->AnimData->ButtonPressMontage);
+
 }
 
 void UInteractionComponent::AttachInteractingItem()
@@ -550,44 +544,30 @@ void UInteractionComponent::PlayLockedDoorMontage(AActor* DoorActor)
 	if (!OwnerCharacter || !OwnerCharacter->AnimData) return;
 	if (!OwnerCharacter->AnimData->LockedDoorMontage) return;
 
-	// SingleDoor일 때만 유효
 	ASingleDoor* SingleDoor = Cast<ASingleDoor>(DoorActor);
 	if (!SingleDoor) return;
 
 	if (UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance())
-	{
 		if (AnimInst->IsAnyMontagePlaying()) return;
-	}
 
 	if (!OwnerCharacter->MotionWarpingComp) return;
 
-	// HandleSocket 위치 (IK 타겟)
-	FVector HandleLocation = DoorActor->GetActorLocation(); // 폴백
-	if (UStaticMeshComponent* DoorMesh = DoorActor->FindComponentByClass<UStaticMeshComponent>())
-	{
-		if (DoorMesh->DoesSocketExist(TEXT("HandleSocket")))
-		{
-			HandleLocation = DoorMesh->GetSocketLocation(TEXT("HandleSocket"));
-		}
-	}
+	// HandleSocket 위치 → 워프 회전 계산에 사용 (IK 는 AnimInstance 가 덮어씀)
+	FVector HandleLocation = DoorActor->GetActorLocation();
+	if (SingleDoor->Mesh && SingleDoor->Mesh->DoesSocketExist(TEXT("HandleSocket")))
+		HandleLocation = SingleDoor->Mesh->GetSocketLocation(TEXT("HandleSocket"));
 
-	// IK 타겟으로 등록 
-	CurrentPickupLocation = HandleLocation;
+	CurrentPickupLocation = HandleLocation; // AnimInstance 가 매 프레임 정확한 값으로 갱신
 	CurrentInteractingItem = DoorActor;
-	CurrentPickupLocation += FVector(-2.27f, -0.79f, -30.f);
 
-	// PullPoint 위치 (캐릭터 이동 워프 타겟)
-	FVector WarpLocation = OwnerCharacter->GetActorLocation(); // 폴백
+	// PullPoint 탐색 (워프 위치)
+	FVector WarpLocation = OwnerCharacter->GetActorLocation();
 	USceneComponent* PullPoint = nullptr;
 	TInlineComponentArray<USceneComponent*> SceneComps;
 	DoorActor->GetComponents<USceneComponent>(SceneComps);
 	for (USceneComponent* Comp : SceneComps)
 	{
-		if (Comp->GetFName() == FName(TEXT("PullPoint")))
-		{
-			PullPoint = Comp;
-			break;
-		}
+		if (Comp->GetFName() == FName(TEXT("PullPoint"))) { PullPoint = Comp; break; }
 	}
 	if (PullPoint)
 	{
@@ -595,10 +575,11 @@ void UInteractionComponent::PlayLockedDoorMontage(AActor* DoorActor)
 		WarpLocation.Z = OwnerCharacter->GetActorLocation().Z;
 	}
 
-	// 회전 워핑 PullPoint -> HandleSocket 방향
+	// 워프 회전 (PullPoint → HandleSocket 방향)
 	FVector DirToHandle = (HandleLocation - WarpLocation).GetSafeNormal2D();
 	if (DirToHandle.IsNearlyZero())
 		DirToHandle = (DoorActor->GetActorLocation() - WarpLocation).GetSafeNormal2D();
+
 	FRotator TargetRot = DirToHandle.Rotation();
 	TargetRot.Pitch = 0.f;
 	TargetRot.Roll = 0.f;
@@ -609,9 +590,10 @@ void UInteractionComponent::PlayLockedDoorMontage(AActor* DoorActor)
 		PC->SetIgnoreMoveInput(true);
 		PC->SetIgnoreLookInput(true);
 	}
-	bIsInteractingDoor = true;                         
+	bIsInteractingDoor = true;
 	OwnerCharacter->bIsInteractingDoor = true;
 
+	// 카메라 정렬 후 워프 + 몽타주
 	StartCameraAlign(DoorActor, [this, WarpLocation, TargetRot]()
 		{
 			if (!OwnerCharacter || !OwnerCharacter->MotionWarpingComp) return;
@@ -625,7 +607,6 @@ void UInteractionComponent::PlayLockedDoorMontage(AActor* DoorActor)
 			OwnerCharacter->PlayAnimMontage(OwnerCharacter->AnimData->LockedDoorMontage);
 		});
 }
-
 void UInteractionComponent::TriggerInteraction()
 {
 	if (CurrentInteractingItem && IsValid(CurrentInteractingItem))
