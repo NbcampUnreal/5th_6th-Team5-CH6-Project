@@ -95,16 +95,7 @@ void AObjectBase::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 }
-
-void AObjectBase::OnIneractionRangeEntered_Implementation()
-{
-	
-}
-
-void AObjectBase::OnIneractionRangeExited_Implementation()
-{
-	
-}
+www
 
 void AObjectBase::OnIneracted_Implementation(APrototypeCharacter* Character)
 {

@@ -94,13 +94,6 @@ void AItemBase::Tick(float DeltaTime)
 
 }
 
-void AItemBase::OnIneractionRangeEntered_Implementation()
-{
-}
-
-void AItemBase::OnIneractionRangeExited_Implementation()
-{
-}
 
 void AItemBase::OnIneracted_Implementation(APrototypeCharacter* Character)
 {
