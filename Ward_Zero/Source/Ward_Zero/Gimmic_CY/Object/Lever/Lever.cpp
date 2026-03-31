@@ -3,6 +3,9 @@
 #include "Components/BoxComponent.h"
 #include "Gimmic_CY/Interface/InteractionBase.h"
 #include "Gimmic_CY/Object/Door/SingleDoor.h"
+#include "UI_KWJ/ItemNotify/ItemNotifySubsystem.h"
+#include "Engine/LocalPlayer.h"
+#include "Kismet/GameplayStatics.h"
 
 ALever::ALever()
 {
@@ -119,5 +122,17 @@ void ALever::HandleInteraction_Implementation(APrototypeCharacter* Character)
 	if (bCanInteract)
 	{
 		Activate();
+
+		// 아이템 노티파이 표시 (DocIdx가 유효한 경우)
+		if (DocIdx >= 0)
+		{
+			if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+			{
+				if (UItemNotifySubsystem* NotifySys = PC->GetLocalPlayer()->GetSubsystem<UItemNotifySubsystem>())
+				{
+					NotifySys->ShowItemNotifyByIndex(DocIdx);
+				}
+			}
+		}
 	}
 }
