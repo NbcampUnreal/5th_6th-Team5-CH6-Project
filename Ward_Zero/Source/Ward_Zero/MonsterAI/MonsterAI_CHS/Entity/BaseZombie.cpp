@@ -112,10 +112,7 @@ void ABaseZombie::BeginPlay()
 		MoveComp->bUseControllerDesiredRotation = true;
 		MoveComp->RotationRate = FRotator(0.f, MonsterData->StateConfigMap[EMonsterMainState::Idle].YawRotateSpeed, 0.f);
 	}
-	if (bIsAutoActivate)
-	{
-		Activate();
-	}
+	
 	/*bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;*/
 	

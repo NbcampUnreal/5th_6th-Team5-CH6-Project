@@ -72,8 +72,7 @@ public:
 	void CheckRagdollVelocity();
 	void RecoverFromRagdoll();
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	bool bIsAutoActivate = false;
+	
 	
 	const UMonsterDataAsset* GetMonsterData() const;
 #if WITH_EDITOR
