@@ -42,13 +42,7 @@ class WARD_ZERO_API IInteractionBase
 	GENERATED_BODY()
 
 public:
-
-	UFUNCTION(BlueprintNativeEvent)
-	void OnIneractionRangeEntered();
-
-	UFUNCTION(BlueprintNativeEvent)
-	void OnIneractionRangeExited();
-
+	
 	UFUNCTION(BlueprintNativeEvent)
 	void OnIneracted(APrototypeCharacter* Character);
 

@@ -26,8 +26,6 @@ public:
 
 	// ===== IGimmickInterface =====
 public:
-	virtual void OnIneractionRangeEntered_Implementation() override;
-	virtual void OnIneractionRangeExited_Implementation() override;
 	virtual void OnIneracted_Implementation(APrototypeCharacter* Character) override;
 	virtual void HandleInteraction_Implementation(APrototypeCharacter* Character) override;
 	virtual bool CanBeInteracted_Implementation() const override { return true; }
