@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -E \"\\\\.h$|\\\\.cpp$\")"
+      "Bash(grep -E \"\\\\.h$|\\\\.cpp$\")",
+      "Read(//c/5th_6th-Team5-CH6-Project/.vscode/**)",
+      "Read(//c/Program Files/Epic Games/**)",
+      "Read(//d/Program Files/**)",
+      "Read(//c//**)"
     ]
   }
 }

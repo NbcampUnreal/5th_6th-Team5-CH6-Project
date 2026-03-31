@@ -4,6 +4,7 @@
 #include "UI_KWJ/Reading/DocumentData.h"
 #include "UI_KWJ/Reading/DocumentViewerWidget.h"
 #include "UI_KWJ/Reading/DocumentCollectionWidget.h"
+#include "UI_KWJ/ItemNotify/ItemNotifySubsystem.h"
 #include "WardGameInstanceSubsystem.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
@@ -126,6 +127,36 @@ void UDocumentSubsystem::CloseDocument()
 
 void UDocumentSubsystem::OpenDocumentByIndex(int32 DocIndex)
 {
+	// 같은 프레임에 노티파이와 서류 열기가 동시 호출될 수 있으므로
+	// 한 틱 지연 후 노티파이 활성 여부를 재확인
+	PendingDocIndex = DocIndex;
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			OpenDocumentByIndexDeferred();
+		});
+	}
+}
+
+void UDocumentSubsystem::OpenDocumentByIndexDeferred()
+{
+	int32 DocIndex = PendingDocIndex;
+	if (DocIndex < 0) return;
+	PendingDocIndex = -1;
+
+	// 노티파이가 표시 중이면 닫힌 후에 서류 열기
+	if (UItemNotifySubsystem* NotifySys = GetLocalPlayer()->GetSubsystem<UItemNotifySubsystem>())
+	{
+		if (NotifySys->IsNotifyActive())
+		{
+			PendingDocIndex = DocIndex;
+			NotifySys->OnNotifyHidden.AddUObject(this, &UDocumentSubsystem::OnNotifyHiddenOpenPending);
+			UE_LOG(LogWard_Zero, Log, TEXT("서류 열기 대기 (인덱스 %d): 노티파이 닫힌 후 실행"), DocIndex);
+			return;
+		}
+	}
+
 	// GameInstanceSubsystem에서 DataTable 조회
 	UGameInstance* GI = GetLocalPlayer()->GetGameInstance();
 	if (!GI) return;
@@ -162,6 +193,22 @@ void UDocumentSubsystem::OpenDocumentByIndex(int32 DocIndex)
 	OpenDocument(TempDoc);
 
 	UE_LOG(LogWard_Zero, Log, TEXT("서류 열기 (인덱스 %d): %s"), DocIndex, *Entry.Title.ToString());
+}
+
+void UDocumentSubsystem::OnNotifyHiddenOpenPending()
+{
+	// 델리게이트 해제
+	if (UItemNotifySubsystem* NotifySys = GetLocalPlayer()->GetSubsystem<UItemNotifySubsystem>())
+	{
+		NotifySys->OnNotifyHidden.RemoveAll(this);
+	}
+
+	if (PendingDocIndex >= 0)
+	{
+		int32 DocIdx = PendingDocIndex;
+		PendingDocIndex = -1;
+		OpenDocumentByIndex(DocIdx);
+	}
 }
 
 bool UDocumentSubsystem::IsDocumentOpen() const

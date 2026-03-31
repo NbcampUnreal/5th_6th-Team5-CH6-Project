@@ -79,9 +79,12 @@ private:
 	FDelegateHandle OnLevelLoadedHandle;
 	void OnLevelLoaded(UWorld* LoadedWorld);
 
-	void CaptureScreenshot(TArray<uint8>& OutPNGData, int32& OutWidth, int32& OutHeight);
+	void RequestScreenshotCapture();
+	void HandleScreenshotCaptured(int32 Width, int32 Height, const TArray<FColor>& Bitmap);
 	UTexture2D* CreateThumbnailFromPNG(const TArray<uint8>& PNGData, int32 Width, int32 Height);
 	FString GenerateSlotName() const;
+
+	FDelegateHandle ScreenshotDelegateHandle;
 
 	// ── 세이브 위젯 ──
 	UPROPERTY()
