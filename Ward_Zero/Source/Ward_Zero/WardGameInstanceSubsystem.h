@@ -145,6 +145,20 @@ public:
 	const TSet<FName>& GetDefeatedBosses() const { return DefeatedBosses; }
 	void SetDefeatedBosses(const TSet<FName>& Bosses) { DefeatedBosses = Bosses; }
 
+	// ══════════════════════════════════════════
+	//  누적 플레이타임
+	// ══════════════════════════════════════════
+
+	/** 현재 총 플레이타임 반환 (누적 + 현재 레벨 경과) */
+	UFUNCTION(BlueprintPure, Category = "PlayTime")
+	float GetTotalPlayTime() const;
+
+	/** 로드 시 누적값 복원 */
+	void SetAccumulatedPlayTime(float InTime) { AccumulatedPlayTime = InTime; }
+
+	/** 현재 레벨 시작 시점 기록 (레벨 로드 후 호출) */
+	void ResetLevelStartTime();
+
 	/** 새 게임 시작 시 모든 데이터 초기화 */
 	UFUNCTION(BlueprintCallable, Category = "Save")
 	void ResetForNewGame();
@@ -167,4 +181,10 @@ private:
 
 	/** 런타임 보스 격파 목록 */
 	TSet<FName> DefeatedBosses;
+
+	/** 이전 세이브/로드까지 누적된 플레이타임 (초) */
+	float AccumulatedPlayTime = 0.f;
+
+	/** 현재 레벨 시작 시점 (FPlatformTime 기준) */
+	double LevelStartTime = 0.0;
 };

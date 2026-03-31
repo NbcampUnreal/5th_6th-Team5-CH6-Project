@@ -333,7 +333,6 @@ UWardSaveGame* USaveSubsystem::CollectCurrentGameState()
 	// 레벨 & 시간
 	SaveData->CurrentLevelName = FName(*UGameplayStatics::GetCurrentLevelName(GetWorld()));
 	SaveData->SaveDateTime = FDateTime::Now();
-	SaveData->PlayTimeSeconds = 0.f; // TODO: 별도 추적
 
 	// 오브젝트 상태 + 스테이지 (GameInstanceSubsystem → 세이브 데이터)
 	UGameInstance* GI = GetLocalPlayer()->GetGameInstance();
@@ -341,6 +340,7 @@ UWardSaveGame* USaveSubsystem::CollectCurrentGameState()
 	{
 		if (UWardGameInstanceSubsystem* SaveGI = GI->GetSubsystem<UWardGameInstanceSubsystem>())
 		{
+			SaveData->PlayTimeSeconds = SaveGI->GetTotalPlayTime();
 			SaveData->ObjectStates = SaveGI->GetRuntimeObjectStates();
 			SaveData->StageIndex = SaveGI->GetCurrentStage();
 			SaveData->DefeatedBosses = SaveGI->GetDefeatedBosses();
@@ -448,6 +448,8 @@ void USaveSubsystem::ApplyGameState(UWardSaveGame* SaveData)
 			SaveGI->SetDefeatedBosses(SaveData->DefeatedBosses);
 			SaveGI->SetActiveDocumentIndices(SaveData->CollectedDocumentIndices);
 			SaveGI->SetNotifiedItemIndices(SaveData->NotifiedItemIndices);
+			SaveGI->SetAccumulatedPlayTime(SaveData->PlayTimeSeconds);
+			SaveGI->ResetLevelStartTime();
 		}
 	}
 
@@ -510,7 +512,8 @@ void USaveSubsystem::CaptureScreenshot(TArray<uint8>& OutPNGData, int32& OutWidt
 		return;
 	}
 
-	// 렌더링 완료 대기 후 ReadPixels
+	// 패키징 빌드에서 백버퍼가 비어있을 수 있으므로 강제 Draw 후 ReadPixels
+	Viewport->Draw();
 	FlushRenderingCommands();
 
 	bool bSuccess = Viewport->ReadPixels(Bitmap);
