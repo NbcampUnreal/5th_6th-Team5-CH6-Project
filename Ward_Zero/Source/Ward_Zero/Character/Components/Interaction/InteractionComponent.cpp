@@ -84,20 +84,20 @@ void UInteractionComponent::TryInteract()
 			// Door / SingleDoor: 잠긴 문 전용 변수에 저장 (몽타주 재생)
 			if (Type == EInteractionType::Door || Type == EInteractionType::SingleDoor)
 			{
-				if (ASingleDoor* Door = Cast<ASingleDoor>(Actor))
+				if (ASingleDoor* SingleDoor = Cast<ASingleDoor>(Actor))
 				{
-					if (Door->GetbIsOpen()) continue; // 열린 문이면 아래 로직 실행하지 않음. 
-				}
-				if (DistSq < MinLockedDistSq)
-				{
-					MinLockedDistSq = DistSq;
-					ClosetLockedDoor = Actor;
+					if (!SingleDoor->bActivated && !InteractInterface->GetBCanInteract())
+					{
+						if (DistSq < MinLockedDistSq)
+						{
+							MinLockedDistSq = DistSq;
+							ClosetLockedDoor = Actor;
+						}
+					}
 				}
 			}
 			// Lever, SafeBox, Button 등 잠긴 오브젝트 전용 변수에 저장 
-			else if (Type == EInteractionType::Lever
-				|| Type == EInteractionType::SafeBox
-				|| Type == EInteractionType::Button)
+			else if (Type == EInteractionType::Lever || Type == EInteractionType::SafeBox || Type == EInteractionType::Button)
 			{
 				if (DistSq < MinLockedOtherDistSq)
 				{
@@ -498,7 +498,11 @@ void UInteractionComponent::AttachInteractingItem()
 	{
 		CurrentInteractingItem->SetActorEnableCollision(false);
 		CurrentInteractingItem->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("ItemSocket"));
-		CurrentInteractingItem->SetActorScale3D(FVector(0.8f));
+
+		if (AItemBase* PickedItem = Cast<AItemBase>(CurrentInteractingItem))
+		{
+			CurrentInteractingItem->SetActorRelativeTransform(PickedItem->GetInHandTransform());
+		}
 	}
 }
 

@@ -9,7 +9,7 @@
 AAmmoBoxActor::AAmmoBoxActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	InHandRotator = FRotator(0.f, 90.f, 0.f);
+	//InHandRotator = FRotator(0.f, 90.f, 0.f);
 }
 
 void AAmmoBoxActor::BeginPlay()

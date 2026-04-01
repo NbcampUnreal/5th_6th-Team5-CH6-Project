@@ -191,10 +191,7 @@ public:
 	void PopHealItemCap();
 
 public:
-
-	// 애니메이션 데이터 에셋에 픽업 몽타주가 있다고 가정 (AnimData에 추가 필요)
 	void PlayPickupAnimation(AActor* TargetItem);
-
 
 	// 노티파이에서 호출할 함수
 	UFUNCTION(BlueprintCallable)
@@ -212,8 +209,8 @@ public:
 	float LastDoorInteractTime = 0.0f;
 
 	FVector CurrentPickupLocation;
+
 private:
-	AActor* FindClosestInteractable();
 	void HandleDoorInteraction(AActor* DoorActor);
 	void HandleItemInteraction(AActor* ItemActor);
 	void HandleLeverInteraction(AActor* LeverActor);
@@ -250,15 +247,6 @@ public:
 	void UpdateVentState();
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 	virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
-
-	//UPROPERTY()
-	//FTimeline ReviveCameraTimeline;
-
-	//UPROPERTY(EditAnywhere, Category = "Camera")
-	//UCurveFloat* ReviveCameraCurve; // 0초에서 -60(아래), 끝날 때 0(정면)으로 변하는 커브 설정
-
-	/*UFUNCTION()
-	void UpdateReviveCamera(float Value);*/
 
 	UPROPERTY(EditAnywhere, Category = "CameraShake")
 	TSubclassOf<UCameraShakeBase> IdleShakeClass;

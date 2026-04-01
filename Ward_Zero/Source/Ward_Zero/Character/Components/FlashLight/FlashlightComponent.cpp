@@ -114,21 +114,25 @@ void UFlashlightComponent::UpdateFlashlight(float DeltaTime)
 	float VentOuterConeAngleMultiplier = (Player->bIsInVent) ? 1.5f : 1.0f;
 
 	bool bIsLever = false;
-	if (Player->InteractionComp->CurrentInteractingItem && Player->InteractionComp->CurrentInteractingItem->IsA(ALever::StaticClass()))
+	if (Player->InteractionComp && Player->InteractionComp->CurrentInteractingItem)
 	{
-		bIsLever = true;
+		if (Player->InteractionComp->CurrentInteractingItem->IsA(ALever::StaticClass()))
+			bIsLever = true;
 	}
-	bool bHandIsBusy = bIsInteracting && bIsUnarmed && !bIsLever;
+	bool bHandIsBusy = bIsInteracting && !bIsLever;
 	if (!bIsUseFlashlight || bHandIsBusy)
 	{
+		// 메인 손전등 액터 숨기기
 		FlashLightActor->SetActorHiddenInGame(true);
 		FlashLightSpot->SetVisibility(false);
-		if (FlashLightMesh) FlashLightMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), 0.0f);
-
-		// 이전 무기 라이트 정리
-		if (LastEquippedWeapon && LastEquippedWeapon->SMGSpotLight)
-			LastEquippedWeapon->SMGSpotLight->SetVisibility(false);
-
+		if (FlashLightMesh)
+		{
+			FlashLightMesh->SetVisibility(false);
+			FlashLightMesh->SetScalarParameterValueOnMaterials(TEXT("Intensity"), 0.0f);
+		}
+		// 무기 라이트(SMG 등)도 상호작용 중엔 끔
+		if (CurrentWeapon && CurrentWeapon->SMGSpotLight)
+			CurrentWeapon->SMGSpotLight->SetVisibility(false);
 		return;
 	}
 

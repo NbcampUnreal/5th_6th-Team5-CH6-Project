@@ -765,11 +765,6 @@ void APrototypeCharacter::Revive()
 		}
 	}
 
-	/*if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
-	{
-		AnimInst->StopAllMontages(0.0f);
-	}*/
-
 	// 몽타주 재생 및 길이(시간) 가져오기
 	float MontageDuration = 0.0f;
 	if (StatusComp->ReviveMontage)
@@ -1118,16 +1113,6 @@ void APrototypeCharacter::NotifyActorEndOverlap(AActor* OtherActor)
 		UpdateVentState();
 	}
 }
-
-//void APrototypeCharacter::UpdateReviveCamera(float Value)
-//{
-//	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-//	{
-//		FRotator CurrentRot = PC->GetControlRotation();
-//		CurrentRot.Pitch = Value; // 커브 값에 따라 Pitch 조절
-//		PC->SetControlRotation(CurrentRot);
-//	}
-//}
 
 void APrototypeCharacter::ChangeLocomotionCameraShake(int32 StateIndex)
 {

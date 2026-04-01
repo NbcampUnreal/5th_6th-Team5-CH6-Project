@@ -79,13 +79,20 @@ void UPlayerAnimInstance::UpdateCombatIK(float DeltaSeconds) {
 	{
 		UAnimInstance* AI = CachedCharacter->GetMesh()->GetAnimInstance();
 		// 힐/픽업 등 전투 외 몽타주가 재생 중이면서 전투 몽타주가 아닐 때
-		if (AI && AI->IsAnyMontagePlaying() && !bIsReloading && !bIsEquipping)
-			bIsPlayingNonCombatMontage = true;
+		if (AI && AI->IsAnyMontagePlaying())
+		{
+			if (!bIsReloading && !bIsEquipping && !bIsInjured)
+				bIsPlayingNonCombatMontage = true;
+		}
 	}
 
 	bool bIsIKBusy = bIsEquipping || bIsReloading || bIsInteracting || bIsQuickTurning || bIsPlayingNonCombatMontage;
+
+	float TargetSMGAlpha = (bIsSMGEquipped && !bIsQuickTurning && !bIsIKBusy) ? GetCurveValue(TEXT("HandIKLeftAlpha")) : 0.0f;
+	float InterpSpeed = bIsInjured ? 5.0f : 15.0f;
+
 	float CurveValue = GetCurveValue(TEXT("HandIKLeftAlpha"));
-	SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, (bIsSMGEquipped && !bIsQuickTurning && !bIsIKBusy) ? CurveValue : 0.0f, DeltaSeconds, 15.0f);
+	SMGHandIKAlpha = FMath::FInterpTo(SMGHandIKAlpha, (bIsSMGEquipped && !bIsQuickTurning && !bIsIKBusy) ? CurveValue : 0.0f, DeltaSeconds, InterpSpeed);
 	PistolIKAlpha = FMath::FInterpTo(PistolIKAlpha, (bIsPistolEquipped && !bIsSMGEquipped && !bIsIKBusy) ? 1.0f : 0.0f, DeltaSeconds, 15.0f);
 
 	if (bIsPistolEquipped && WeaponMesh) {
@@ -212,7 +219,8 @@ void UPlayerAnimInstance::UpdateFlashlightLogic(float DeltaSeconds)
 	}
 	bool bHandIsBusy = bIsInteracting && bIsUnarmed && !bIsLeverInteraction;
 	float TargetAlpha = (bIsUseFlashLight && bIsUnarmed && !bIsInVent && !bHandIsBusy) ? 1.0f : 0.0f;
-	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetAlpha, DeltaSeconds, 5.0f);
+	float InterpSpeed = (TargetAlpha > FlashlightAlpha) ? 2.0f : 10.0f;
+	FlashlightAlpha = FMath::FInterpTo(FlashlightAlpha, TargetAlpha, DeltaSeconds, InterpSpeed);
 }
 
 void UPlayerAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds) {

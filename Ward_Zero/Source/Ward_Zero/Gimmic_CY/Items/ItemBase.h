@@ -55,7 +55,7 @@ public:
 	
 	bool bActivated = false;
 	
-	FRotator GetInHandTransform() const { return InHandRotator; }
+	FTransform GetInHandTransform() const { return InHandRotator; }
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
 	class UWidgetComponent* InteractWidget;
@@ -93,7 +93,7 @@ protected:
 	UStaticMeshComponent* Mesh;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Setting")
-	FRotator InHandRotator;
+	FTransform InHandRotator;
 	
 	
 	
