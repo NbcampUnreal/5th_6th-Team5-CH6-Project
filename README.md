@@ -163,10 +163,46 @@ Undead Zombie Animation Bundle
 Spy Girl Agent (Modular)
 
 폴더 구조 예시
-WardZero/
-├─ Source/
-├─ Content/
-├─ Docs/
-│  ├─ Images/
-│  └─ README_assets/
-├─ Config/
+Source/Ward_Zero/
+├─ Character/
+│  ├─ Animation/
+│  │  ├─ Interface/
+│  │  ├─ Notify/
+│  │  ├─ PlayerAnimInstance.cpp
+│  │  └─ PlayerAnimInstance.h
+│  ├─ Components/
+│  ├─ Data/
+│  ├─ Enum/
+│  ├─ Noise/
+│  └─ Prototype_Character/
+│     ├─ PrototypeCharacter.cpp
+│     └─ PrototypeCharacter.h
+│
+├─ FlashLight/
+│
+├─ Gimmick_CY/
+│  ├─ Interface/
+│  ├─ Items/
+│  ├─ Object/
+│  └─ Test/
+│
+├─ Level_YC/
+├─ MonsterAI/
+├─ Objects/
+├─ UI_KWJ/
+├─ Variant_Combat/
+├─ Variant_Platforming/
+├─ Variant_SideScrolling/
+├─ Weapon/
+│
+├─ Ward_Zero.Build.cs
+├─ Ward_Zero.cpp
+├─ Ward_Zero.h
+├─ Ward_ZeroCharacter.cpp
+├─ Ward_ZeroCharacter.h
+├─ Ward_ZeroGameMode.cpp
+├─ Ward_ZeroGameMode.h
+├─ Ward_ZeroPlayerController.cpp
+├─ Ward_ZeroPlayerController.h
+├─ WardGameInstanceSubsystem.cpp
+└─ WardGameInstanceSubsystem.h
